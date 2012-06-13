@@ -1,4 +1,4 @@
-BINS= nop.bin
+BINS= nop.bin simple.bin
 
 all: $(BINS)
 

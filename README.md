@@ -10,3 +10,9 @@ Home page for the free (lite) edition at http://www.mentor.com/embedded-software
 ### Use it
 
     source ./env.sh
+
+
+
+## ISA
+
+Pseudo-instructions: http://en.wikibooks.org/wiki/MIPS_Assembly/Pseudoinstructions
