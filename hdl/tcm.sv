@@ -35,4 +35,6 @@ module tcm #(
 
   assign cpu_rd_data  = mem[mem_addr];
 
+  assert property (~(cpu_rd & cpu_wr));
+
 endmodule

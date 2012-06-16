@@ -84,7 +84,7 @@ module generic_cache #(
   // XXX: add prefetching
 
   // Either read or write
-  assert property (cpu_wr ^ cpu_rd);
+  assert property (~(cpu_wr & cpu_rd));
 
   // XXX: cache consistency with self-modifying code?
   //      need cache region invalidation, or complete cache invalidation
