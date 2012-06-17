@@ -4,6 +4,7 @@ module idec #(
   input                      clock,
   input                      reset_n,
 
+  input [31:0]               pc,
   input [31:0]               inst_word,
 
   output [ 4:0]              rfile_rd_addr1,
