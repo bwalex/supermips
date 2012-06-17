@@ -22,4 +22,7 @@ module mem #(
   output [31:0]           result
 );
 
-endmodule
+  // XXX: just pass ALU through, everything else is 0 result
+  assign result  = (mem_inst) ? 32'b0 : alu_result;
+
+endmodule // mem
