@@ -1,7 +1,8 @@
 BINS= $(patsubst %.s,%.bin,$(wildcard *.s))
 VMEMS= $(patsubst %.s,%.vmem,$(wildcard *.s))
+DISS= $(patsubst %.s,%.dis,$(wildcard *.s))
 
-all: $(BINS) $(VMEMS)
+all: $(BINS) $(VMEMS) $(DISS)
 
 %.elf: %.s
 	mips-sde-elf-as $*.s -o $@
@@ -12,5 +13,11 @@ all: $(BINS) $(VMEMS)
 %.vmem: %.elf
 	mips-sde-elf-objcopy -O verilog $*.elf $@
 
+%.dis: %.elf
+	mips-sde-elf-objdump -D $*.elf > $@
+
 clean:
-	rm -f *.elf *.bin *.vmem
+	rm -f *.elf *.bin *.vmem *.dis
+
+disassemble:
+	mips-sde-elf-objdump -EB -m mips -b binary -D *.bin
