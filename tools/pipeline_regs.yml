@@ -1,0 +1,28 @@
+IF_ID:
+ - inst_word/32
+
+
+ID_EX:
+ - A/32
+ - B/32
+ - A_reg/5
+ - B_reg/5
+ - B_imm/1
+ - shamt/5
+ - alu_op/12
+ - alu_inst/1
+ - mem_inst/1
+ - dest_reg/5
+ - dest_reg_valid/1
+
+
+EX_MEM:
+ - result/32
+ - dest_reg/5
+ - dest_reg_valid/1
+
+
+MEM_WB:
+ - result/32
+ - dest_reg/5
+ - dest_reg_valid/1
