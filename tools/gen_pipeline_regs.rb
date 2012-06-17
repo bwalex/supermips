@@ -23,5 +23,5 @@ regs.each do |reg,signals|
   end
 
   text = erb.result(binding)
-  File.open("../hdl/#{module_name}.v", 'w') { |f| f.write(text) }
+  File.open("../hdl/#{module_name}.sv", 'w') { |f| f.write(text) }
 end
