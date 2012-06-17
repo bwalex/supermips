@@ -17,7 +17,7 @@ module ex #(
   input                     mem_inst,
   input                     jmp_inst,
 
-  input                     dest_reg,
+  input [ 4:0]              dest_reg,
   input                     dest_reg_valid,
 
   output [31:0]             result
