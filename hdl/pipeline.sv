@@ -56,33 +56,65 @@ module pipeline#(
   wire [31:0] mem_result;
 
 
-  // XXX: In addition need pipeline register interconnect signals
+  // Pipeline register interconnect signals
+  wire [31:0] if_pc_r;
+  wire [31:0] if_inst_word_r;
+
+  wire [31:0] id_pc_r;
+  wire [31:0] id_A_r;
+  wire [31:0] id_B_r;
+  wire [ 4:0] id_A_reg_r;
+  wire [ 4:0] id_B_reg_r;
+  wire        id_B_imm_r;
+  wire        id_shamt_r;
+  wire [11:0] id_alu_op_r;
+  wire        id_alu_inst_r;
+  wire        id_mem_inst_r;
+  wire        id_jmp_inst_r;
+  wire [ 4:0] id_dest_reg_r;
+  wire        id_dest_reg_valid_r;
+
+  wire [31:0] ex_pc_r;
+  wire        ex_mem_inst_r;
+  wire        ex_jmp_inst_r;
+  wire [31:0] ex_result_r;
+  wire [ 4:0] ex_dest_reg_r;
+  wire        ex_dest_reg_valid_r;
+
+  wire [31:0] mem_pc_r;
+  wire [31:0] mem_result_r;
+  wire [ 4:0] mem_dest_reg_r;
+  wire        mem_dest_reg_valid_r;
 
 
 
 
   ifetch IF(
+            // Inputs
             .clock(clock),
             .reset_n(reset_n),
-            .cache_addr(icache_addr),
-            .cache_rd(icache_rd),
             .cache_data(icache_data),
             .cache_waitrequest(icache_waitrequest),
-            .inst_word(if_inst_word),
             .load_pc(1'b0),
             .new_pc(32'b0),
+            // Outputs
+            .cache_addr(icache_addr[31:0]),
+            .cache_rd(icache_rd),
+            .inst_word(if_inst_word),
             .pc_out(if_pc)
             );
 
   idec ID(
+          // Inputs
           .clock(clock),
           .reset_n(reset_n),
           .pc(if_pc_r),
           .inst_word(if_inst_word_r),
-          .rfile_rd_addr1(rfile_rd_addr1),
-          .rfile_rd_addr2(rfile_rd_addr2),
           .rfile_rd_data1(rfile_rd_data1),
           .rfile_rd_data2(rfile_rd_data2),
+          // Outputs
+          .rfile_rd_addr1(rfile_rd_addr1),
+          .rfile_rd_addr2(rfile_rd_addr2),
           .A(id_A),
           .B(id_B),
           .A_reg(id_A_reg),
@@ -144,19 +176,20 @@ module pipeline#(
         );
 
 
-  wire [31:0] if_inst_word_r;
-
 
   pipreg_if_id R_IF_ID(
+                       // Inputs
                        .clock(clock),
                        .reset_n(reset_n),
                        .if_pc(if_pc),
                        .if_inst_word(if_inst_word),
+                       // Outputs
                        .id_pc(if_pc_r),
                        .id_inst_word(if_inst_word_r)
                        );
 
   pipreg_id_ex R_ID_EX(
+                       // Inputs
                        .clock(clock),
                        .reset_n(reset_n),
                        .id_pc(if_pc_r),
@@ -172,6 +205,7 @@ module pipeline#(
                        .id_jmp_inst(id_jmp_inst),
                        .id_dest_reg(id_dest_reg),
                        .id_dest_reg_valid(id_dest_reg_valid),
+                       // Outputs
                        .ex_pc(id_pc_r),
                        .ex_A(id_A_r),
                        .ex_B(id_B_r),
@@ -188,6 +222,7 @@ module pipeline#(
                        );
 
   pipreg_ex_mem R_EX_MEM(
+                         // Inputs
                          .clock(clock),
                          .reset_n(reset_n),
                          .ex_pc(id_pc_r),
@@ -196,6 +231,7 @@ module pipeline#(
                          .ex_result(ex_result),
                          .ex_dest_reg(id_dest_reg_r),
                          .ex_dest_reg_valid(id_dest_reg_valid_r),
+                         // Outputs
                          .mem_pc(ex_pc_r),
                          .mem_mem_inst(ex_mem_inst_r),
                          .mem_jmp_inst(ex_jmp_inst_r),
@@ -205,12 +241,14 @@ module pipeline#(
                          );
 
   pipreg_mem_wb R_MEM_WB(
+                         // Inputs
                          .clock(clock),
                          .reset_n(reset_n),
                          .mem_pc(ex_pc_r),
                          .mem_result(mem_result),
                          .mem_dest_reg(ex_dest_reg_r),
                          .mem_dest_reg_valid(ex_dest_reg_valid_r),
+                         // Outputs
                          .wb_pc(mem_pc_r),
                          .wb_result(mem_result_r),
                          .wb_dest_reg(mem_dest_reg_r),
