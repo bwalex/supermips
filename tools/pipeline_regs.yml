@@ -1,8 +1,10 @@
 IF_ID:
+ - pc/32
  - inst_word/32
 
 
 ID_EX:
+ - pc/32
  - A/32
  - B/32
  - A_reg/5
@@ -12,17 +14,22 @@ ID_EX:
  - alu_op/12
  - alu_inst/1
  - mem_inst/1
+ - jmp_inst/1
  - dest_reg/5
  - dest_reg_valid/1
 
 
 EX_MEM:
+ - pc/32
+ - mem_inst/1
+ - jmp_inst/1
  - result/32
  - dest_reg/5
  - dest_reg_valid/1
 
 
 MEM_WB:
+ - pc/32
  - result/32
  - dest_reg/5
  - dest_reg_valid/1

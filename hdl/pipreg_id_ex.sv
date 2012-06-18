@@ -2,6 +2,7 @@
 //       DO NOT EDIT BY HAND!
 module pipreg_id_ex(
 
+  input [31:0] id_pc,
   input [31:0] id_A,
   input [31:0] id_B,
   input [4:0] id_A_reg,
@@ -11,10 +12,12 @@ module pipreg_id_ex(
   input [11:0] id_alu_op,
   input [0:0] id_alu_inst,
   input [0:0] id_mem_inst,
+  input [0:0] id_jmp_inst,
   input [4:0] id_dest_reg,
   input [0:0] id_dest_reg_valid,
 
 
+  output reg [31:0] ex_pc,
   output reg [31:0] ex_A,
   output reg [31:0] ex_B,
   output reg [4:0] ex_A_reg,
@@ -24,6 +27,7 @@ module pipreg_id_ex(
   output reg [11:0] ex_alu_op,
   output reg [0:0] ex_alu_inst,
   output reg [0:0] ex_mem_inst,
+  output reg [0:0] ex_jmp_inst,
   output reg [4:0] ex_dest_reg,
   output reg [0:0] ex_dest_reg_valid,
 
@@ -34,6 +38,7 @@ module pipreg_id_ex(
   always_ff @(posedge clock, negedge reset_n) begin
     if (~reset_n) begin
     
+      ex_pc <= 'b0;
       ex_A <= 'b0;
       ex_B <= 'b0;
       ex_A_reg <= 'b0;
@@ -43,11 +48,13 @@ module pipreg_id_ex(
       ex_alu_op <= 'b0;
       ex_alu_inst <= 'b0;
       ex_mem_inst <= 'b0;
+      ex_jmp_inst <= 'b0;
       ex_dest_reg <= 'b0;
       ex_dest_reg_valid <= 'b0;
     end
     else begin
     
+      ex_pc <= id_pc;
       ex_A <= id_A;
       ex_B <= id_B;
       ex_A_reg <= id_A_reg;
@@ -57,6 +64,7 @@ module pipreg_id_ex(
       ex_alu_op <= id_alu_op;
       ex_alu_inst <= id_alu_inst;
       ex_mem_inst <= id_mem_inst;
+      ex_jmp_inst <= id_jmp_inst;
       ex_dest_reg <= id_dest_reg;
       ex_dest_reg_valid <= id_dest_reg_valid;
     end

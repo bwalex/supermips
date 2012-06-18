@@ -2,9 +2,11 @@
 //       DO NOT EDIT BY HAND!
 module pipreg_if_id(
 
+  input [31:0] if_pc,
   input [31:0] if_inst_word,
 
 
+  output reg [31:0] id_pc,
   output reg [31:0] id_inst_word,
 
   input clock,
@@ -14,10 +16,12 @@ module pipreg_if_id(
   always_ff @(posedge clock, negedge reset_n) begin
     if (~reset_n) begin
     
+      id_pc <= 'b0;
       id_inst_word <= 'b0;
     end
     else begin
     
+      id_pc <= if_pc;
       id_inst_word <= if_inst_word;
     end
   end
