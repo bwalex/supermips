@@ -218,7 +218,7 @@ module pipeline#(
                        .ex_mem_inst(id_mem_inst_r),
                        .ex_jmp_inst(id_jmp_inst_r),
                        .ex_dest_reg(id_dest_reg_r),
-                       .ex_dest_reg_valid(id_dest_reg_valid_r),
+                       .ex_dest_reg_valid(id_dest_reg_valid_r)
                        );
 
   pipreg_ex_mem R_EX_MEM(
