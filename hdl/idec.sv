@@ -15,18 +15,18 @@ module idec #(
 
   output [31:0]              A,
   output [31:0]              B,
-  output [ 4:0]              A_reg,
-  output [ 4:0]              B_reg,
+  output reg [ 4:0]          A_reg,
+  output reg [ 4:0]          B_reg,
   output                     B_imm,
-  output [ 4:0]              shamt,
+  output reg [ 4:0]          shamt,
   output [ALU_OPC_WIDTH-1:0] alu_op,
 
-  output                     alu_inst,
-  output                     mem_inst,
-  output                     jmp_inst,
+  output reg                 alu_inst,
+  output reg                 mem_inst,
+  output reg                 jmp_inst,
 
-  output [ 4:0]              dest_reg,
-  output                     dest_reg_valid
+  output reg [ 4:0]          dest_reg,
+  output reg                 dest_reg_valid
 );
 
   wire [5:0]                 inst_opc;
@@ -149,7 +149,7 @@ module idec #(
 
 
   assign imm_extended  = (imm_sext)
-                         ? { 16 {inst_imm[15]}, inst_imm }
+                         ? { {16{inst_imm[15]}}, inst_imm }
                          : { 16'd0, inst_imm };
 
 
