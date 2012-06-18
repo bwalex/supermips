@@ -5,6 +5,8 @@ module top#(
            parameter DMEM_FILE = "../software/simple.vmem"
 )(
 );
+  logic clock;
+  logic reset_n;
 
   /*AUTOWIRE*/
   // Beginning of automatic wires (for undeclared instantiated-module outputs)

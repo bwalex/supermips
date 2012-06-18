@@ -3,7 +3,7 @@ module tcm #(
             DATA_WIDTH = 32,
             MEM_DEPTH  = 65536,
             MEM_FILE   = "",
-            BE_WIDTH   = $clog2(DATA_WIDTH)
+            BE_WIDTH   = 5//$clog2(DATA_WIDTH) // XXX: ncverilog doesn't support $clog2()
 )(
   input                   clock,
   input                   reset_n,
@@ -31,7 +31,7 @@ module tcm #(
                       | (cpu_wr_data   &  cpu_wr_be);
 
 
-  assign cpu_waitrequest <= 1'b0;
+  assign cpu_waitrequest = 1'b0;
 
   assign cpu_rd_data  = mem[mem_addr];
 
