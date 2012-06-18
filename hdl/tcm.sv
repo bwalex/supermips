@@ -3,7 +3,7 @@ module tcm #(
             DATA_WIDTH = 32,
             MEM_DEPTH  = 65536,
             MEM_FILE   = "",
-            BE_WIDTH   = 5//$clog2(DATA_WIDTH) // XXX: ncverilog doesn't support $clog2()
+            BE_WIDTH   = DATA_WIDTH/8
 )(
   input                   clock,
   input                   reset_n,
@@ -20,7 +20,7 @@ module tcm #(
   reg [DATA_WIDTH-1:0]    mem[MEM_DEPTH];
   wire [ADDR_WIDTH-1:0]   mem_addr;
 
-  assign mem_addr  = cpu_addr[ADDR_WIDTH-1:BE_WIDTH];
+  assign mem_addr  = cpu_addr >> 2;
 
 
   always_ff @(posedge clock, negedge reset_n)

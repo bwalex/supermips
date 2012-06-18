@@ -162,7 +162,7 @@ module ex #(
       OP_SRA:
         alu_res  = B >>> shift_val;
       OP_LUI:
-        alu_res  = { B[31:16], 16'b0 };
+        alu_res  = { B[15:0], 16'b0 };
     endcase // case (op)
   end
 
