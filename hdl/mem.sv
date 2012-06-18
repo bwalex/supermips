@@ -23,6 +23,8 @@ module mem #(
 );
 
   // XXX: just pass ALU through, everything else is 0 result
-  assign result  = (mem_inst) ? 32'b0 : alu_result;
+  assign result   = (mem_inst) ? 32'b0 : alu_result;
+  assign cache_wr = 1'b0;
+  assign cache_rd = 1'b0;
 
 endmodule // mem
