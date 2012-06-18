@@ -84,13 +84,13 @@ module top#(
              .MEM_FILE(DMEM_FILE)
            ) DTCM (
            // Outputs
-           .cpu_rd_data                 (dcache_data[DATA_WIDTH-1:0]),
+           .cpu_rd_data                 (dcache_data),
            .cpu_waitrequest             (dcache_waitrequest),
            // Inputs
            .clock                       (clock),
            .reset_n                     (reset_n),
-           .cpu_addr                    (dcache_addr[ADDR_WIDTH-1:0]),
-           .cpu_wr_data                 (dcache_wr_data[DATA_WIDTH-1:0]),
+           .cpu_addr                    (dcache_addr),
+           .cpu_wr_data                 (dcache_wr_data),
            .cpu_wr_be                   ('b0),//dcache_wr_be[BE_WIDTH-1:0]),
            .cpu_rd                      (dcache_rd),
            .cpu_wr                      (dcache_wr));
