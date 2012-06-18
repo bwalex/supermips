@@ -23,7 +23,7 @@ module ex #(
   output [31:0]             result
 );
 
-  typedef enum { OP_ADD, OP_SUB, OP_OR, OP_XOR, OP_NOR, OP_AND, OP_SLL, OP_SRL, OP_SLA, OP_SRA, OP_PASS_A, OP_PASS_B } op_t;
+  typedef enum { OP_ADD, OP_SUB, OP_OR, OP_XOR, OP_NOR, OP_AND, OP_SLL, OP_SRL, OP_SLA, OP_SRA, OP_LUI, OP_PASS_A, OP_PASS_B } op_t;
 
   typedef enum { RES_ALU, RES_SET } result_unit_t;
 
@@ -124,6 +124,8 @@ module ex #(
         op  = OP_OR;
       6'h0e: // xori
         op  = OP_XOR;
+      6'h0f: // lui
+        op  = OP_LUI;
     endcase // case (inst_opc)
   end // always_comb
 
@@ -159,6 +161,8 @@ module ex #(
         alu_res  = B <<< shift_val;
       OP_SRA:
         alu_res  = B >>> shift_val;
+      OP_LUI:
+        alu_res  = { B[31:16], 16'b0 };
     endcase // case (op)
   end
 

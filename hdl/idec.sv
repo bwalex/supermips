@@ -144,6 +144,11 @@ module idec #(
         // xori
         alu_inst  = 1'b1;
       end
+
+      6'h0f: begin
+        // lui
+        alu_inst  = 1'b1;
+      end
     endcase
   end
 
