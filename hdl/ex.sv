@@ -54,7 +54,7 @@ module ex #(
 
   assign flag_zero  = (alu_res == 0);
 
-  assign result  = (res_sel == RES_ALU) ? res_alu : res_set;
+  assign result  = (res_sel == RES_ALU) ? alu_res : set_res;
 
 
   always_comb begin
@@ -134,34 +134,33 @@ module ex #(
     alu_res     = 0;
     flag_carry  = 1'b0;
 
-    begin
-      case (op)
-        OP_ADD:
-          { flag_carry, alu_res }  = A + B;
-        OP_SUB:
-          { flag_carry, alu_res }  = A - B;
-        OP_OR:
-          alu_res  = A | B;
-        OP_XOR:
-          alu_res  = A ^ B;
-        OP_NOR:
-          alu_res  = ~(A | B);
-        OP_AND:
-          alu_res  = A & B;
-        OP_PASS_A:
-          alu_res  = A;
-        OP_PASS_B:
-          alu_res  = B;
-        OP_SLL:
-          alu_res  = B << shift_val;
-        OP_SRL:
-          alu_res  = B >> shift_val;
-        OP_SLA:
-          alu_res  = B <<< shift_val;
-        OP_SRA:
-          alu_res  = B >>> shift_val;
-      endcase // case (op)
-    end
+    case (op)
+      OP_ADD:
+        { flag_carry, alu_res }  = A + B;
+      OP_SUB:
+        { flag_carry, alu_res }  = A - B;
+      OP_OR:
+        alu_res  = A | B;
+      OP_XOR:
+        alu_res  = A ^ B;
+      OP_NOR:
+        alu_res  = ~(A | B);
+      OP_AND:
+        alu_res  = A & B;
+      OP_PASS_A:
+        alu_res  = A;
+      OP_PASS_B:
+        alu_res  = B;
+      OP_SLL:
+        alu_res  = B << shift_val;
+      OP_SRL:
+        alu_res  = B >> shift_val;
+      OP_SLA:
+        alu_res  = B <<< shift_val;
+      OP_SRA:
+        alu_res  = B >>> shift_val;
+    endcase // case (op)
+  end
 
 
   always_comb begin
