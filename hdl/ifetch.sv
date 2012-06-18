@@ -10,7 +10,7 @@ module ifetch #(
   input [DATA_WIDTH-1:0]  cache_data,
   input                   cache_waitrequest,
 
-  output                  inst_word,
+  output [31:0]           inst_word,
 
   input                   load_pc,
   input [DATA_WIDTH-1:0]  new_pc,

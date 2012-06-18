@@ -66,7 +66,7 @@ module pipeline#(
   wire [ 4:0] id_A_reg_r;
   wire [ 4:0] id_B_reg_r;
   wire        id_B_imm_r;
-  wire        id_shamt_r;
+  wire [ 4:0] id_shamt_r;
   wire [11:0] id_alu_op_r;
   wire        id_alu_inst_r;
   wire        id_mem_inst_r;

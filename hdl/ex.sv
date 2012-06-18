@@ -10,7 +10,7 @@ module ex #(
   input [31:0]              B,
   input [ 4:0]              A_reg,
   input [ 4:0]              B_reg,
-  input [ 4:0]              B_imm,
+  input                     B_imm,
   input [ 4:0]              shamt,
   input [ALU_OPC_WIDTH-1:0] alu_op,
   input                     alu_inst,
