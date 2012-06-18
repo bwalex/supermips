@@ -1,0 +1,18 @@
+
+simple.elf:     file format elf32-tradbigmips
+
+
+Disassembly of section .text:
+
+00000000 <.text>:
+   0:	3c080003 	lui	t0,0x3
+   4:	3508bf20 	ori	t0,t0,0xbf20
+   8:	3401aa10 	li	at,0xaa10
+   c:	00201021 	move	v0,at
+  10:	01092020 	add	a0,t0,t1
+
+Disassembly of section .reginfo:
+
+00000000 <.reginfo>:
+   0:	00000316 	0x316
+	...
