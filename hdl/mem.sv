@@ -23,15 +23,17 @@ module mem #(
   input [31:0]            result_from_mem_wb,
   input [ 1:0]            B_fwd_from,
 
-  output [31:0]           result
+  output [31:0]           result,
+  output                  stall
 );
 
   wire [31:0]             word_st;
 
   assign word_st  = (B_fwd_from == FWD_FROM_MEMWB_LATE) ? result_from_mem_wb : result_2;
 
+  // XXX: need to handle stalls and bubble in.
+  assign stall  = cache_waitrequest;
 
-  // XXX: need to handle stalls!!
   // XXX: need to handle byte and half-word loads and stores
   assign result        = (load_inst) ? cache_data : alu_result;
   assign cache_addr    = alu_result >> 2;

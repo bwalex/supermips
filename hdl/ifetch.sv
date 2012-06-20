@@ -12,6 +12,7 @@ module ifetch #(
 
   output [31:0]           inst_word,
 
+  input                   stall,
   input                   load_pc,
   input [DATA_WIDTH-1:0]  new_pc,
 
@@ -24,9 +25,9 @@ module ifetch #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       pc <= 'b0;
-    else if (load_pc)
+    else if (~stall && load_pc)
       pc <= new_pc;
-    else
+    else if (~stall)
       pc <= pc + 4;
 
 
