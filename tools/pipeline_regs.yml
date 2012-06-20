@@ -5,15 +5,19 @@ IF_ID:
 
 ID_EX:
  - pc/32
+ - opc/12
  - A/32
  - B/32
  - A_reg/5
+ - A_reg_valid/1
  - B_reg/5
- - B_imm/1
+ - B_reg_valid/1
+ - imm/32
  - shamt/5
- - alu_op/12
  - alu_inst/1
- - mem_inst/1
+ - alu_op/32 # XXX: 32 is way too wide, but let's play it safe for the moment.
+ - load_inst/1
+ - store_inst/1
  - jmp_inst/1
  - dest_reg/5
  - dest_reg_valid/1
@@ -21,15 +25,19 @@ ID_EX:
 
 EX_MEM:
  - pc/32
- - mem_inst/1
+ - opc/12
+ - load_inst/1
+ - store_inst/1
  - jmp_inst/1
  - result/32
+ - result_2/32
  - dest_reg/5
  - dest_reg_valid/1
 
 
 MEM_WB:
  - pc/32
+ - opc/12
  - result/32
  - dest_reg/5
  - dest_reg_valid/1

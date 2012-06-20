@@ -44,7 +44,8 @@ module pipeline#(
   wire [ 4:0] id_shamt;
   wire [11:0] id_alu_op;
   wire        id_alu_inst;
-  wire        id_mem_inst;
+  wire        id_load_inst;
+  wire        id_store_inst;
   wire        id_jmp_inst;
   wire [ 4:0] id_dest_reg;
   wire        id_dest_reg_valid;
@@ -69,13 +70,15 @@ module pipeline#(
   wire [ 4:0] id_shamt_r;
   wire [11:0] id_alu_op_r;
   wire        id_alu_inst_r;
-  wire        id_mem_inst_r;
+  wire        id_load_inst_r;
+  wire        id_store_inst_r;
   wire        id_jmp_inst_r;
   wire [ 4:0] id_dest_reg_r;
   wire        id_dest_reg_valid_r;
 
   wire [31:0] ex_pc_r;
-  wire        ex_mem_inst_r;
+  wire        ex_load_inst_r;
+  wire        ex_store_inst_r;
   wire        ex_jmp_inst_r;
   wire [31:0] ex_result_r;
   wire [ 4:0] ex_dest_reg_r;
@@ -123,7 +126,8 @@ module pipeline#(
           .shamt(id_shamt),
           .alu_op(id_alu_op),
           .alu_inst(id_alu_inst),
-          .mem_inst(id_mem_inst),
+          .load_inst(id_load_inst),
+          .store_inst(id_store_inst),
           .jmp_inst(id_jmp_inst),
           .dest_reg(id_dest_reg),
           .dest_reg_valid(id_dest_reg_valid)
@@ -141,7 +145,8 @@ module pipeline#(
         .shamt(id_shamt_r),
         .alu_op(id_alu_op_r),
         .alu_inst(id_alu_inst_r),
-        .mem_inst(id_mem_inst_r),
+        .load_inst(id_load_inst_r),
+        .store_inst(id_store_inst_r),
         .jmp_inst(id_jmp_inst_r),
         .dest_reg(id_dest_reg_r),
         .dest_reg_valid(id_dest_reg_valid_r),
@@ -157,7 +162,8 @@ module pipeline#(
           .cache_wr_data(dcache_wr_data),
           .cache_data(dcache_data),
           .cache_waitrequest(dcache_waitrequest),
-          .mem_inst(ex_mem_inst_r),
+          .load_inst(ex_load_inst_r),
+          .store_inst(ex_store_inst_r),
           .dest_reg(ex_dest_reg_r),
           .dest_reg_valid(ex_dest_reg_valid_r),
           .alu_result(ex_result_r),
@@ -201,7 +207,8 @@ module pipeline#(
                        .id_shamt(id_shamt),
                        .id_alu_op(id_alu_op),
                        .id_alu_inst(id_alu_inst),
-                       .id_mem_inst(id_mem_inst),
+                       .id_load_inst(id_load_inst),
+                       .id_store_inst(id_store_inst),
                        .id_jmp_inst(id_jmp_inst),
                        .id_dest_reg(id_dest_reg),
                        .id_dest_reg_valid(id_dest_reg_valid),
@@ -215,7 +222,8 @@ module pipeline#(
                        .ex_shamt(id_shamt_r),
                        .ex_alu_op(id_alu_op_r),
                        .ex_alu_inst(id_alu_inst_r),
-                       .ex_mem_inst(id_mem_inst_r),
+                       .ex_load_inst(id_load_inst_r),
+                       .ex_store_inst(id_store_inst_r),
                        .ex_jmp_inst(id_jmp_inst_r),
                        .ex_dest_reg(id_dest_reg_r),
                        .ex_dest_reg_valid(id_dest_reg_valid_r)
@@ -226,14 +234,16 @@ module pipeline#(
                          .clock(clock),
                          .reset_n(reset_n),
                          .ex_pc(id_pc_r),
-                         .ex_mem_inst(id_mem_inst_r),
+                         .ex_load_inst(id_load_inst_r),
+                         .ex_store_inst(id_store_inst_r),
                          .ex_jmp_inst(id_jmp_inst_r),
                          .ex_result(ex_result),
                          .ex_dest_reg(id_dest_reg_r),
                          .ex_dest_reg_valid(id_dest_reg_valid_r),
                          // Outputs
                          .mem_pc(ex_pc_r),
-                         .mem_mem_inst(ex_mem_inst_r),
+                         .mem_load_inst(ex_load_inst_r),
+                         .mem_store_inst(ex_store_inst_r),
                          .mem_jmp_inst(ex_jmp_inst_r),
                          .mem_result(ex_result_r),
                          .mem_dest_reg(ex_dest_reg_r),

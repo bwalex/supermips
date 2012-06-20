@@ -9,9 +9,10 @@ module pipreg_id_ex(
   input [4:0] id_B_reg,
   input [0:0] id_B_imm,
   input [4:0] id_shamt,
-  input [11:0] id_alu_op,
+  input [11:0] id_opc,
   input [0:0] id_alu_inst,
-  input [0:0] id_mem_inst,
+  input [0:0] id_load_inst,
+  input [0:0] id_store_inst,
   input [0:0] id_jmp_inst,
   input [4:0] id_dest_reg,
   input [0:0] id_dest_reg_valid,
@@ -24,9 +25,10 @@ module pipreg_id_ex(
   output reg [4:0] ex_B_reg,
   output reg [0:0] ex_B_imm,
   output reg [4:0] ex_shamt,
-  output reg [11:0] ex_alu_op,
+  output reg [11:0] ex_opc,
   output reg [0:0] ex_alu_inst,
-  output reg [0:0] ex_mem_inst,
+  output reg [0:0] ex_load_inst,
+  output reg [0:0] ex_store_inst,
   output reg [0:0] ex_jmp_inst,
   output reg [4:0] ex_dest_reg,
   output reg [0:0] ex_dest_reg_valid,
@@ -45,9 +47,10 @@ module pipreg_id_ex(
       ex_B_reg <= 'b0;
       ex_B_imm <= 'b0;
       ex_shamt <= 'b0;
-      ex_alu_op <= 'b0;
+      ex_opc <= 'b0;
       ex_alu_inst <= 'b0;
-      ex_mem_inst <= 'b0;
+      ex_load_inst <= 'b0;
+      ex_store_inst <= 'b0;
       ex_jmp_inst <= 'b0;
       ex_dest_reg <= 'b0;
       ex_dest_reg_valid <= 'b0;
@@ -61,9 +64,10 @@ module pipreg_id_ex(
       ex_B_reg <= id_B_reg;
       ex_B_imm <= id_B_imm;
       ex_shamt <= id_shamt;
-      ex_alu_op <= id_alu_op;
+      ex_opc <= id_opc;
       ex_alu_inst <= id_alu_inst;
-      ex_mem_inst <= id_mem_inst;
+      ex_load_inst <= id_load_inst;
+      ex_store_inst <= id_store_inst;
       ex_jmp_inst <= id_jmp_inst;
       ex_dest_reg <= id_dest_reg;
       ex_dest_reg_valid <= id_dest_reg_valid;

@@ -12,7 +12,8 @@ module mem #(
   input [DATA_WIDTH-1:0]  cache_data,
   input                   cache_waitrequest,
 
-  input                   mem_inst, // XXX: break up into load_inst, store_inst
+  input                   load_inst,
+  input                   store_inst,
 
   input [ 4:0]            dest_reg,
   input                   dest_reg_valid,

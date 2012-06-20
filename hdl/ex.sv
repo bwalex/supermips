@@ -9,18 +9,23 @@ module ex #(
   input [31:0]              A,
   input [31:0]              B,
   input [ 4:0]              A_reg,
+  input                     A_reg_valid,
   input [ 4:0]              B_reg,
-  input                     B_imm,
+  input                     B_reg_valid,
+  input [31:0]              imm,
+  input                     imm_valid,
   input [ 4:0]              shamt,
   input [ALU_OPC_WIDTH-1:0] alu_op,
   input                     alu_inst,
-  input                     mem_inst,
+  input                     load_inst,
+  input                     store_inst,
   input                     jmp_inst,
 
   input [ 4:0]              dest_reg,
   input                     dest_reg_valid,
 
-  output [31:0]             result
+  output [31:0]             result,
+  output [31:0]             result_2
 );
 
   typedef enum { OP_ADD, OP_SUB, OP_OR, OP_XOR, OP_NOR, OP_AND, OP_SLL, OP_SRL, OP_SLA, OP_SRA, OP_LUI, OP_PASS_A, OP_PASS_B } op_t;
@@ -44,6 +49,19 @@ module ex #(
   reg                       set_u;
 
 
+  wire [31:0]               A_val;
+  wire [31:0]               B_val;
+
+
+  // XXX: consider forwarding.
+  assign A_val  = A;
+  assign B_val  = (imm_valid) ? imm : B;
+
+
+
+  assign result_2  = B;
+
+
   assign inst_opc   = alu_op[11:6];
   assign inst_funct = alu_op[5:0];
 
@@ -55,79 +73,6 @@ module ex #(
   assign flag_zero  = (alu_res == 0);
 
   assign result  = (res_sel == RES_ALU) ? alu_res : set_res;
-
-
-  always_comb begin
-    op       = OP_PASS_A;
-    res_sel  = RES_ALU;
-    set_u    = 1'b0;
-
-    case (inst_opc)
-      6'd00: begin
-        case (inst_funct)
-          6'd00: // sll
-            op  = OP_SLL;
-          6'd02: // srl
-            op  = OP_SRL;
-          6'd03: // sra
-            op  = OP_SRA;
-          6'd04: // sllv
-            op  = OP_SLL;
-          6'd06: // srlv
-            op  = OP_SRL;
-          6'd07: // srav
-            op  = OP_SRA;
-          6'd32: // add
-            op  = OP_ADD;
-          6'd33: // addu
-            op  = OP_ADD;
-          6'd34: // sub
-            op  = OP_SUB;
-          6'd35: // subu
-            op  = OP_SUB;
-          6'd36: // and
-            op  = OP_AND;
-          6'd37: // or
-            op  = OP_OR;
-          6'd38: // xor
-            op  = OP_XOR;
-          6'd39: // nor
-            op  = OP_NOR;
-          6'd42: begin // slt
-            op       = OP_SUB;
-            res_sel  = RES_SET;
-          end
-          6'd43: begin // sltu
-            op       = OP_SUB;
-            res_sel  = RES_SET;
-            set_u    = 1 'b1;
-          end
-        endcase // case (inst_funct)
-
-      end
-      6'h08: // addi
-        op  = OP_ADD;
-      6'h09: // addiu
-        op  = OP_ADD;
-      6'h0a: begin // slti
-        op       = OP_SUB;
-        res_sel  = RES_SET;
-      end
-      6'h0b: begin // sltiu
-        op       = OP_SUB;
-        res_sel  = RES_SET;
-        set_u    = 1'b1;
-      end
-      6'h0c: // andi
-        op  = OP_AND;
-      6'h0d: // ori
-        op  = OP_OR;
-      6'h0e: // xori
-        op  = OP_XOR;
-      6'h0f: // lui
-        op  = OP_LUI;
-    endcase // case (inst_opc)
-  end // always_comb
 
 
 
@@ -168,6 +113,7 @@ module ex #(
 
 
   always_comb begin
+    // XXX: wrong way round?
     if (set_u) begin
       // slt(i)u
       set_res  = { 31'b0, (A[31] & ~B[31]) | (alu_res[31] & (~A[31] ^ B[31])) };
