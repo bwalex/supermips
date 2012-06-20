@@ -31,7 +31,7 @@ module rfile #(
     end
 
 
-  assign rd_data1  = regfile[rd_addr1];
-  assign rd_data2  = regfile[rd_addr2];
+  assign rd_data1  = (rd_addr1 == wr_addr1 && wr_enable1) ? wr_data1 : regfile[rd_addr1];
+  assign rd_data2  = (rd_addr2 == wr_addr1 && wr_enable1) ? wr_data1 : regfile[rd_addr2];
 
 endmodule
