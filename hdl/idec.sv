@@ -135,14 +135,12 @@ module idec #(
             A_reg_valid  = 1'b1;
             B_reg_valid  = 1'b1;
           end
-          6'd08: begin
-            // JR
+          6'd08: begin // jr
             jmp_inst        = 1'b1;
             dest_reg_valid  = 1'b0;
             A_reg_valid     = 1'b1;
           end
-          6'd09: begin
-            // JALR
+          6'd09: begin // jalr
             jmp_inst     = 1'b1;
             A_reg_valid  = 1'b1;
           end
@@ -219,24 +217,21 @@ module idec #(
         endcase // case (inst_funct)
       end // case: 6'h00
 
-      6'h08: begin
-        // addi
+      6'h08: begin // addi
         imm_sext     = 1'b1;
         alu_inst     = 1'b1;
         alu_op       = OP_ADD;
         A_reg_valid  = 1'b1;
       end
 
-      6'h09: begin
-        // addiu
+      6'h09: begin // addiu
         imm_sext     = 1'b1;
         alu_inst     = 1'b1;
         alu_op       = OP_ADD;
         A_reg_valid  = 1'b1;
       end
 
-      6'h0a: begin
-        // slti
+      6'h0a: begin // slti
         imm_sext     = 1'b1;
         alu_inst     = 1'b1;
         alu_op       = OP_SUB;
@@ -244,8 +239,7 @@ module idec #(
         A_reg_valid  = 1'b1;
       end
 
-      6'h0b: begin
-        // sltiu
+      6'h0b: begin // sltiu
         imm_sext     = 1'b1;
         alu_inst     = 1'b1;
         alu_op       = OP_SUB;
@@ -254,41 +248,35 @@ module idec #(
         A_reg_valid  = 1'b1;
       end
 
-      6'h0c: begin
-        // andi
+      6'h0c: begin // andi
         alu_inst     = 1'b1;
         alu_op       = OP_AND;
         A_reg_valid  = 1'b1;
       end
 
-      6'h0d: begin
-        // ori
+      6'h0d: begin // ori
         alu_inst     = 1'b1;
         alu_op       = OP_OR;
         A_reg_valid  = 1'b1;
       end
 
-      6'h0e: begin
-        // xori
+      6'h0e: begin // xori
         alu_inst     = 1'b1;
         alu_op       = OP_XOR;
         A_reg_valid  = 1'b1;
       end
 
-      6'h0f: begin
-        // lui
+      6'h0f: begin // lui
         alu_inst  = 1'b1;
         alu_op    = OP_LUI;
       end
 
-      6'h23: begin
-        // lw
+      6'h23: begin // lw
         load_inst    = 1'b1;
         A_reg_valid  = 1'b1;
       end
 
-      6'h2b: begin
-        // sw
+      6'h2b: begin // sw
         store_inst      = 1'b1;
         A_reg_valid     = 1'b1;
         B_reg_valid     = 1'b1;
