@@ -7,6 +7,7 @@ module <%= module_name %>(
 <% for s in out_signals %>
   output reg [<%=s[:high]%>:<%=s[:low]%>] <%=s[:name]%>,<% end %>
 
+  input stall,
   input clock,
   input reset_n
 );
@@ -16,7 +17,7 @@ module <%= module_name %>(
     <% for s in out_signals %>
       <%=s[:name]%> <= 'b0;<% end %>
     end
-    else begin
+    else if (~stall) begin
     <% out_signals.each_index do |idx| %>
       <%= out_signals[idx][:name] %> <= <%= in_signals[idx][:name] %>;<% end %>
     end
