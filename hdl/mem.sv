@@ -19,13 +19,24 @@ module mem #(
   input                   dest_reg_valid,
 
   input [31:0]            alu_result, // soon to be agu_result
+  input [31:0]            result_2,
+  input [31:0]            result_from_mem_wb,
+  input [ 1:0]            B_fwd_from,
 
   output [31:0]           result
 );
 
-  // XXX: just pass ALU through, everything else is 0 result
-  assign result   = (mem_inst) ? 32'b0 : alu_result;
-  assign cache_wr = 1'b0;
-  assign cache_rd = 1'b0;
+  wire [31:0]             word_st;
+
+  assign word_st  = (B_fwd_from == FWD_FROM_MEMWB_LATE) ? result_from_mem_wb : result_2;
+
+
+  // XXX: need to handle stalls!!
+  // XXX: need to handle byte and half-word loads and stores
+  assign result        = (load_inst) ? cache_data : alu_result;
+  assign cache_addr    = alu_result >> 2;
+  assign cache_wr      = store_inst;
+  assign cache_rd      = load_inst;
+  assign cache_wr_data = word_st;
 
 endmodule // mem

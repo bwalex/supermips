@@ -3,14 +3,21 @@
 module pipreg_id_ex(
 
   input [31:0] id_pc,
+  input [11:0] id_opc,
   input [31:0] id_A,
   input [31:0] id_B,
   input [4:0] id_A_reg,
+  input [0:0] id_A_reg_valid,
+  input [1:0] id_A_fwd_from,
   input [4:0] id_B_reg,
-  input [0:0] id_B_imm,
+  input [0:0] id_B_reg_valid,
+  input [0:0] id_B_need_late,
+  input [1:0] id_B_fwd_from,
+  input [31:0] id_imm,
+  input [0:0] id_imm_valid,
   input [4:0] id_shamt,
-  input [11:0] id_opc,
   input [0:0] id_alu_inst,
+  input [31:0] id_alu_op,
   input [0:0] id_load_inst,
   input [0:0] id_store_inst,
   input [0:0] id_jmp_inst,
@@ -19,14 +26,21 @@ module pipreg_id_ex(
 
 
   output reg [31:0] ex_pc,
+  output reg [11:0] ex_opc,
   output reg [31:0] ex_A,
   output reg [31:0] ex_B,
   output reg [4:0] ex_A_reg,
+  output reg [0:0] ex_A_reg_valid,
+  output reg [1:0] ex_A_fwd_from,
   output reg [4:0] ex_B_reg,
-  output reg [0:0] ex_B_imm,
+  output reg [0:0] ex_B_reg_valid,
+  output reg [0:0] ex_B_need_late,
+  output reg [1:0] ex_B_fwd_from,
+  output reg [31:0] ex_imm,
+  output reg [0:0] ex_imm_valid,
   output reg [4:0] ex_shamt,
-  output reg [11:0] ex_opc,
   output reg [0:0] ex_alu_inst,
+  output reg [31:0] ex_alu_op,
   output reg [0:0] ex_load_inst,
   output reg [0:0] ex_store_inst,
   output reg [0:0] ex_jmp_inst,
@@ -41,14 +55,21 @@ module pipreg_id_ex(
     if (~reset_n) begin
     
       ex_pc <= 'b0;
+      ex_opc <= 'b0;
       ex_A <= 'b0;
       ex_B <= 'b0;
       ex_A_reg <= 'b0;
+      ex_A_reg_valid <= 'b0;
+      ex_A_fwd_from <= 'b0;
       ex_B_reg <= 'b0;
-      ex_B_imm <= 'b0;
+      ex_B_reg_valid <= 'b0;
+      ex_B_need_late <= 'b0;
+      ex_B_fwd_from <= 'b0;
+      ex_imm <= 'b0;
+      ex_imm_valid <= 'b0;
       ex_shamt <= 'b0;
-      ex_opc <= 'b0;
       ex_alu_inst <= 'b0;
+      ex_alu_op <= 'b0;
       ex_load_inst <= 'b0;
       ex_store_inst <= 'b0;
       ex_jmp_inst <= 'b0;
@@ -58,14 +79,21 @@ module pipreg_id_ex(
     else begin
     
       ex_pc <= id_pc;
+      ex_opc <= id_opc;
       ex_A <= id_A;
       ex_B <= id_B;
       ex_A_reg <= id_A_reg;
+      ex_A_reg_valid <= id_A_reg_valid;
+      ex_A_fwd_from <= id_A_fwd_from;
       ex_B_reg <= id_B_reg;
-      ex_B_imm <= id_B_imm;
+      ex_B_reg_valid <= id_B_reg_valid;
+      ex_B_need_late <= id_B_need_late;
+      ex_B_fwd_from <= id_B_fwd_from;
+      ex_imm <= id_imm;
+      ex_imm_valid <= id_imm_valid;
       ex_shamt <= id_shamt;
-      ex_opc <= id_opc;
       ex_alu_inst <= id_alu_inst;
+      ex_alu_op <= id_alu_op;
       ex_load_inst <= id_load_inst;
       ex_store_inst <= id_store_inst;
       ex_jmp_inst <= id_jmp_inst;

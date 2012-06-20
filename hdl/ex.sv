@@ -6,16 +6,22 @@ module ex #(
 
   input [31:0]              pc,
 
-  input [31:0]              A,
-  input [31:0]              B,
+  input [31:0]              A_val,
+  input [31:0]              B_val,
+  input [31:0]              result_from_ex_mem,
+  input [31:0]              result_from_mem_wb,
   input [ 4:0]              A_reg,
   input                     A_reg_valid,
+  input [ 1:0]              A_fwd_from,
   input [ 4:0]              B_reg,
   input                     B_reg_valid,
+  input [ 1:0]              B_fwd_from,
   input [31:0]              imm,
   input                     imm_valid,
   input [ 4:0]              shamt,
   input [ALU_OPC_WIDTH-1:0] alu_op,
+  input                     alu_res_sel,
+  input                     alu_set_u,
   input                     alu_inst,
   input                     load_inst,
   input                     store_inst,
@@ -44,22 +50,26 @@ module ex #(
   reg [31:0]                alu_res;
   reg [31:0]                set_res;
 
-  op_t                      op;
-  result_unit_t             res_sel;
-  reg                       set_u;
+
+  wire [31:0]               A;
+  wire [31:0]               B;
+  wire [31:0]               B_forwarded;
 
 
-  wire [31:0]               A_val;
-  wire [31:0]               B_val;
+  // Forward results as required
+  assign B_forwarded =  (B_fwd_from == FWD_FROM_EXMEM) ? result_from_ex_mem
+                      : (B_fwd_from == FWD_FROM_MEMWB) ? result_from_mem_wb
+                      :                                  B_val;
+
+  assign A  =  (A_fwd_from == FWD_FROM_EXMEM) ? result_from_ex_mem
+             : (A_fwd_from == FWD_FROM_MEMWB) ? result_from_mem_wb
+             :                                  A_val;
 
 
-  // XXX: consider forwarding.
-  assign A_val  = A;
-  assign B_val  = (imm_valid) ? imm : B;
+  assign B  = (imm_valid) ? imm : B_forwarded;
 
+  assign result_2  = B_forwarded;
 
-
-  assign result_2  = B;
 
 
   assign inst_opc   = alu_op[11:6];
@@ -67,12 +77,12 @@ module ex #(
 
 
   // Detect sllv, srlv, srav
-  assign shift_val  = (inst_funct == 6'h4 || inst_funct == 6'h6 || inst_funct == 6'h7) ? A[4:0] : shamt;
+  assign shift_val  = A_reg_valid ? A[4:0] : shamt;
 
 
   assign flag_zero  = (alu_res == 0);
 
-  assign result  = (res_sel == RES_ALU) ? alu_res : set_res;
+  assign result  = (alu_res_sel == RES_ALU) ? alu_res : set_res;
 
 
 
@@ -81,7 +91,7 @@ module ex #(
     alu_res     = 0;
     flag_carry  = 1'b0;
 
-    case (op)
+    case (alu_op)
       OP_ADD:
         { flag_carry, alu_res }  = A + B;
       OP_SUB:
@@ -108,13 +118,13 @@ module ex #(
         alu_res  = B >>> shift_val;
       OP_LUI:
         alu_res  = { B[15:0], 16'b0 };
-    endcase // case (op)
+    endcase // case (alu_op)
   end
 
 
   always_comb begin
     // XXX: wrong way round?
-    if (set_u) begin
+    if (alu_set_u) begin
       // slt(i)u
       set_res  = { 31'b0, (A[31] & ~B[31]) | (alu_res[31] & (~A[31] ^ B[31])) };
     end

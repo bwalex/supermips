@@ -3,12 +3,14 @@
 module pipreg_mem_wb(
 
   input [31:0] mem_pc,
+  input [11:0] mem_opc,
   input [31:0] mem_result,
   input [4:0] mem_dest_reg,
   input [0:0] mem_dest_reg_valid,
 
 
   output reg [31:0] wb_pc,
+  output reg [11:0] wb_opc,
   output reg [31:0] wb_result,
   output reg [4:0] wb_dest_reg,
   output reg [0:0] wb_dest_reg_valid,
@@ -21,6 +23,7 @@ module pipreg_mem_wb(
     if (~reset_n) begin
     
       wb_pc <= 'b0;
+      wb_opc <= 'b0;
       wb_result <= 'b0;
       wb_dest_reg <= 'b0;
       wb_dest_reg_valid <= 'b0;
@@ -28,6 +31,7 @@ module pipreg_mem_wb(
     else begin
     
       wb_pc <= mem_pc;
+      wb_opc <= mem_opc;
       wb_result <= mem_result;
       wb_dest_reg <= mem_dest_reg;
       wb_dest_reg_valid <= mem_dest_reg_valid;

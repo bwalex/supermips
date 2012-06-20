@@ -13,13 +13,21 @@ module idec #(
   input [31:0]               rfile_rd_data1,
   input [31:0]               rfile_rd_data2,
 
+  input [ 4:0]               id_ex_dest_reg,
+  input [ 4:0]               ex_mem_dest_reg,
+  input                      id_ex_dest_reg_valid,
+  input                      ex_mem_dest_reg_valid,
+  input                      id_ex_load_inst,
+
   output [31:0]              A,
   output [31:0]              B,
   output reg [ 4:0]          A_reg,
   output reg                 A_reg_valid,
+  output [ 1:0]              A_fwd_from,
   output reg [ 4:0]          B_reg,
   output reg                 B_reg_valid,
   output reg                 B_need_late,
+  output [ 1:0]              B_fwd_from,
   output [31:0]              imm,
   output                     imm_valid,
   output reg [ 4:0]          shamt,
@@ -33,6 +41,10 @@ module idec #(
   output reg [ 4:0]          dest_reg,
   output reg                 dest_reg_valid
 );
+
+
+  typedef enum { FWD_NONE, FWD_FROM_EXMEM, FWD_FROM_MEMWB, FWD_FROM_MEMWB_LATE } fwd_t;
+
 
   wire [5:0]                 inst_opc;
   wire [4:0]                 inst_rs;
@@ -51,7 +63,32 @@ module idec #(
   wire [31:0]                imm_extended;
   wire                       stall;
 
-  assign stall  = 1'b0;
+  wire                       A_reg_match_id_ex;
+  wire                       A_reg_match_ex_mem;
+  wire                       B_reg_match_id_ex;
+  wire                       B_reg_match_ex_mem;
+
+
+  // Forwarding and stalling logic
+  assign A_reg_match_id_ex  = id_ex_dest_reg_valid  && A_reg_valid && (A_reg == id_ex_dest_reg);
+  assign B_reg_match_id_ex  = id_ex_dest_reg_valid  && B_reg_valid && (B_reg == id_ex_dest_reg);
+
+  assign A_reg_match_ex_mem = ex_mem_dest_reg_valid && A_reg_valid && (A_reg == ex_mem_dest_reg);
+  assign B_reg_match_ex_mem = ex_mem_dest_reg_valid && B_reg_valid && (B_reg == ex_mem_dest_reg);
+
+  assign A_fwd_from  =  (A_reg_match_id_ex)  ? FWD_FROM_EXMEM
+                      : (A_reg_match_ex_mem) ? FWD_FROM_MEMWB
+                      :                        FWD_NONE;
+
+  // Forwarding of B has special case of requiring B late, and B also available late
+  assign B_fwd_from  =  (B_reg_match_id_ex)  ? (id_ex_load_inst ? FWD_FROM_MEMWB_LATE : FWD_FROM_EXMEM)
+                      : (B_reg_match_ex_mem) ? FWD_FROM_MEMWB
+                      :                        FWD_NONE;
+
+  // Stall when depending on a load instruction currently in the EX stage
+  assign stall  = id_ex_load_inst && (A_reg_match_id_ex || (~B_need_late && B_reg_match_id_ex));
+
+
 
   // XXX: could use A_reg, B_reg (more "correct") but
   //      using inst_{rs,rt} is good enough and is

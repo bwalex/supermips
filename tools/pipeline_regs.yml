@@ -10,9 +10,13 @@ ID_EX:
  - B/32
  - A_reg/5
  - A_reg_valid/1
+ - A_fwd_from/2
  - B_reg/5
  - B_reg_valid/1
+ - B_need_late/1
+ - B_fwd_from/2
  - imm/32
+ - imm_valid/1
  - shamt/5
  - alu_inst/1
  - alu_op/32 # XXX: 32 is way too wide, but let's play it safe for the moment.
@@ -26,6 +30,7 @@ ID_EX:
 EX_MEM:
  - pc/32
  - opc/12
+ - B_fwd_from/2
  - load_inst/1
  - store_inst/1
  - jmp_inst/1
