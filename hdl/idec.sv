@@ -1,45 +1,49 @@
 module idec #(
-  parameter ALU_OPC_WIDTH = 12
+  parameter ALU_OP_WIDTH = 12,
+            LS_OP_WIDTH = 4
 )(
-  input                      clock,
-  input                      reset_n,
+  input                         clock,
+  input                         reset_n,
 
-  input [31:0]               pc,
-  input [31:0]               inst_word,
+  input [31:0]                  pc,
+  input [31:0]                  inst_word,
 
-  output [ 4:0]              rfile_rd_addr1,
-  output [ 4:0]              rfile_rd_addr2,
+  output [ 4:0]                 rfile_rd_addr1,
+  output [ 4:0]                 rfile_rd_addr2,
 
-  input [31:0]               rfile_rd_data1,
-  input [31:0]               rfile_rd_data2,
+  input [31:0]                  rfile_rd_data1,
+  input [31:0]                  rfile_rd_data2,
 
-  input [ 4:0]               id_ex_dest_reg,
-  input [ 4:0]               ex_mem_dest_reg,
-  input                      id_ex_dest_reg_valid,
-  input                      ex_mem_dest_reg_valid,
-  input                      id_ex_load_inst,
+  input [ 4:0]                  id_ex_dest_reg,
+  input [ 4:0]                  ex_mem_dest_reg,
+  input                         id_ex_dest_reg_valid,
+  input                         ex_mem_dest_reg_valid,
+  input                         id_ex_load_inst,
 
-  output [31:0]              A,
-  output [31:0]              B,
-  output reg [ 4:0]          A_reg,
-  output reg                 A_reg_valid,
-  output [ 1:0]              A_fwd_from,
-  output reg [ 4:0]          B_reg,
-  output reg                 B_reg_valid,
-  output reg                 B_need_late,
-  output [ 1:0]              B_fwd_from,
-  output [31:0]              imm,
-  output                     imm_valid,
-  output reg [ 4:0]          shamt,
-  output [ALU_OPC_WIDTH-1:0] alu_op,
+  output [31:0]                 A,
+  output [31:0]                 B,
+  output reg [ 4:0]             A_reg,
+  output reg                    A_reg_valid,
+  output [ 1:0]                 A_fwd_from,
+  output reg [ 4:0]             B_reg,
+  output reg                    B_reg_valid,
+  output reg                    B_need_late,
+  output [ 1:0]                 B_fwd_from,
+  output [31:0]                 imm,
+  output                        imm_valid,
+  output reg [ 4:0]             shamt,
+  output reg [ALU_OP_WIDTH-1:0] alu_op,
 
-  output reg                 alu_inst,
-  output reg                 load_inst,
-  output reg                 store_inst,
-  output reg                 jmp_inst,
+  output reg [LS_OP_WIDTH-1:0]  ls_op,
+  output reg                    ls_sext,
 
-  output reg [ 4:0]          dest_reg,
-  output reg                 dest_reg_valid
+  output reg                    alu_inst,
+  output reg                    load_inst,
+  output reg                    store_inst,
+  output reg                    jmp_inst,
+
+  output reg [ 4:0]             dest_reg,
+  output reg                    dest_reg_valid
 );
 
 
@@ -105,8 +109,6 @@ module idec #(
   assign inst_shamt = inst_word[10: 6];
   assign inst_funct = inst_word[ 5: 0];
 
-  assign alu_op     = { inst_opc, inst_funct };
-
 
   always_comb begin
     A_reg           = inst_rs;
@@ -128,6 +130,8 @@ module idec #(
     alu_op          = OP_PASS_A;
     alu_set_u       = 1'b0;
     alu_res_sel     = RES_ALU;
+    ls_op           = OP_LS_WORD;
+    ls_sext         = 1'b0;
 
 
     case (inst_opc)
@@ -308,12 +312,72 @@ module idec #(
         alu_op    = OP_LUI;
       end
 
+      6'h20: begin // lb
+        alu_op       = OP_ADD;
+        imm_sext     = 1'b1;
+        load_inst    = 1'b1;
+        A_reg_valid  = 1'b1;
+        ls_op        = OP_LS_BYTE;
+        ls_sext      = 1'b1;
+      end
+
+      6'h21: begin // lh
+        alu_op       = OP_ADD;
+        imm_sext     = 1'b1;
+        load_inst    = 1'b1;
+        A_reg_valid  = 1'b1;
+        ls_op        = OP_LS_HALFWORD;
+        ls_sext      = 1'b1;
+      end
+
       6'h23: begin // lw
+        alu_op       = OP_ADD;
+        imm_sext     = 1'b1;
         load_inst    = 1'b1;
         A_reg_valid  = 1'b1;
       end
 
+      6'h24: begin // lbu
+        alu_op       = OP_ADD;
+        imm_sext     = 1'b1;
+        load_inst    = 1'b1;
+        A_reg_valid  = 1'b1;
+        ls_op        = OP_LS_BYTE;
+      end
+
+      6'h25: begin //lhu
+        alu_op       = OP_ADD;
+        imm_sext     = 1'b1;
+        load_inst    = 1'b1;
+        A_reg_valid  = 1'b1;
+        ls_op        = OP_LS_HALFWORD;
+      end
+
+      6'h28: begin // sb
+        alu_op          = OP_ADD;
+        imm_sext        = 1'b1;
+        store_inst      = 1'b1;
+        A_reg_valid     = 1'b1;
+        B_reg_valid     = 1'b1;
+        B_need_late     = 1'b1; // Only need B in MEM stage, not EX/ALU
+        dest_reg_valid  = 1'b0;
+        ls_op           = OP_LS_BYTE;
+      end
+
+      6'h29: begin // sh
+        alu_op          = OP_ADD;
+        imm_sext        = 1'b1;
+        store_inst      = 1'b1;
+        A_reg_valid     = 1'b1;
+        B_reg_valid     = 1'b1;
+        B_need_late     = 1'b1; // Only need B in MEM stage, not EX/ALU
+        dest_reg_valid  = 1'b0;
+        ls_op           = OP_LS_HALFWORD;
+      end
+
       6'h2b: begin // sw
+        alu_op          = OP_ADD;
+        imm_sext        = 1'b1;
         store_inst      = 1'b1;
         A_reg_valid     = 1'b1;
         B_reg_valid     = 1'b1;

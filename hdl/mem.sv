@@ -28,8 +28,10 @@ module mem #(
 );
 
   wire [31:0]             word_st;
+  wire [ 1:0]             word_idx;
 
   assign word_st  = (B_fwd_from == FWD_FROM_MEMWB_LATE) ? result_from_mem_wb : result_2;
+  assign word_idx = alu_result[1:0];
 
   // XXX: need to handle stalls and bubble in.
   assign stall  = cache_waitrequest;
