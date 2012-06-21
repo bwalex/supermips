@@ -19,7 +19,9 @@ ID_EX:
  - imm_valid/1
  - shamt/5
  - alu_inst/1
- - alu_op/32 # XXX: 32 is way too wide, but let's play it safe for the moment.
+ - alu_op/12 # XXX: 32 is way too wide, but let's play it safe for the moment.
+ - ls_op/4 # XXX: 32 is way too wide, but let's play it safe for the moment.
+ - ls_sext/1
  - load_inst/1
  - store_inst/1
  - jmp_inst/1
@@ -31,6 +33,8 @@ EX_MEM:
  - pc/32
  - opc/12
  - B_fwd_from/2
+ - ls_op/4 # XXX: see above
+ - ls_sext/1
  - load_inst/1
  - store_inst/1
  - jmp_inst/1

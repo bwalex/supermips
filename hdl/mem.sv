@@ -1,6 +1,7 @@
 module mem #(
   parameter ADDR_WIDTH = 32,
             DATA_WIDTH = 32,
+            LS_OP_WIDTH = 4,
             BE_WIDTH   = DATA_WIDTH/8
 )(
   input                     clock,

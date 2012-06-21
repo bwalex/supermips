@@ -1,37 +1,37 @@
 module ex #(
-  parameter ALU_OPC_WIDTH = 12
+  parameter ALU_OP_WIDTH = 12
 )(
-  input                     clock,
-  input                     reset_n,
+  input                    clock,
+  input                    reset_n,
 
-  input [31:0]              pc,
+  input [31:0]             pc,
 
-  input [31:0]              A_val,
-  input [31:0]              B_val,
-  input [31:0]              result_from_ex_mem,
-  input [31:0]              result_from_mem_wb,
-  input [ 4:0]              A_reg,
-  input                     A_reg_valid,
-  input [ 1:0]              A_fwd_from,
-  input [ 4:0]              B_reg,
-  input                     B_reg_valid,
-  input [ 1:0]              B_fwd_from,
-  input [31:0]              imm,
-  input                     imm_valid,
-  input [ 4:0]              shamt,
-  input [ALU_OPC_WIDTH-1:0] alu_op,
-  input                     alu_res_sel,
-  input                     alu_set_u,
-  input                     alu_inst,
-  input                     load_inst,
-  input                     store_inst,
-  input                     jmp_inst,
+  input [31:0]             A_val,
+  input [31:0]             B_val,
+  input [31:0]             result_from_ex_mem,
+  input [31:0]             result_from_mem_wb,
+  input [ 4:0]             A_reg,
+  input                    A_reg_valid,
+  input [ 1:0]             A_fwd_from,
+  input [ 4:0]             B_reg,
+  input                    B_reg_valid,
+  input [ 1:0]             B_fwd_from,
+  input [31:0]             imm,
+  input                    imm_valid,
+  input [ 4:0]             shamt,
+  input [ALU_OC_WIDTH-1:0] alu_op,
+  input                    alu_res_sel,
+  input                    alu_set_u,
+  input                    alu_inst,
+  input                    load_inst,
+  input                    store_inst,
+  input                    jmp_inst,
 
-  input [ 4:0]              dest_reg,
-  input                     dest_reg_valid,
+  input [ 4:0]             dest_reg,
+  input                    dest_reg_valid,
 
-  output [31:0]             result,
-  output [31:0]             result_2
+  output [31:0]            result,
+  output [31:0]            result_2
 );
 
   typedef enum { OP_ADD, OP_SUB, OP_OR, OP_XOR, OP_NOR, OP_AND, OP_SLL, OP_SRL, OP_SLA, OP_SRA, OP_LUI, OP_PASS_A, OP_PASS_B } op_t;
