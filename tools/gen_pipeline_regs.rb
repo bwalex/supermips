@@ -18,10 +18,11 @@ regs.each do |reg,signals|
     b = s.split(/\//)
     sig_name = b[0]
     sig_width = b[1].to_i
+    sig_init = b[2]
     sig_type = nil
     sig_type = b[1] if sig_width == 0
-    in_signals  << { :name => "#{in_stage}_#{sig_name}",  :low => 0, :high => sig_width-1, :type => sig_type }
-    out_signals << { :name => "#{out_stage}_#{sig_name}", :low => 0, :high => sig_width-1, :type => sig_type }
+    in_signals  << { :name => "#{in_stage}_#{sig_name}",  :low => 0, :high => sig_width-1, :type => sig_type, :init => sig_init }
+    out_signals << { :name => "#{out_stage}_#{sig_name}", :low => 0, :high => sig_width-1, :type => sig_type, :init => sig_init }
   end
 
   text = erb.result(binding)

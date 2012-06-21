@@ -1,3 +1,5 @@
+import pipTypes::*;
+
 module idec #(
   parameter ALU_OP_WIDTH = 12,
             LS_OP_WIDTH = 4
@@ -34,6 +36,7 @@ module idec #(
   output reg [ 4:0]             shamt,
   output alu_op_t               alu_op,
   output alu_res_t              alu_res_sel,
+  output reg                    alu_set_u,
 
   output ls_op_t                ls_op,
   output reg                    ls_sext,

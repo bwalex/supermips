@@ -9,6 +9,7 @@ ensure_lib ./libraries/work/
 vmap work ./libraries/work/
 
 # Compile the additional test files
+vlog -sv $HDL_BASE/types.sv
 vlog -sv $HDL_BASE/ex.sv
 vlog -sv $HDL_BASE/idec.sv
 vlog -sv $HDL_BASE/ifetch.sv

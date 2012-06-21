@@ -10,18 +10,19 @@ ID_EX:
  - B/32
  - A_reg/5
  - A_reg_valid/1
- - A_fwd_from/fwd_t
+ - A_fwd_from/fwd_t/FWD_NONE
  - B_reg/5
  - B_reg_valid/1
  - B_need_late/1
- - B_fwd_from/fwd_t
+ - B_fwd_from/fwd_t/FWD_NONE
  - imm/32
  - imm_valid/1
  - shamt/5
  - alu_inst/1
- - alu_op/alu_op_t
- - alu_res_sel/alu_res_t
- - ls_op/ls_op_t
+ - alu_op/alu_op_t/OP_PASS_A
+ - alu_res_sel/alu_res_t/RES_ALU
+ - alu_set_u/1
+ - ls_op/ls_op_t/OP_LS_WORD
  - ls_sext/1
  - load_inst/1
  - store_inst/1
@@ -33,8 +34,8 @@ ID_EX:
 EX_MEM:
  - pc/32
  - opc/12
- - B_fwd_from/fwd_t
- - ls_op/ls_op_t
+ - B_fwd_from/fwd_t/FWD_NONE
+ - ls_op/ls_op_t/OP_LS_WORD
  - ls_sext/1
  - load_inst/1
  - store_inst/1

@@ -1,3 +1,5 @@
+import pipTypes::*;
+
 module ex #(
   parameter ALU_OP_WIDTH = 12
 )(
