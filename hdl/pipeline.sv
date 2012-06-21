@@ -1,3 +1,6 @@
+import pipTypes::*;
+
+
 module pipeline#(
   parameter ADDR_WIDTH = 32,
             DATA_WIDTH = 32
