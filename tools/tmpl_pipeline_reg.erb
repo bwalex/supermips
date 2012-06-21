@@ -2,10 +2,10 @@
 //       DO NOT EDIT BY HAND!
 module <%= module_name %>(
 <% for s in in_signals %>
-  input [<%=s[:high]%>:<%=s[:low]%>] <%=s[:name]%>,<% end %>
+  input <% if not s[:type].nil? %><%= s[:type] %><% else %>[<%=s[:high]%>:<%=s[:low]%>]<%end%> <%=s[:name]%>,<% end %>
 
 <% for s in out_signals %>
-  output reg [<%=s[:high]%>:<%=s[:low]%>] <%=s[:name]%>,<% end %>
+  output <% if not s[:type].nil? %><%= s[:type] %><% else %>reg [<%=s[:high]%>:<%=s[:low]%>]<%end%> <%=s[:name]%>,<% end %>
 
   input stall,
   input clock,

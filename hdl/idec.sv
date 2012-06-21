@@ -24,17 +24,18 @@ module idec #(
   output [31:0]                 B,
   output reg [ 4:0]             A_reg,
   output reg                    A_reg_valid,
-  output [ 1:0]                 A_fwd_from,
+  output fwd_t                  A_fwd_from,
   output reg [ 4:0]             B_reg,
   output reg                    B_reg_valid,
   output reg                    B_need_late,
-  output [ 1:0]                 B_fwd_from,
+  output fwd_t                  B_fwd_from,
   output [31:0]                 imm,
   output                        imm_valid,
   output reg [ 4:0]             shamt,
-  output reg [ALU_OP_WIDTH-1:0] alu_op,
+  output alu_op_t               alu_op,
+  output alu_res_t              alu_res_sel,
 
-  output reg [LS_OP_WIDTH-1:0]  ls_op,
+  output ls_op_t                ls_op,
   output reg                    ls_sext,
 
   output reg                    alu_inst,
@@ -45,9 +46,6 @@ module idec #(
   output reg [ 4:0]             dest_reg,
   output reg                    dest_reg_valid
 );
-
-
-  typedef enum { FWD_NONE, FWD_FROM_EXMEM, FWD_FROM_MEMWB, FWD_FROM_MEMWB_LATE } fwd_t;
 
 
   wire [5:0]                 inst_opc;
@@ -80,6 +78,7 @@ module idec #(
   assign A_reg_match_ex_mem = ex_mem_dest_reg_valid && A_reg_valid && (A_reg == ex_mem_dest_reg);
   assign B_reg_match_ex_mem = ex_mem_dest_reg_valid && B_reg_valid && (B_reg == ex_mem_dest_reg);
 
+  // XXX: Forwarding bits probably need always_comb due to resolution on enumerated types
   assign A_fwd_from  =  (A_reg_match_id_ex)  ? FWD_FROM_EXMEM
                       : (A_reg_match_ex_mem) ? FWD_FROM_MEMWB
                       :                        FWD_NONE;

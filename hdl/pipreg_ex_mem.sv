@@ -4,7 +4,9 @@ module pipreg_ex_mem(
 
   input [31:0] ex_pc,
   input [11:0] ex_opc,
-  input [1:0] ex_B_fwd_from,
+  input fwd_t ex_B_fwd_from,
+  input ls_op_t ex_ls_op,
+  input [0:0] ex_ls_sext,
   input [0:0] ex_load_inst,
   input [0:0] ex_store_inst,
   input [0:0] ex_jmp_inst,
@@ -16,7 +18,9 @@ module pipreg_ex_mem(
 
   output reg [31:0] mem_pc,
   output reg [11:0] mem_opc,
-  output reg [1:0] mem_B_fwd_from,
+  output fwd_t mem_B_fwd_from,
+  output ls_op_t mem_ls_op,
+  output reg [0:0] mem_ls_sext,
   output reg [0:0] mem_load_inst,
   output reg [0:0] mem_store_inst,
   output reg [0:0] mem_jmp_inst,
@@ -25,6 +29,7 @@ module pipreg_ex_mem(
   output reg [4:0] mem_dest_reg,
   output reg [0:0] mem_dest_reg_valid,
 
+  input stall,
   input clock,
   input reset_n
 );
@@ -35,6 +40,8 @@ module pipreg_ex_mem(
       mem_pc <= 'b0;
       mem_opc <= 'b0;
       mem_B_fwd_from <= 'b0;
+      mem_ls_op <= 'b0;
+      mem_ls_sext <= 'b0;
       mem_load_inst <= 'b0;
       mem_store_inst <= 'b0;
       mem_jmp_inst <= 'b0;
@@ -43,11 +50,13 @@ module pipreg_ex_mem(
       mem_dest_reg <= 'b0;
       mem_dest_reg_valid <= 'b0;
     end
-    else begin
+    else if (~stall) begin
     
       mem_pc <= ex_pc;
       mem_opc <= ex_opc;
       mem_B_fwd_from <= ex_B_fwd_from;
+      mem_ls_op <= ex_ls_op;
+      mem_ls_sext <= ex_ls_sext;
       mem_load_inst <= ex_load_inst;
       mem_store_inst <= ex_store_inst;
       mem_jmp_inst <= ex_jmp_inst;

@@ -12,15 +12,15 @@ module ex #(
   input [31:0]             result_from_mem_wb,
   input [ 4:0]             A_reg,
   input                    A_reg_valid,
-  input [ 1:0]             A_fwd_from,
+  input fwd_t              A_fwd_from,
   input [ 4:0]             B_reg,
   input                    B_reg_valid,
-  input [ 1:0]             B_fwd_from,
+  input fwd_t              B_fwd_from,
   input [31:0]             imm,
   input                    imm_valid,
   input [ 4:0]             shamt,
-  input [ALU_OP_WIDTH-1:0] alu_op,
-  input                    alu_res_sel,
+  input alu_op_t           alu_op,
+  input alu_res_t          alu_res_sel,
   input                    alu_set_u,
   input                    alu_inst,
   input                    load_inst,
@@ -33,10 +33,6 @@ module ex #(
   output [31:0]            result,
   output [31:0]            result_2
 );
-
-  typedef enum { OP_ADD, OP_SUB, OP_OR, OP_XOR, OP_NOR, OP_AND, OP_SLL, OP_SRL, OP_SLA, OP_SRA, OP_LUI, OP_PASS_A, OP_PASS_B } op_t;
-
-  typedef enum { RES_ALU, RES_SET } result_unit_t;
 
 
   wire [6:0]                inst_opc;

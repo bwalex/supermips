@@ -15,6 +15,7 @@ module pipreg_mem_wb(
   output reg [4:0] wb_dest_reg,
   output reg [0:0] wb_dest_reg_valid,
 
+  input stall,
   input clock,
   input reset_n
 );
@@ -28,7 +29,7 @@ module pipreg_mem_wb(
       wb_dest_reg <= 'b0;
       wb_dest_reg_valid <= 'b0;
     end
-    else begin
+    else if (~stall) begin
     
       wb_pc <= mem_pc;
       wb_opc <= mem_opc;

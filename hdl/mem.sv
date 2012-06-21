@@ -1,7 +1,6 @@
 module mem #(
   parameter ADDR_WIDTH = 32,
             DATA_WIDTH = 32,
-            LS_OP_WIDTH = 4,
             BE_WIDTH   = DATA_WIDTH/8
 )(
   input                     clock,
@@ -18,7 +17,7 @@ module mem #(
   input                     load_inst,
   input                     store_inst,
 
-  input [LS_OP_WIDTH-1:0]   ls_op,
+  input ls_op_t             ls_op,
   input                     ls_sext,
 
   input [ 4:0]              dest_reg,
@@ -27,7 +26,7 @@ module mem #(
   input [31:0]              alu_result, // soon to be agu_result
   input [31:0]              result_2,
   input [31:0]              result_from_mem_wb,
-  input [ 1:0]              B_fwd_from,
+  input fwd_t               B_fwd_from,
 
   output [31:0]             result,
   output                    stall

@@ -9,6 +9,7 @@ module pipreg_if_id(
   output reg [31:0] id_pc,
   output reg [31:0] id_inst_word,
 
+  input stall,
   input clock,
   input reset_n
 );
@@ -19,7 +20,7 @@ module pipreg_if_id(
       id_pc <= 'b0;
       id_inst_word <= 'b0;
     end
-    else begin
+    else if (~stall) begin
     
       id_pc <= if_pc;
       id_inst_word <= if_inst_word;

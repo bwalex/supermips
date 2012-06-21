@@ -8,16 +8,19 @@ module pipreg_id_ex(
   input [31:0] id_B,
   input [4:0] id_A_reg,
   input [0:0] id_A_reg_valid,
-  input [1:0] id_A_fwd_from,
+  input fwd_t id_A_fwd_from,
   input [4:0] id_B_reg,
   input [0:0] id_B_reg_valid,
   input [0:0] id_B_need_late,
-  input [1:0] id_B_fwd_from,
+  input fwd_t id_B_fwd_from,
   input [31:0] id_imm,
   input [0:0] id_imm_valid,
   input [4:0] id_shamt,
   input [0:0] id_alu_inst,
-  input [31:0] id_alu_op,
+  input alu_op_t id_alu_op,
+  input alu_res_t id_alu_res_sel,
+  input ls_op_t id_ls_op,
+  input [0:0] id_ls_sext,
   input [0:0] id_load_inst,
   input [0:0] id_store_inst,
   input [0:0] id_jmp_inst,
@@ -31,22 +34,26 @@ module pipreg_id_ex(
   output reg [31:0] ex_B,
   output reg [4:0] ex_A_reg,
   output reg [0:0] ex_A_reg_valid,
-  output reg [1:0] ex_A_fwd_from,
+  output fwd_t ex_A_fwd_from,
   output reg [4:0] ex_B_reg,
   output reg [0:0] ex_B_reg_valid,
   output reg [0:0] ex_B_need_late,
-  output reg [1:0] ex_B_fwd_from,
+  output fwd_t ex_B_fwd_from,
   output reg [31:0] ex_imm,
   output reg [0:0] ex_imm_valid,
   output reg [4:0] ex_shamt,
   output reg [0:0] ex_alu_inst,
-  output reg [31:0] ex_alu_op,
+  output alu_op_t ex_alu_op,
+  output alu_res_t ex_alu_res_sel,
+  output ls_op_t ex_ls_op,
+  output reg [0:0] ex_ls_sext,
   output reg [0:0] ex_load_inst,
   output reg [0:0] ex_store_inst,
   output reg [0:0] ex_jmp_inst,
   output reg [4:0] ex_dest_reg,
   output reg [0:0] ex_dest_reg_valid,
 
+  input stall,
   input clock,
   input reset_n
 );
@@ -70,13 +77,16 @@ module pipreg_id_ex(
       ex_shamt <= 'b0;
       ex_alu_inst <= 'b0;
       ex_alu_op <= 'b0;
+      ex_alu_res_sel <= 'b0;
+      ex_ls_op <= 'b0;
+      ex_ls_sext <= 'b0;
       ex_load_inst <= 'b0;
       ex_store_inst <= 'b0;
       ex_jmp_inst <= 'b0;
       ex_dest_reg <= 'b0;
       ex_dest_reg_valid <= 'b0;
     end
-    else begin
+    else if (~stall) begin
     
       ex_pc <= id_pc;
       ex_opc <= id_opc;
@@ -94,6 +104,9 @@ module pipreg_id_ex(
       ex_shamt <= id_shamt;
       ex_alu_inst <= id_alu_inst;
       ex_alu_op <= id_alu_op;
+      ex_alu_res_sel <= id_alu_res_sel;
+      ex_ls_op <= id_ls_op;
+      ex_ls_sext <= id_ls_sext;
       ex_load_inst <= id_load_inst;
       ex_store_inst <= id_store_inst;
       ex_jmp_inst <= id_jmp_inst;
