@@ -32,9 +32,6 @@ module tcm #(
   endgenerate
 
 
-  assign be_expanded = { {8{cpu_wr_be[3]} }
-
-
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       $readmemh(MEM_FILE, mem);
