@@ -1,5 +1,7 @@
 `timescale 1ns/10ps
 
+import pipTypes::*;
+
 module top#(
            parameter IMEM_FILE = "../software/simple.vmem",
            parameter DMEM_FILE = "../software/simple.vmem"

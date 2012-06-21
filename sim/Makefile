@@ -12,6 +12,7 @@ modelsim_clean:
 
 ncv:
 	ncverilog -sv +access+r +gui +ncaccess+r \
+		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/ex.sv \
 		$(HDL_BASE)/idec.sv \
