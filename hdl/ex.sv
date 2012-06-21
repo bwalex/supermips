@@ -19,7 +19,7 @@ module ex #(
   input [31:0]             imm,
   input                    imm_valid,
   input [ 4:0]             shamt,
-  input [ALU_OC_WIDTH-1:0] alu_op,
+  input [ALU_OP_WIDTH-1:0] alu_op,
   input                    alu_res_sel,
   input                    alu_set_u,
   input                    alu_inst,
