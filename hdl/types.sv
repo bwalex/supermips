@@ -33,4 +33,12 @@ package pipTypes;
                 OP_LS_HALFWORD,
                 OP_LS_BYTE
                 } ls_op_t;
+
+  typedef enum {
+                COND_UNCONDITIONAL,
+                COND_EQ,
+                COND_NE,
+                COND_GT,
+                COND_LT
+               } cond_t;
 endpackage

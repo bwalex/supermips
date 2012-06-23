@@ -264,6 +264,40 @@ module idec #(
         endcase // case (inst_funct)
       end // case: 6'h00
 
+      6'h02: begin // j
+        inst_iformat   = 1'b0;
+        inst_jformat   = 1'b1;
+        dest_reg_valid = 1'b0;
+        jmp_inst       = 1'b1;
+      end
+
+      6'h03: begin // jal
+        inst_iformat = 1'b0;
+        inst_jformat = 1'b1;
+        dest_reg     = 5'd31;
+        jmp_inst     = 1'b1;
+      end
+
+      6'h04: begin // beq
+        dest_reg_valid = 1'b0;
+        jmp_inst       = 1'b1;
+      end
+
+      6'h05: begin // bne
+        dest_reg_valid = 1'b0;
+        jmp_inst       = 1'b1;
+      end
+
+      6'h06: begin // blez
+        dest_reg_valid = 1'b0;
+        jmp_inst       = 1'b1;
+      end
+
+      6'h07: begin // bgtz
+        dest_reg_valid = 1'b0;
+        jmp_inst       = 1'b1;
+      end
+
       6'h08: begin // addi
         imm_sext     = 1'b1;
         alu_inst     = 1'b1;
