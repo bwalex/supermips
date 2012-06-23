@@ -59,7 +59,7 @@ module pipeline#(
   // Exports from ID
   wire [31:0] id_A;//
   wire [31:0] id_B;//
-  wire [11:0] id_opc;
+  wire [11:0] id_opc;//
   wire [ 4:0] id_A_reg;//
   wire [ 4:0] id_B_reg;//
   wire        id_A_reg_valid;//
@@ -188,6 +188,7 @@ module pipeline#(
           .stall                        (id_stall),
           .rfile_rd_addr1               (rfile_rd_addr1),
           .rfile_rd_addr2               (rfile_rd_addr2),
+          .opc                          (id_opc),
           .A                            (id_A),
           .B                            (id_B),
           .A_reg                        (id_A_reg),
@@ -316,6 +317,7 @@ module pipeline#(
                        .ex_ls_op        (id_ls_op_r),
                        // Outputs
                        .ex_pc           (id_pc_r),
+                       .ex_inst_word    (id_inst_word_r),
                        .ex_opc          (id_opc_r),
                        .ex_A            (id_A_r),
                        .ex_B            (id_B_r),
@@ -337,6 +339,7 @@ module pipeline#(
                        .ex_dest_reg_valid(id_dest_reg_valid_r),
                        // Inputs
                        .id_pc           (if_pc_r),
+                       .id_inst_word    (if_inst_word_r),
                        .id_opc          (id_opc),
                        .id_A            (id_A),
                        .id_B            (id_B),
@@ -368,6 +371,7 @@ module pipeline#(
                          .mem_ls_op             (ex_ls_op_r),
                          // Outputs
                          .mem_pc                (ex_pc_r),
+                         .mem_inst_word         (ex_inst_word_r),
                          .mem_opc               (ex_opc_r),
                          .mem_ls_sext           (ex_ls_sext_r),
                          .mem_load_inst         (ex_load_inst_r),
@@ -379,6 +383,7 @@ module pipeline#(
                          .mem_dest_reg_valid    (ex_dest_reg_valid_r),
                          // Inputs
                          .ex_pc                 (id_pc_r),
+                         .ex_inst_word          (id_inst_word_r),
                          .ex_opc                (id_opc_r),
                          .ex_ls_sext            (id_ls_sext_r),
                          .ex_load_inst          (id_load_inst_r),
@@ -395,12 +400,14 @@ module pipeline#(
   pipreg_mem_wb R_MEM_WB(
                          // Outputs
                          .wb_pc                 (mem_pc_r),
+                         .wb_inst_word          (mem_inst_word_r),
                          .wb_opc                (mem_opc_r),
                          .wb_result             (mem_result_r),
                          .wb_dest_reg           (mem_dest_reg_r),
                          .wb_dest_reg_valid     (mem_dest_reg_valid_r),
                          // Inputs
                          .mem_pc                (ex_pc_r),
+                         .mem_inst_word         (ex_inst_word_r),
                          .mem_opc               (ex_opc_r),
                          .mem_result            (mem_result),
                          .mem_dest_reg          (ex_dest_reg_r),

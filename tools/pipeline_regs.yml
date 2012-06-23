@@ -5,6 +5,7 @@ IF_ID:
 
 ID_EX:
  - pc/32
+ - inst_word/32
  - opc/12
  - A/32
  - B/32
@@ -33,6 +34,7 @@ ID_EX:
 
 EX_MEM:
  - pc/32
+ - inst_word/32
  - opc/12
  - B_fwd_from/fwd_t/FWD_NONE
  - ls_op/ls_op_t/OP_LS_WORD
@@ -48,6 +50,7 @@ EX_MEM:
 
 MEM_WB:
  - pc/32
+ - inst_word/32
  - opc/12
  - result/32
  - dest_reg/5

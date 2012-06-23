@@ -5,6 +5,7 @@ import pipTypes::*;
 module pipreg_id_ex(
 
   input [31:0] id_pc,
+  input [31:0] id_inst_word,
   input [11:0] id_opc,
   input [31:0] id_A,
   input [31:0] id_B,
@@ -32,6 +33,7 @@ module pipreg_id_ex(
 
 
   output reg [31:0] ex_pc,
+  output reg [31:0] ex_inst_word,
   output reg [11:0] ex_opc,
   output reg [31:0] ex_A,
   output reg [31:0] ex_B,
@@ -66,6 +68,7 @@ module pipreg_id_ex(
     if (~reset_n) begin
     
       ex_pc<= 'b0;
+      ex_inst_word<= 'b0;
       ex_opc<= 'b0;
       ex_A<= 'b0;
       ex_B<= 'b0;
@@ -94,6 +97,7 @@ module pipreg_id_ex(
     else if (~stall) begin
     
       ex_pc <= id_pc;
+      ex_inst_word <= id_inst_word;
       ex_opc <= id_opc;
       ex_A <= id_A;
       ex_B <= id_B;

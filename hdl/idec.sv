@@ -22,6 +22,8 @@ module idec #(
   input                         ex_mem_dest_reg_valid,
   input                         id_ex_load_inst,
 
+  output [11:0]                 opc,
+
   output [31:0]                 A,
   output [31:0]                 B,
   output reg [ 4:0]             A_reg,
@@ -110,6 +112,8 @@ module idec #(
   assign inst_addr  = inst_word[25: 0];
   assign inst_shamt = inst_word[10: 6];
   assign inst_funct = inst_word[ 5: 0];
+
+  assign opc  = { inst_opc, inst_funct };
 
 
   always_comb begin

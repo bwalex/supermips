@@ -5,6 +5,7 @@ import pipTypes::*;
 module pipreg_ex_mem(
 
   input [31:0] ex_pc,
+  input [31:0] ex_inst_word,
   input [11:0] ex_opc,
   input fwd_t ex_B_fwd_from,
   input ls_op_t ex_ls_op,
@@ -19,6 +20,7 @@ module pipreg_ex_mem(
 
 
   output reg [31:0] mem_pc,
+  output reg [31:0] mem_inst_word,
   output reg [11:0] mem_opc,
   output fwd_t mem_B_fwd_from,
   output ls_op_t mem_ls_op,
@@ -40,6 +42,7 @@ module pipreg_ex_mem(
     if (~reset_n) begin
     
       mem_pc<= 'b0;
+      mem_inst_word<= 'b0;
       mem_opc<= 'b0;
       mem_B_fwd_from<= FWD_NONE;
       mem_ls_op<= OP_LS_WORD;
@@ -55,6 +58,7 @@ module pipreg_ex_mem(
     else if (~stall) begin
     
       mem_pc <= ex_pc;
+      mem_inst_word <= ex_inst_word;
       mem_opc <= ex_opc;
       mem_B_fwd_from <= ex_B_fwd_from;
       mem_ls_op <= ex_ls_op;
