@@ -44,6 +44,8 @@ module idec #(
   output ls_op_t                ls_op,
   output reg                    ls_sext,
 
+  output cond_t                 jmp_cond,
+
   output reg                    alu_inst,
   output reg                    load_inst,
   output reg                    store_inst,
@@ -138,6 +140,7 @@ module idec #(
     alu_res_sel     = RES_ALU;
     ls_op           = OP_LS_WORD;
     ls_sext         = 1'b0;
+    jmp_cond        = COND_UNCONDITIONAL;
 
 
     case (inst_opc)
@@ -281,21 +284,25 @@ module idec #(
       6'h04: begin // beq
         dest_reg_valid = 1'b0;
         jmp_inst       = 1'b1;
+        jmp_cond       = COND_EQ;
       end
 
       6'h05: begin // bne
         dest_reg_valid = 1'b0;
         jmp_inst       = 1'b1;
+        jmp_cond       = COND_NE;
       end
 
       6'h06: begin // blez
         dest_reg_valid = 1'b0;
         jmp_inst       = 1'b1;
+        jmp_cond       = COND_LE;
       end
 
       6'h07: begin // bgtz
         dest_reg_valid = 1'b0;
         jmp_inst       = 1'b1;
+        jmp_cond       = COND_GT;
       end
 
       6'h08: begin // addi
