@@ -98,6 +98,7 @@ module pipeline#(
   wire [31:0] if_inst_word_r;//
 
   wire [31:0] id_pc_r;//
+  wire [31:0] id_inst_word_r;//
   wire [11:0] id_opc_r;//
   wire [31:0] id_A_r;//
   wire [31:0] id_B_r;//
@@ -125,6 +126,7 @@ module pipeline#(
 
 
   wire [31:0] ex_pc_r;//
+  wire [31:0] ex_inst_word_r;//
   wire [11:0] ex_opc_r;//
   wire        ex_load_inst_r;//
   wire        ex_store_inst_r;//
@@ -138,6 +140,7 @@ module pipeline#(
   fwd_t       ex_B_fwd_from_r;//
 
   wire [31:0] mem_pc_r;//
+  wire [31:0] mem_inst_word_r;//
   wire [11:0] mem_opc_r;//
   wire [31:0] mem_result_r;//
   wire [ 4:0] mem_dest_reg_r;//

@@ -13,6 +13,7 @@ module top#(
   wire [31:0]           dcache_addr;            // From CPU of pipeline.v
   wire                  dcache_rd;              // From CPU of pipeline.v
   wire                  dcache_wr;              // From CPU of pipeline.v
+  wire [ 3:0]           dcache_wr_be;
   wire [31:0]           dcache_wr_data;         // From CPU of pipeline.v
   wire [31:0]           dcache_data;
   wire                  dcache_waitrequest;
@@ -40,6 +41,7 @@ module top#(
                .dcache_addr             (dcache_addr),
                .dcache_rd               (dcache_rd),
                .dcache_wr               (dcache_wr),
+               .dcache_wr_be            (dcache_wr_be),
                .dcache_wr_data          (dcache_wr_data),
                .rfile_wr_addr1          (rfile_wr_addr1),
                .rfile_wr_enable1        (rfile_wr_enable1),
