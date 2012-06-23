@@ -10,8 +10,12 @@ all: $(BINS) $(VMEMS) $(DISS)
 %.bin: %.elf
 	mips-sde-elf-objcopy -O binary $*.elf $@
 
-%.vmem: %.elf
-	mips-sde-elf-objcopy -O verilog $*.elf $@
+#%.vmem: %.elf
+#	mips-sde-elf-objcopy -O verilog $*.elf $@
+
+
+%.vmem: %.bin
+	ruby post_process.rb $*.bin > $@
 
 %.dis: %.elf
 	mips-sde-elf-objdump -D $*.elf > $@
