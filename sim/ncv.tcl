@@ -22,19 +22,15 @@ simvision {
         top.CPU.IF.pc \
         top.CPU.stall_if
 
-
     set groupId0 [waveform add -groups IF]
     set gpGlist0 [waveform hierarchy contents $groupId0]
     set gpID0 [lindex $gpGlist0 0]
     foreach {name attrs} [subst -nobackslashes -nocommands {
-        {simulator::top.CPU.IF.pc[31:0]} {-radix %x}
-        simulator::top.CPU.stall_if {}
+        {top.CPU.IF.pc[31:0]} {-radix %x}
+        top.CPU.stall_if {}
     }] {
-        set expected [ join [waveform signals -format fullpath $gpID0] ]
-        if {[string equal $name $expected]} {
-            if {$attrs != ""} {
-                eval waveform format $gpID0 $attrs
-            }
+        if {$attrs != ""} {
+            eval waveform format $gpID0 $attrs
         }
         set gpGlist0 [lrange $gpGlist0 1 end]
         set gpID0 [lindex $gpGlist0 0]
@@ -72,43 +68,39 @@ simvision {
         top.CPU.id_stall \
         top.CPU.id_store_inst
 
-
     set groupId0 [waveform add -groups ID]
     set gpGlist0 [waveform hierarchy contents $groupId0]
     set gpID0 [lindex $gpGlist0 0]
     foreach {name attrs} [subst -nobackslashes -nocommands {
-        {simulator::top.CPU.if_pc_r} {}
-        {simulator::top.CPU.if_inst_word_r} {}
-        simulator::top.CPU.id_A_fwd_from {}
-        simulator::top.CPU.id_B_fwd_from {}
-        {simulator::top.CPU.id_A} {-radix %x}
-        {simulator::top.CPU.id_B} {-radix %x}
-        simulator::top.CPU.id_B_need_late {}
-        simulator::top.CPU.id_A_reg_valid {}
-        {simulator::top.CPU.id_A_reg} {-radix %d}
-        {simulator::top.CPU.id_B_reg} {-radix %d}
-        simulator::top.CPU.id_B_reg_valid {}
-        simulator::top.CPU.id_alu_inst {}
-        simulator::top.CPU.id_alu_op {}
-        simulator::top.CPU.id_alu_res_sel {}
-        simulator::top.CPU.id_alu_set_u {}
-        {simulator::top.CPU.id_dest_reg} {-radix %d}
-        simulator::top.CPU.id_dest_reg_valid {}
-        {simulator::top.CPU.id_imm} {-radix %x}
-        simulator::top.CPU.id_imm_valid {}
-        simulator::top.CPU.id_jmp_inst {}
-        simulator::top.CPU.id_load_inst {}
-        simulator::top.CPU.id_ls_op {}
-        simulator::top.CPU.id_ls_sext {}
-        {simulator::top.CPU.id_shamt} {-radix %d}
-        simulator::top.CPU.id_stall {}
-        simulator::top.CPU.id_store_inst {}
+        {top.CPU.if_pc_r} {}
+        {top.CPU.if_inst_word_r} {}
+        top.CPU.id_A_fwd_from {}
+        top.CPU.id_B_fwd_from {}
+        {top.CPU.id_A} {-radix %x}
+        {top.CPU.id_B} {-radix %x}
+        top.CPU.id_B_need_late {}
+        top.CPU.id_A_reg_valid {}
+        {top.CPU.id_A_reg} {-radix %d}
+        {top.CPU.id_B_reg} {-radix %d}
+        top.CPU.id_B_reg_valid {}
+        top.CPU.id_alu_inst {}
+        top.CPU.id_alu_op {}
+        top.CPU.id_alu_res_sel {}
+        top.CPU.id_alu_set_u {}
+        {top.CPU.id_dest_reg} {-radix %d}
+        top.CPU.id_dest_reg_valid {}
+        {top.CPU.id_imm} {-radix %x}
+        top.CPU.id_imm_valid {}
+        top.CPU.id_jmp_inst {}
+        top.CPU.id_load_inst {}
+        top.CPU.id_ls_op {}
+        top.CPU.id_ls_sext {}
+        {top.CPU.id_shamt} {-radix %d}
+        top.CPU.id_stall {}
+        top.CPU.id_store_inst {}
     }] {
-        set expected [ join [waveform signals -format fullpath $gpID0] ]
-        if {[string equal $name $expected]} {
-            if {$attrs != ""} {
-                eval waveform format $gpID0 $attrs
-            }
+        if {$attrs != ""} {
+            eval waveform format $gpID0 $attrs
         }
         set gpGlist0 [lrange $gpGlist0 1 end]
         set gpID0 [lindex $gpGlist0 0]

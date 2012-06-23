@@ -11,7 +11,7 @@ modelsim_clean:
 	rm -rf libraries
 
 ncv:
-	ncverilog -sv +access+r +gui +ncaccess+r \
+	ncverilog -sv +access+r +gui +ncaccess+r +tcl+ncv.tcl \
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/ex.sv \
