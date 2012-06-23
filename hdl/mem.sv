@@ -67,7 +67,7 @@ module mem #(
 
   always_comb begin
     word_to_cache  = word_st;
-    cache_wr_be    = 'b0;
+    cache_wr_be    = 4'b1111;
 
     if (ls_op == OP_LS_BYTE) begin
       word_to_cache[31-(word_idx << 3) -: 8]  = word_st[7:0];
