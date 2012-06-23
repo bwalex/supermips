@@ -93,7 +93,7 @@ module top#(
            .reset_n                     (reset_n),
            .cpu_addr                    (dcache_addr),
            .cpu_wr_data                 (dcache_wr_data),
-           .cpu_wr_be                   ('b0),//dcache_wr_be[BE_WIDTH-1:0]),
+           .cpu_wr_be                   (dcache_wr_be),
            .cpu_rd                      (dcache_rd),
            .cpu_wr                      (dcache_wr));
 
