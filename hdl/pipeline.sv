@@ -175,7 +175,7 @@ module pipeline#(
             .cache_waitrequest          (icache_waitrequest),
             .stall                      (stall_if),
             .load_pc                    (1'b0),
-            .new_pc                     (32'b0);
+            .new_pc                     (32'b0));
 
   idec ID(
           // Interfaces

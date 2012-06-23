@@ -22,6 +22,7 @@ module idec #(
   input                         ex_mem_dest_reg_valid,
   input                         id_ex_load_inst,
 
+  output                        stall,
   output [11:0]                 opc,
 
   output [31:0]                 A,
@@ -68,7 +69,6 @@ module idec #(
 
   reg                        imm_sext;
   wire [31:0]                imm_extended;
-  wire                       stall;
 
   wire                       A_reg_match_id_ex;
   wire                       A_reg_match_ex_mem;
