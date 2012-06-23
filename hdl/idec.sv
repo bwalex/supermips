@@ -285,24 +285,36 @@ module idec #(
         dest_reg_valid = 1'b0;
         jmp_inst       = 1'b1;
         jmp_cond       = COND_EQ;
+        A_reg_valid    = 1'b1;
+        B_reg_valid    = 1'b1;
+        alu_op         = OP_SUB;
       end
 
       6'h05: begin // bne
         dest_reg_valid = 1'b0;
         jmp_inst       = 1'b1;
         jmp_cond       = COND_NE;
+        A_reg_valid    = 1'b1;
+        B_reg_valid    = 1'b1;
+        alu_op         = OP_SUB;
       end
 
       6'h06: begin // blez
         dest_reg_valid = 1'b0;
         jmp_inst       = 1'b1;
         jmp_cond       = COND_LE;
+        A_reg_valid    = 1'b1;
+        B_reg_valid    = 1'b1;
+        alu_op         = OP_SUB;
       end
 
       6'h07: begin // bgtz
         dest_reg_valid = 1'b0;
         jmp_inst       = 1'b1;
         jmp_cond       = COND_GT;
+        A_reg_valid    = 1'b1;
+        B_reg_valid    = 1'b1;
+        alu_op         = OP_SUB;
       end
 
       6'h08: begin // addi
