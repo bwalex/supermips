@@ -233,14 +233,26 @@ simvision {
     register addtype -page Page-1 -type signalvalue -x0 796.0 -y0 544.0 -fontsize regfont-12 -fill white -radix {} [subst -nobackslashes -nocommands {simulator::top.REGFILE.regfile[30]} ]
     register addtype -page Page-1 -type signalvalue -x0 796.0 -y0 561.0 -fontsize regfont-12 -fill white -radix {} [subst -nobackslashes -nocommands {simulator::top.REGFILE.regfile[31]} ]
 
-    register addtype -page Page-1 -type text -x0 77.0 -y0 29.0 -fontsize regfont-12 -fill #ffff00 -text { PC }
-    register addtype -page Page-1 -type signalvalue -x0 159.0 -y0 29.0 -fontsize regfont-12 -fill #ffff00 -radix %x [subst -nobackslashes -nocommands {simulator::top.CPU.if_pc[31:0]} ]
-    register addtype -page Page-1 -type text -x0 42.0 -y0 47.0 -fontsize regfont-12 -fill #ffff00 -text { IW }
-    register addtype -page Page-1 -type signalvalue -x0 163.0 -y0 47.0 -fontsize regfont-12 -fill #ffff00 -mmap {MIPS opcodes} [subst -nobackslashes -nocommands {simulator::top.CPU.if_inst_word[31:0]} ]
+    register addtype -page Page-1 -type text -x0 50.0 -y0 25.0 -fontsize regfont-12 -fill #ffff00 -text { PC }
+    register addtype -page Page-1 -type signalvalue -x0 70.0 -y0 25.0 -fontsize regfont-12 -fill #ffff00 -radix %x [subst -nobackslashes -nocommands {simulator::top.CPU.if_pc[31:0]} ]
+    #register addtype -page Page-1 -type text -x0 42.0 -y0 47.0 -fontsize regfont-12 -fill #ffff00 -text { IW }
+    register addtype -page Page-1 -type signalvalue -x0 50 -y0 47.0 -fontsize regfont-12 -fill #ffff00 -mmap {MIPS opcodes} [subst -nobackslashes -nocommands {simulator::top.CPU.if_inst_word[31:0]} ]
 
-    register addtype -page Page-1 -type text -x0 302.0 -y0 25.0 -fontsize regfont-12 -fill #ffff00 { PC }
-    register addtype -page Page-1 -type signalvalue -x0 395.0 -y0 25.0 -fontsize regfont-12 -fill #ffff00 -radix {} [subst -nobackslashes -nocommands {simulator::top.CPU.if_pc_r[31:0]} ]
-    register addtype -page Page-1 -type text -x0 286.0 -y0 48.0 -fontsize regfont-12 -fill #ffff00 { IW }
-    register addtype -page Page-1 -type signalvalue -x0 418.0 -y0 48.0 -fontsize regfont-12 -fill #ffff00 -mmap {MIPS opcodes} [subst -nobackslashes -nocommands {simulator::top.CPU.if_inst_word_r[31:0]} ]
 
+    register addtype -page Page-1 -type text -x0 290.0 -y0 25.0 -fontsize regfont-12 -fill #ffff00 -text { PC }
+    register addtype -page Page-1 -type signalvalue -x0 310.0 -y0 25.0 -fontsize regfont-12 -fill #ffff00 -radix {} [subst -nobackslashes -nocommands {simulator::top.CPU.if_pc_r[31:0]} ]
+    #register addtype -page Page-1 -type text -x0 286.0 -y0 47.0 -fontsize regfont-12 -fill #ffff00 -text { IW }
+    register addtype -page Page-1 -type signalvalue -x0 290.0 -y0 47.0 -fontsize regfont-12 -fill #ffff00 -mmap {MIPS opcodes} [subst -nobackslashes -nocommands {simulator::top.CPU.if_inst_word_r[31:0]} ]
+
+
+    probe -create -shm top.CPU.if_pc
+    probe -create -shm top.CPU.if_inst_word
+    probe -create -shm top.CPU.if_pc_r
+    probe -create -shm top.CPU.if_inst_word_r
+    probe -create -shm top.CPU.id_pc_r
+    probe -create -shm top.CPU.id_inst_word_r
+    probe -create -shm top.CPU.ex_pc_r
+    probe -create -shm top.CPU.ex_inst_word_r
+    probe -create -shm top.CPU.mem_pc_r
+    probe -create -shm top.CPU.mem_inst_word_r
 }
