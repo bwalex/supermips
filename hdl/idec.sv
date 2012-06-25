@@ -70,6 +70,7 @@ module idec #(
   reg                        inst_iformat;
 
   reg                        imm_sext;
+  reg                        imm_lsl_2;
   wire [31:0]                imm_extended;
 
   wire                       A_reg_match_id_ex;
@@ -131,6 +132,7 @@ module idec #(
     jmp_inst        = 1'b0;
     dest_reg_valid  = 1'b1;
     imm_sext        = 1'b0;
+    imm_lsl_2       = 1'b0;
     inst_rformat    = 1'b0;
     inst_iformat    = 1'b1;
     inst_jformat    = 1'b0;
@@ -464,7 +466,7 @@ module idec #(
 
     if (stall) begin
       $display("Introducing a bubble and stalling.");
-      dest_reg_valid  = 1'b1;
+      dest_reg_valid  = 1'b0;
       load_inst       = 1'b0;
       store_inst      = 1'b0;
       jmp_inst        = 1'b0;
@@ -472,9 +474,10 @@ module idec #(
   end
 
 
-  assign imm_extended  = (imm_sext)
-                         ? { {16{inst_imm[15]}}, inst_imm }
-                         : { 16'd0, inst_imm };
+  // imm_lsl_2 always uses sign extension.
+  assign imm_extended  = (imm_lsl_2) ? { {14{inst_imm[15]}}, inst_imm, 2'db00 }
+                                     : (imm_sext ) ? { {16{inst_imm[15]}}, inst_imm }
+                                                   : { 16'd0, inst_imm };
 
 
   assign A   = rfile_rd_data1;
