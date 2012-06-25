@@ -37,4 +37,5 @@ module ifetch #(
   assign cache_addr = pc;
 
   assign inst_word  = cache_data;
+  assign pc_out     = pc;
 endmodule

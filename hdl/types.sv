@@ -39,6 +39,8 @@ package pipTypes;
                 COND_EQ,
                 COND_NE,
                 COND_GT,
-                COND_LT
+                COND_LT,
+                COND_GE,
+                COND_LE
                } cond_t;
 endpackage

@@ -85,7 +85,6 @@ module idec #(
   assign A_reg_match_ex_mem = ex_mem_dest_reg_valid && A_reg_valid && (A_reg == ex_mem_dest_reg);
   assign B_reg_match_ex_mem = ex_mem_dest_reg_valid && B_reg_valid && (B_reg == ex_mem_dest_reg);
 
-  // XXX: Forwarding bits probably need always_comb due to resolution on enumerated types
   assign A_fwd_from  =  (A_reg_match_id_ex)  ? FWD_FROM_EXMEM
                       : (A_reg_match_ex_mem) ? FWD_FROM_MEMWB
                       :                        FWD_NONE;
@@ -266,6 +265,17 @@ module idec #(
           end
         endcase // case (inst_funct)
       end // case: 6'h00
+
+      6'h01: begin
+        case (inst_rt)
+          default: begin
+            dest_reg_valid = 1'b0;
+            load_inst      = 1'b0;
+            store_inst     = 1'b0;
+            $display("Unknown instruction: opc: %x, rt: %d", inst_opc, inst_rt);
+          end
+        endcase // case (inst_rt)
+      end // case: 6'h01
 
       6'h02: begin // j
         inst_iformat   = 1'b0;
