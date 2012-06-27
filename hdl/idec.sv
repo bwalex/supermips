@@ -10,6 +10,8 @@ module idec #(
   input [31:0]                  pc,
   input [31:0]                  inst_word,
 
+  input [31:0]                  pc_plus_4,
+
   output [ 4:0]                 rfile_rd_addr1,
   output [ 4:0]                 rfile_rd_addr2,
 
@@ -44,12 +46,13 @@ module idec #(
   output ls_op_t                ls_op,
   output reg                    ls_sext,
 
-  output cond_t                 jmp_cond,
+  output cond_t                 branch_cond,
 
   output reg                    alu_inst,
   output reg                    load_inst,
   output reg                    store_inst,
   output reg                    jmp_inst,
+  output reg                    branch_inst,
 
   output reg [ 4:0]             dest_reg,
   output reg                    dest_reg_valid
@@ -70,8 +73,7 @@ module idec #(
   reg                        inst_iformat;
 
   reg                        imm_sext;
-  reg                        imm_lsl_2;
-  wire [31:0]                imm_extended;
+  reg  [31:0]                imm_extended;
 
   wire                       A_reg_match_id_ex;
   wire                       A_reg_match_ex_mem;
@@ -130,9 +132,9 @@ module idec #(
     load_inst       = 1'b0;
     store_inst      = 1'b0;
     jmp_inst        = 1'b0;
+    branch_inst     = 1'b0;
     dest_reg_valid  = 1'b1;
     imm_sext        = 1'b0;
-    imm_lsl_2       = 1'b0;
     inst_rformat    = 1'b0;
     inst_iformat    = 1'b1;
     inst_jformat    = 1'b0;
@@ -141,7 +143,7 @@ module idec #(
     alu_res_sel     = RES_ALU;
     ls_op           = OP_LS_WORD;
     ls_sext         = 1'b0;
-    jmp_cond        = COND_UNCONDITIONAL;
+    branch_cond     = COND_UNCONDITIONAL;
 
 
     case (inst_opc)
@@ -270,6 +272,37 @@ module idec #(
 
       6'h01: begin
         case (inst_rt)
+          5'h00: begin // bltz
+            dest_reg_valid  = 1'b0;
+            branch_inst     = 1'b1;
+            branch_cond     = COND_LT;
+            A_reg_valid     = 1'b1;
+          end
+
+          5'h01: begin // bgez
+            dest_reg_valid  = 1'b0;
+            branch_inst     = 1'b1;
+            branch_cond     = COND_GE;
+            A_reg_valid     = 1'b1;
+          end
+
+          5'h10: begin // bltzal
+            dest_reg        = 5'd31;
+            dest_reg_valid  = 1'b1;
+            branch_inst     = 1'b1;
+            branch_cond     = COND_LT;
+            A_reg_valid     = 1'b1;
+
+          end
+
+          5'h11: begin // bgezal
+            dest_reg        = 5'd31;
+            dest_reg_valid  = 1'b1;
+            branch_inst     = 1'b1;
+            branch_cond     = COND_GE;
+            A_reg_valid     = 1'b1;
+          end
+
           default: begin
             dest_reg_valid = 1'b0;
             load_inst      = 1'b0;
@@ -295,38 +328,32 @@ module idec #(
 
       6'h04: begin // beq
         dest_reg_valid = 1'b0;
-        jmp_inst       = 1'b1;
-        jmp_cond       = COND_EQ;
+        branch_inst    = 1'b1;
+        branch_cond    = COND_EQ;
         A_reg_valid    = 1'b1;
         B_reg_valid    = 1'b1;
-        alu_op         = OP_SUB;
       end
 
       6'h05: begin // bne
         dest_reg_valid = 1'b0;
-        jmp_inst       = 1'b1;
-        jmp_cond       = COND_NE;
+        branch_inst    = 1'b1;
+        branch_cond    = COND_NE;
         A_reg_valid    = 1'b1;
         B_reg_valid    = 1'b1;
-        alu_op         = OP_SUB;
       end
 
       6'h06: begin // blez
         dest_reg_valid = 1'b0;
-        jmp_inst       = 1'b1;
-        jmp_cond       = COND_LE;
+        branch_inst    = 1'b1;
+        branch_cond    = COND_LE;
         A_reg_valid    = 1'b1;
-        B_reg_valid    = 1'b1;
-        alu_op         = OP_SUB;
       end
 
       6'h07: begin // bgtz
         dest_reg_valid = 1'b0;
-        jmp_inst       = 1'b1;
-        jmp_cond       = COND_GT;
+        branch_inst    = 1'b1;
+        branch_cond    = COND_GT;
         A_reg_valid    = 1'b1;
-        B_reg_valid    = 1'b1;
-        alu_op         = OP_SUB;
       end
 
       6'h08: begin // addi
@@ -474,15 +501,23 @@ module idec #(
   end
 
 
-  // imm_lsl_2 always uses sign extension.
-  assign imm_extended  = (imm_lsl_2) ? { {14{inst_imm[15]}}, inst_imm, 2'db00 }
-                                     : (imm_sext ) ? { {16{inst_imm[15]}}, inst_imm }
-                                                   : { 16'd0, inst_imm };
+//  always_comb begin
+//    if (jmp_inst)
+//      imm_extended  = { pc_plus_4[31:28], inst_addr, 2'b00 };
+//    else if (branch_inst)
+//      imm_extended  = pc_plus_4 + { {14{inst_imm[15]}}, inst_imm, 2'b00 };
+//    else
+//      imm_extended  = (imm_sext) ? { {16{inst_imm[15]}}, inst_imm } : { 16'd0, inst_imm };
+//  end
 
+  assign imm  = (jmp_inst)    ? { pc_plus_4[31:28], inst_addr, 2'b00 }
+              : (branch_inst) ? pc_plus_4 + { {14{inst_imm[15]}}, inst_imm, 2'b00 }
+              : (imm_sext)    ? { {16{inst_imm[15]}}, inst_imm }
+              :                 { 16'd0, inst_imm };
 
   assign A   = rfile_rd_data1;
   assign B   = rfile_rd_data2;
-  assign imm  = imm_extended;
+//  assign imm  = imm_extended;
 
-  assign imm_valid  = inst_iformat;
+  assign imm_valid  = inst_iformat | inst_jformat;
 endmodule
