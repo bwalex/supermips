@@ -8,6 +8,8 @@ module ex #(
 
   input [31:0]             pc,
 
+  input [31:0]             pc_plus_8,
+
   input [31:0]             A_val,
   input [31:0]             B_val,
   input [31:0]             result_from_ex_mem,
@@ -28,12 +30,16 @@ module ex #(
   input                    load_inst,
   input                    store_inst,
   input                    jmp_inst,
+  input                    branch_inst,
+  input cond_t             branch_cond,
 
   input [ 4:0]             dest_reg,
   input                    dest_reg_valid,
 
   output [31:0]            result,
-  output [31:0]            result_2
+  output [31:0]            result_2,
+  output [31:0]            new_pc,
+  output                   new_pc_valid
 );
 
 
@@ -44,6 +50,11 @@ module ex #(
 
   reg                       flag_carry;
   wire                      flag_zero;
+
+  wire                      branch_cond_ok;
+  wire                      AB_equal;
+  wire                      AB_gez;
+  wire                      A_gtz;
 
   reg [31:0]                alu_res;
   reg [31:0]                set_res;
@@ -66,8 +77,23 @@ module ex #(
 
   assign B  = (imm_valid) ? imm : B_forwarded;
 
+  assign AB_equal  = (A == B);
+  assign A_gtz     = (A >  0);
+  assign A_gez     = (A >= 0);
+
   assign result_2  = B_forwarded;
 
+
+  assign new_pc    = (imm_valid) ? imm : A;
+
+  assign new_pc_valid    = jmp_inst | (branch_inst & branch_cond_ok);
+  assign branch_cond_ok  = (branch_cond == COND_UNCONDITIONAL)
+                         | (branch_cond == COND_EQ && AB_equal)
+                         | (branch_cond == COND_NE && ~AB_equal)
+                         | (branch_cond == COND_GT && A_gtz)
+                         | (branch_cond == COND_GE && A_gez)
+                         | (branch_cond == COND_LT && ~A_gez)
+                         | (branch_cond == COND_LE && ~A_gtz);
 
 
   assign inst_opc   = alu_op[11:6];
@@ -80,11 +106,12 @@ module ex #(
 
   assign flag_zero  = (alu_res == 0);
 
-  assign result  = (alu_res_sel == RES_ALU) ? alu_res : set_res;
+  assign result  = (branch_inst           ) ? pc_plus_8
+                 : (alu_res_sel == RES_ALU) ? alu_res
+                 :                            set_res;
 
 
-
-  // XXX: should factor out barrel shifter
+  // XXX: should factor out (barrel) shifter
   always_comb begin
     alu_res     = 0;
     flag_carry  = 1'b0;
