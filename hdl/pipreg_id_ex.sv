@@ -28,6 +28,8 @@ module pipreg_id_ex(
   input [0:0] id_load_inst,
   input [0:0] id_store_inst,
   input [0:0] id_jmp_inst,
+  input [0:0] id_branch_inst,
+  input cond_t id_branch_cond,
   input [4:0] id_dest_reg,
   input [0:0] id_dest_reg_valid,
 
@@ -56,6 +58,8 @@ module pipreg_id_ex(
   output reg [0:0] ex_load_inst,
   output reg [0:0] ex_store_inst,
   output reg [0:0] ex_jmp_inst,
+  output reg [0:0] ex_branch_inst,
+  output cond_t ex_branch_cond,
   output reg [4:0] ex_dest_reg,
   output reg [0:0] ex_dest_reg_valid,
 
@@ -91,6 +95,8 @@ module pipreg_id_ex(
       ex_load_inst<= 'b0;
       ex_store_inst<= 'b0;
       ex_jmp_inst<= 'b0;
+      ex_branch_inst<= 'b0;
+      ex_branch_cond<= COND_UNCONDITIONAL;
       ex_dest_reg<= 'b0;
       ex_dest_reg_valid<= 'b0;
     end
@@ -120,6 +126,8 @@ module pipreg_id_ex(
       ex_load_inst <= id_load_inst;
       ex_store_inst <= id_store_inst;
       ex_jmp_inst <= id_jmp_inst;
+      ex_branch_inst <= id_branch_inst;
+      ex_branch_cond <= id_branch_cond;
       ex_dest_reg <= id_dest_reg;
       ex_dest_reg_valid <= id_dest_reg_valid;
     end

@@ -28,6 +28,8 @@ ID_EX:
  - load_inst/1
  - store_inst/1
  - jmp_inst/1
+ - branch_inst/1
+ - branch_cond/cond_t/COND_UNCONDITIONAL
  - dest_reg/5
  - dest_reg_valid/1
 

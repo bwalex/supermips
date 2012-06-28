@@ -491,6 +491,10 @@ module idec #(
       end
     endcase // case (inst_opc)
 
+    // Don't let anything write to $0 - and don't use it for forwarding, either.
+    if (dest_reg == 5'd0)
+      dest_reg_valid  = 1'b0;
+
     if (stall) begin
       $display("Introducing a bubble and stalling.");
       dest_reg_valid  = 1'b0;

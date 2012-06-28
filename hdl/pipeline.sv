@@ -72,6 +72,8 @@ module pipeline#(
   wire        id_load_inst;//
   wire        id_store_inst;//
   wire        id_jmp_inst;//
+  wire        id_branch_inst;
+  cond_t      id_branch_cond;
   wire [ 4:0] id_dest_reg;//
   wire        id_dest_reg_valid;//
   wire        id_alu_set_u;//
@@ -87,6 +89,8 @@ module pipeline#(
   // Exports from EX
   wire [31:0] ex_result;//
   wire [31:0] ex_result_2;//
+  wire [31:0] ex_new_pc;
+  wire        ex_new_pc_valid;
 
   // Exports from MEM
   wire [31:0] mem_result;//
