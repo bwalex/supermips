@@ -99,7 +99,17 @@ module top#(
            .cpu_rd                      (dcache_rd),
            .cpu_wr                      (dcache_wr));
 
+  string                inst_str_if;
+  string                inst_str_id;
+  string                inst_str_ex;
+  string                inst_str_mem;
+  string                inst_str_wb;
 
+  text_idec(.inst_word(CPU.if_inst_word), .inst_str(inst_str_if));
+  text_idec(.inst_word(CPU.if_inst_word_r), .inst_str(inst_str_id));
+  text_idec(.inst_word(CPU.id_inst_word_r), .inst_str(inst_str_ex));
+  text_idec(.inst_word(CPU.ex_inst_word_r), .inst_str(inst_str_mem));
+  text_idec(.inst_word(CPU.mem_inst_word_r), .inst_str(inst_str_wb));
 
 
   // 100 MHz clock
