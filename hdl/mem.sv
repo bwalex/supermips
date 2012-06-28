@@ -38,9 +38,25 @@ module mem #(
   wire [ 1:0]               word_idx;
   reg [31:0]                word_from_cache;
   reg [31:0]                word_to_cache;
+  reg [31:0]                result_from_mem_wb_retained;
+  reg                       stall_d1;
 
 
-  assign word_st  = (B_fwd_from == FWD_FROM_MEMWB_LATE) ? result_from_mem_wb : result_2;
+  always @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      stall_d1 <= 1'b0;
+    else
+      stall_d1 <= stall;
+
+
+  always @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      result_from_mem_wb_retained <= 32'b0;
+    else if (stall & ~stall_d1)
+      result_from_mem_wb_retained <= result_from_mem_wb;
+
+
+  assign word_st  = (B_fwd_from == FWD_FROM_MEMWB_LATE) ? (stall_d1) ? result_from_mem_wb_retained : result_from_mem_wb : result_2;
   assign word_idx = alu_result[1:0];
 
   // XXX: need to handle stalls and bubble in.
