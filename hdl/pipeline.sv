@@ -48,6 +48,7 @@ module pipeline#(
   wire                    id_ex_store_inst_i;
   wire                    id_ex_jmp_inst_i;
   wire                    id_ex_alu_inst_i;
+  wire                    id_ex_branch_inst_i;
 
   wire                    mem_wb_dest_reg_valid_i;
 
@@ -72,8 +73,8 @@ module pipeline#(
   wire        id_load_inst;//
   wire        id_store_inst;//
   wire        id_jmp_inst;//
-  wire        id_branch_inst;
-  cond_t      id_branch_cond;
+  wire        id_branch_inst;//
+  cond_t      id_branch_cond;//
   wire [ 4:0] id_dest_reg;//
   wire        id_dest_reg_valid;//
   wire        id_alu_set_u;//
@@ -89,8 +90,8 @@ module pipeline#(
   // Exports from EX
   wire [31:0] ex_result;//
   wire [31:0] ex_result_2;//
-  wire [31:0] ex_new_pc;
-  wire        ex_new_pc_valid;
+  wire [31:0] ex_new_pc;//
+  wire        ex_new_pc_valid;//
 
   // Exports from MEM
   wire [31:0] mem_result;//
@@ -118,6 +119,8 @@ module pipeline#(
   wire        id_load_inst_r;//
   wire        id_store_inst_r;//
   wire        id_jmp_inst_r;//
+  wire        id_branch_inst_r;//
+  cond_t      id_branch_cond_r;//
   wire [ 4:0] id_dest_reg_r;//
   wire        id_dest_reg_valid_r;//
   wire        id_alu_set_u_r;//
@@ -164,6 +167,8 @@ module pipeline#(
   assign id_ex_store_inst_i      = id_store_inst        & ~id_stall;
   assign id_ex_jmp_inst_i        = id_jmp_inst          & ~id_stall;
   assign id_ex_alu_inst_i        = id_alu_inst          & ~id_stall;
+  assign id_ex_branch_inst_i     = id_branch_inst       & ~id_stall;
+
 
   assign mem_wb_dest_reg_valid_i = ex_dest_reg_valid_r  & ~mem_stall;
 
@@ -181,8 +186,8 @@ module pipeline#(
             .cache_data                 (icache_data),
             .cache_waitrequest          (icache_waitrequest),
             .stall                      (stall_if),
-            .load_pc                    (1'b0),
-            .new_pc                     (32'b0));
+            .load_pc                    (ex_new_pc_valid),
+            .new_pc                     (ex_new_pc));
 
   idec ID(
           // Interfaces
@@ -212,6 +217,8 @@ module pipeline#(
           .load_inst                    (id_load_inst),
           .store_inst                   (id_store_inst),
           .jmp_inst                     (id_jmp_inst),
+          .branch_inst                  (id_branch_inst),
+          .branch_cond                  (id_branch_cond),
           .dest_reg                     (id_dest_reg),
           .dest_reg_valid               (id_dest_reg_valid),
           // Inputs
@@ -236,6 +243,8 @@ module pipeline#(
         // Outputs
         .result                         (ex_result[31:0]),
         .result_2                       (ex_result_2[31:0]),
+        .new_pc                         (ex_new_pc),
+        .new_pc_valid                   (ex_new_pc_valid),
         // Inputs
         .clock                          (clock),
         .reset_n                        (reset_n),
@@ -256,6 +265,8 @@ module pipeline#(
         .load_inst                      (id_load_inst_r),
         .store_inst                     (id_store_inst_r),
         .jmp_inst                       (id_jmp_inst_r),
+        .branch_inst                    (id_branch_inst_r),
+        .branch_cond                    (id_branch_cond_r),
         .dest_reg                       (id_dest_reg_r),
         .dest_reg_valid                 (id_dest_reg_valid_r));
 
@@ -342,6 +353,8 @@ module pipeline#(
                        .ex_load_inst    (id_load_inst_r),
                        .ex_store_inst   (id_store_inst_r),
                        .ex_jmp_inst     (id_jmp_inst_r),
+                       .ex_branch_inst  (id_branch_inst_r),
+                       .ex_branch_cond  (id_branch_cond_r),
                        .ex_dest_reg     (id_dest_reg_r),
                        .ex_dest_reg_valid(id_dest_reg_valid_r),
                        // Inputs
@@ -364,6 +377,8 @@ module pipeline#(
                        .id_load_inst    (id_ex_load_inst_i),
                        .id_store_inst   (id_ex_store_inst_i),
                        .id_jmp_inst     (id_ex_jmp_inst_i),
+                       .id_branch_inst  (id_ex_branch_inst_i),
+                       .id_branch_cond  (id_ex_branch_cond),
                        .id_dest_reg     (id_dest_reg),
                        .id_dest_reg_valid(id_ex_dest_reg_valid_i),
                        .stall           (stall_id),
