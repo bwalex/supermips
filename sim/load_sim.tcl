@@ -22,6 +22,7 @@ vlog -sv $HDL_BASE/pipreg_mem_wb.sv
 vlog -sv $HDL_BASE/rfile.sv
 vlog -sv $HDL_BASE/tcm.sv
 vlog -sv $HDL_BASE/wb.sv
+vlog -sv $HDL_BASE/text_idec.sv
 vlog -sv $HDL_BASE/top.sv
 
 # Elaborate the top-level design
