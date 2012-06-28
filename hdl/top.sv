@@ -105,11 +105,11 @@ module top#(
   string                inst_str_mem;
   string                inst_str_wb;
 
-  text_idec(.inst_word(CPU.if_inst_word), .inst_str(inst_str_if));
-  text_idec(.inst_word(CPU.if_inst_word_r), .inst_str(inst_str_id));
-  text_idec(.inst_word(CPU.id_inst_word_r), .inst_str(inst_str_ex));
-  text_idec(.inst_word(CPU.ex_inst_word_r), .inst_str(inst_str_mem));
-  text_idec(.inst_word(CPU.mem_inst_word_r), .inst_str(inst_str_wb));
+  text_idec tdec_if(.inst_word(CPU.if_inst_word), .inst_str(inst_str_if));
+  text_idec tdec_id(.inst_word(CPU.if_inst_word_r), .inst_str(inst_str_id));
+  text_idec tdec_ex(.inst_word(CPU.id_inst_word_r), .inst_str(inst_str_ex));
+  text_idec tdec_mem(.inst_word(CPU.ex_inst_word_r), .inst_str(inst_str_mem));
+  text_idec tdec_wb(.inst_word(CPU.mem_inst_word_r), .inst_str(inst_str_wb));
 
 
   // 100 MHz clock

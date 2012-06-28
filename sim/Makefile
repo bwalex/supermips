@@ -14,7 +14,7 @@ ncv:
 	ncverilog -sv +access+r +gui +ncaccess+r +tcl+ncv.tcl \
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/top.sv \
-		$(HDL_BASE)/text_idev.sv \
+		$(HDL_BASE)/text_idec.sv \
 		$(HDL_BASE)/ex.sv \
 		$(HDL_BASE)/idec.sv \
 		$(HDL_BASE)/ifetch.sv \
