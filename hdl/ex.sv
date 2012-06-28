@@ -77,7 +77,9 @@ module ex #(
 
   assign B  = (imm_valid) ? imm : B_forwarded;
 
-  assign AB_equal  = (A == B);
+  // Use B_forwarded for AB_equal, which is used for branches, since
+  // B will contain the PC because imm_valid is true.
+  assign AB_equal  = (A == B_forwarded);
   assign A_gtz     = (A >  0);
   assign A_gez     = (A >= 0);
 
@@ -106,7 +108,7 @@ module ex #(
 
   assign flag_zero  = (alu_res == 0);
 
-  assign result  = (branch_inst           ) ? pc_plus_8
+  assign result  = (jmp_inst | branch_inst) ? pc_plus_8
                  : (alu_res_sel == RES_ALU) ? alu_res
                  :                            set_res;
 
