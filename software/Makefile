@@ -2,10 +2,13 @@ BINS= $(patsubst %.s,%.bin,$(wildcard *.s))
 VMEMS= $(patsubst %.s,%.vmem,$(wildcard *.s))
 DISS= $(patsubst %.s,%.dis,$(wildcard *.s))
 
+ASFLAGS?= -march=74kc
+
 all: $(BINS) $(VMEMS) $(DISS)
 
+
 %.elf: %.s
-	mips-sde-elf-as $*.s -o $@
+	mips-sde-elf-as $(ASFLAGS) $*.s -o $@
 
 %.bin: %.elf
 	mips-sde-elf-objcopy -O binary $*.elf $@

@@ -27,6 +27,8 @@ module ex #(
   input alu_res_t          alu_res_sel,
   input                    alu_set_u,
   input                    alu_inst,
+  input muldiv_op_t        muldiv_op,
+  input                    muldiv_op_u,
   input                    load_inst,
   input                    store_inst,
   input                    jmp_inst,
@@ -63,6 +65,66 @@ module ex #(
   wire [31:0]               A;
   wire [31:0]               B;
   wire [31:0]               B_forwarded;
+
+
+
+  reg [31:0]                hi_r;
+  reg [31:0]                lo_r;
+  reg [31:0]                next_hi;
+  reg [31:0]                next_lo;
+
+  wire                      load_hi;
+  wire                      load_lo;
+
+
+  // MUL, DIV "unit"
+  //
+  // XXX: not really synthesizable and/or practical. need proper
+  // multiplication and division algorithms.
+
+  always @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      hi_r <= 32'b0;
+    else if (load_hi)
+      hi_r <= next_hi;
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      lo_r <= 32'b0;
+    else if (load_lo)
+      lo_r <= next_lo;
+
+  assign load_hi =  (muldiv_op == OP_MTHI)
+                 || (muldiv_op == OP_MUL)
+                 || (muldiv_op == OP_DIV);
+
+  assign load_lo =  (muldiv_op == OP_MTLO)
+                 || (muldiv_op == OP_MUL)
+                 || (muldiv_op == OP_DIV);
+
+  always_comb begin
+    next_hi        = A;
+    next_lo        = A;
+    if (muldiv_op == OP_MUL) begin
+      if (muldiv_op_u)
+        {next_hi, next_lo}  = A*B;
+      else
+        {next_hi, next_lo}  = $signed(A)*$signed(B);
+    end
+    else if (muldiv_op == OP_DIV) begin
+      if (muldiv_op_u) begin
+        next_hi  = A%B;
+        next_lo  = A/B;
+      end
+      else begin
+        next_hi  = $signed(A)%$signed(B);
+        next_lo  = $signed(A)/$signed(B);
+      end
+    end
+  end
+
+  // END MUL, DIV "unit"
+
 
 
   // Forward results as required
@@ -108,8 +170,10 @@ module ex #(
 
   assign flag_zero  = (alu_res == 0);
 
-  assign result  = (jmp_inst | branch_inst) ? pc_plus_8
+  assign result =  (jmp_inst | branch_inst) ? pc_plus_8
                  : (alu_res_sel == RES_ALU) ? alu_res
+                 : (muldiv_op == OP_MFHI)   ? hi_r
+                 : (muldiv_op == OP_MFLO)   ? lo_r
                  :                            set_res;
 
 
@@ -150,7 +214,6 @@ module ex #(
 
 
   always_comb begin
-    // XXX: wrong way round?
     if (alu_set_u) begin
       // slt(i)u
       set_res  = { 31'b0, (A[31] & ~B[31]) | (alu_res[31] & (~A[31] ^ B[31])) };

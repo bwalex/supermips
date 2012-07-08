@@ -52,6 +52,30 @@ module text_idec(
           6'd09: begin // jalr
             $sformat(inst_str, "jalr $%0d, $%0d", inst_rs, inst_rd);
           end
+          6'd16: begin // mfhi
+            $sformat(inst_str, "mfhi $%0d", inst_rd);
+          end
+          6'd17: begin // mthi
+            $sformat(inst_str, "mthi $%0d", inst_rs);
+          end
+          6'd18: begin // mflo
+            $sformat(inst_str, "mflo $%0d", inst_rd);
+          end
+          6'd19: begin // mtlo
+            $sformat(inst_str, "mtlo $%0d", inst_rs);
+          end
+          6'd24: begin // mult
+            $sformat(inst_str, "mult $%0d, $%0d", inst_rs, inst_rt);
+          end
+          6'd25: begin // multu
+            $sformat(inst_str, "multu $%0d, $%0d", inst_rs, inst_rt);
+          end
+          6'd26: begin // div
+            $sformat(inst_str, "div $%0d, $%0d", inst_rs, inst_rt);
+          end
+          6'd27: begin // divu
+            $sformat(inst_str, "divu $%0d, $%0d", inst_rs, inst_rt);
+          end
           6'd32: begin // add
             $sformat(inst_str, "add $%0d, $%0d, $%0d", inst_rd, inst_rs, inst_rt);
           end

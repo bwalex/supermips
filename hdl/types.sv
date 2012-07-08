@@ -23,6 +23,16 @@ package pipTypes;
                 } alu_op_t;
 
   typedef enum {
+                OP_NONE,
+                OP_MUL,
+                OP_DIV,
+                OP_MFHI,
+                OP_MFLO,
+                OP_MTHI,
+                OP_MTLO
+                } muldiv_op_t;
+
+  typedef enum {
                 RES_ALU,
                 RES_SET
                 } alu_res_t;

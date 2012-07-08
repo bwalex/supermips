@@ -42,6 +42,8 @@ module idec #(
   output alu_op_t               alu_op,
   output alu_res_t              alu_res_sel,
   output reg                    alu_set_u,
+  output muldiv_op              muldiv_op,
+  output reg                    muldiv_op_u,
 
   output ls_op_t                ls_op,
   output reg                    ls_sext,
@@ -141,6 +143,8 @@ module idec #(
     alu_op          = OP_PASS_A;
     alu_set_u       = 1'b0;
     alu_res_sel     = RES_ALU;
+    muldiv_op       = OP_NONE;
+    muldiv_op_u     = 1'b0;
     ls_op           = OP_LS_WORD;
     ls_sext         = 1'b0;
     branch_cond     = COND_UNCONDITIONAL;
@@ -196,6 +200,48 @@ module idec #(
           6'd09: begin // jalr
             jmp_inst     = 1'b1;
             A_reg_valid  = 1'b1;
+          end
+          6'd16: begin // mfhi
+            muldiv_op  = OP_MFHI;
+          end
+          6'd17: begin // mthi
+            muldiv_op       = OP_MTHI;
+            A_reg_valid     = 1'b1;
+            dest_reg_valid  = 1'b0;
+          end
+          6'd18: begin // mflo
+            muldiv_op  = OP_MFLO;
+          end
+          6'd19: begin // mtlo
+            muldiv_op       = OP_MTLO;
+            A_reg_valid     = 1'b1;
+            dest_reg_valid  = 1'b0;
+          end
+          6'd24: begin // mult
+            muldiv_op       = OP_MUL;
+            A_reg_valid     = 1'b1;
+            B_reg_valid     = 1'b1;
+            dest_reg_valid  = 1'b0;
+          end
+          6'd25: begin // multu
+            muldiv_op       = OP_MUL;
+            muldiv_op_u     = 1'b1;
+            A_reg_valid     = 1'b1;
+            B_reg_valid     = 1'b1;
+            dest_reg_valid  = 1'b0;
+          end
+          6'd26: begin // div
+            muldiv_op       = OP_DIV;
+            A_reg_valid     = 1'b1;
+            B_reg_valid     = 1'b1;
+            dest_reg_valid  = 1'b0;
+          end
+          6'd27: begin // divu
+            muldiv_op       = OP_DIV;
+            muldiv_op_u     = 1'b1;
+            A_reg_valid     = 1'b1;
+            B_reg_valid     = 1'b1;
+            dest_reg_valid  = 1'b0;
           end
           6'd32: begin // add
             alu_inst  = 1'b1;
