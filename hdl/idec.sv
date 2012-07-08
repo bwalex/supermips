@@ -42,7 +42,7 @@ module idec #(
   output alu_op_t               alu_op,
   output alu_res_t              alu_res_sel,
   output reg                    alu_set_u,
-  output muldiv_op              muldiv_op,
+  output muldiv_op_t            muldiv_op,
   output reg                    muldiv_op_u,
 
   output ls_op_t                ls_op,

@@ -23,6 +23,8 @@ module pipreg_id_ex(
   input alu_op_t id_alu_op,
   input alu_res_t id_alu_res_sel,
   input [0:0] id_alu_set_u,
+  input muldiv_op_t id_muldiv_op,
+  input [0:0] id_muldiv_op_u,
   input ls_op_t id_ls_op,
   input [0:0] id_ls_sext,
   input [0:0] id_load_inst,
@@ -53,6 +55,8 @@ module pipreg_id_ex(
   output alu_op_t ex_alu_op,
   output alu_res_t ex_alu_res_sel,
   output reg [0:0] ex_alu_set_u,
+  output muldiv_op_t ex_muldiv_op,
+  output reg [0:0] ex_muldiv_op_u,
   output ls_op_t ex_ls_op,
   output reg [0:0] ex_ls_sext,
   output reg [0:0] ex_load_inst,
@@ -90,6 +94,8 @@ module pipreg_id_ex(
       ex_alu_op<= OP_PASS_A;
       ex_alu_res_sel<= RES_ALU;
       ex_alu_set_u<= 'b0;
+      ex_muldiv_op<= OP_NONE;
+      ex_muldiv_op_u<= 'b0;
       ex_ls_op<= OP_LS_WORD;
       ex_ls_sext<= 'b0;
       ex_load_inst<= 'b0;
@@ -121,6 +127,8 @@ module pipreg_id_ex(
       ex_alu_op <= id_alu_op;
       ex_alu_res_sel <= id_alu_res_sel;
       ex_alu_set_u <= id_alu_set_u;
+      ex_muldiv_op <= id_muldiv_op;
+      ex_muldiv_op_u <= id_muldiv_op_u;
       ex_ls_op <= id_ls_op;
       ex_ls_sext <= id_ls_sext;
       ex_load_inst <= id_load_inst;
