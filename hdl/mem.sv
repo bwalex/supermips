@@ -34,12 +34,31 @@ module mem #(
   output                    stall
 );
 
+  wire                      trickbox_taken;
+  wire [31:0]               trickbox_out;
+
+
   wire [31:0]               word_st;
   wire [ 1:0]               word_idx;
   reg [31:0]                word_from_cache;
   reg [31:0]                word_to_cache;
   reg [31:0]                result_from_mem_wb_retained;
   reg                       stall_d1;
+
+
+  trickbox#(
+            .ADDR_WIDTH(ADDR_WIDTH)
+  ) trickbox (
+              .clock(clock),
+              .reset_n(reset_n),
+              .addr(alu_result),
+              .read(load_inst),
+              .write(store_inst),
+              .data_in(word_st),
+              .data_out(trickbox_out),
+              .taken(trickbox_taken)
+              );
+
 
 
   always @(posedge clock, negedge reset_n)
@@ -59,13 +78,12 @@ module mem #(
   assign word_st  = (B_fwd_from == FWD_FROM_MEMWB_LATE) ? (stall_d1) ? result_from_mem_wb_retained : result_from_mem_wb : result_2;
   assign word_idx = alu_result[1:0];
 
-  // XXX: need to handle stalls and bubble in.
   assign stall  = cache_waitrequest;
 
-  assign result        = (load_inst) ? word_from_cache : alu_result;
+  assign result        = (load_inst) ? (trickbox_taken) ? trickbox_out : word_from_cache : alu_result;
   assign cache_addr    = alu_result >> 2;
-  assign cache_wr      = store_inst;
-  assign cache_rd      = load_inst;
+  assign cache_wr      = ~trickbox_taken & store_inst;
+  assign cache_rd      = ~trickbox_taken & load_inst;
   assign cache_wr_data = word_to_cache;
 
 
