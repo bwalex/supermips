@@ -174,10 +174,10 @@ module ex #(
 
   assign flag_zero  = (alu_res == 0);
 
-  assign result =  (jmp_inst | branch_inst) ? pc_plus_8
-                 : (alu_res_sel == RES_ALU) ? alu_res
+  assign result  = (jmp_inst | branch_inst) ? pc_plus_8
                  : (muldiv_op == OP_MFHI)   ? hi_r
                  : (muldiv_op == OP_MFLO)   ? lo_r
+                 : (alu_res_sel == RES_ALU) ? alu_res
                  :                            set_res;
 
 
