@@ -14,7 +14,7 @@ LD		= mips-sde-elf-ld
 AS		= mips-sde-elf-as
 # Flag : CFLAGS
 #	Use this flag to define compiler options. Note, you can add compiler options from the command line using XCFLAGS="other flags"
-PORT_CFLAGS = -O3
+PORT_CFLAGS = -O3 -g
 FLAGS_STR = "$(PORT_CFLAGS) $(XCFLAGS) $(XLFLAGS) $(LFLAGS_END)"
 CFLAGS = $(PORT_CFLAGS) -I$(PORT_DIR) -I. -DFLAGS_STR=\"$(FLAGS_STR)\" -std=c99 -T $(PORT_DIR)/simple.ld # can't use -nostdinc because of stdarg
 #Flag : LFLAGS_END

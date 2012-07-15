@@ -224,6 +224,10 @@ module ex #(
         alu_res  = A;
       OP_MOVN:
         alu_res  = A;
+      OP_SEB:
+        alu_res  = { {24{B[ 7]}}, B[ 7:0] };
+      OP_SEH:
+        alu_res  = { {16{B[15]}}, B[15:0] };
     endcase // case (alu_op)
   end
 

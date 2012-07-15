@@ -493,7 +493,45 @@ module idec #(
             $display("Unknown instruction: opc: %x, funct: %d (pc: %x)", inst_opc, inst_funct, pc);
           end
         endcase
-      end
+      end // case: 6'h1c
+
+      6'h1f: begin
+        inst_rformat  = 1'b1;
+        inst_iformat  = 1'b0;
+        dest_reg      = inst_rd;
+
+        case (inst_funct)
+          6'd32: begin
+            case (inst_shamt)
+              5'd16: begin // seb
+                alu_inst     = 1'b1;
+                alu_op       = OP_SEB;
+                B_reg_valid  = 1'b1;
+              end
+
+              5'd24: begin // seh
+                alu_inst  = 1'b1;
+                alu_op    = OP_SEH;
+                B_reg_valid  = 1'b1;
+              end
+
+              default: begin
+                dest_reg_valid  = 1'b0;
+                load_inst       = 1'b0;
+                store_inst      = 1'b0;
+                $display("Unknown instruction: opc: %x, funct: %d, shamt: %d (pc: %x)", inst_opc, inst_funct, inst_shamt, pc);
+              end
+            endcase
+          end
+
+          default: begin
+            dest_reg_valid  = 1'b0;
+            load_inst       = 1'b0;
+            store_inst      = 1'b0;
+            $display("Unknown instruction: opc: %x, funct: %d (pc: %x)", inst_opc, inst_funct, pc);
+          end
+        endcase
+      end // case: 6'h1f
 
       6'h20: begin // lb
         alu_op       = OP_ADD;
