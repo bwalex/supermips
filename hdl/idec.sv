@@ -496,12 +496,18 @@ module idec #(
       end // case: 6'h1c
 
       6'h1f: begin
-        inst_rformat  = 1'b1;
-        inst_iformat  = 1'b0;
-        dest_reg      = inst_rd;
-
         case (inst_funct)
+          6'd00: begin // ext
+            alu_inst     = 1'b1;
+            alu_op       = OP_EXT;
+            A_reg_valid  = 1'b1;
+          end
+
           6'd32: begin
+            inst_rformat  = 1'b1;
+            inst_iformat  = 1'b0;
+            dest_reg      = inst_rd;
+
             case (inst_shamt)
               5'd16: begin // seb
                 alu_inst     = 1'b1;

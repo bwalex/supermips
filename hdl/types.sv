@@ -24,7 +24,8 @@ package pipTypes;
                 OP_MOVZ,
                 OP_MOVN,
                 OP_SEB,
-                OP_SEH
+                OP_SEH,
+                OP_EXT
                 } alu_op_t;
 
   typedef enum {

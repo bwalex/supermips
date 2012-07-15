@@ -68,7 +68,8 @@ module ex #(
   wire [31:0]               B;
   wire [31:0]               B_forwarded;
 
-
+  wire [4:0]                ext_msbd;
+  wire [4:0]                ext_lsb;
 
   reg [31:0]                hi_r;
   reg [31:0]                lo_r;
@@ -140,6 +141,11 @@ module ex #(
 
 
   assign B  = (imm_valid) ? imm : B_forwarded;
+
+
+  assign ext_msbd  = imm[15:11];
+  assign ext_lsb   = imm[10: 6];
+
 
   // Use B_forwarded for AB_equal, which is used for branches, since
   // B will contain the PC because imm_valid is true.
@@ -228,6 +234,8 @@ module ex #(
         alu_res  = { {24{B[ 7]}}, B[ 7:0] };
       OP_SEH:
         alu_res  = { {16{B[15]}}, B[15:0] };
+      OP_EXT:
+        alu_res  = (A >> ext_lsb) & ((1 << ext_msbd) -1);
     endcase // case (alu_op)
   end
 
@@ -235,11 +243,11 @@ module ex #(
   always_comb begin
     if (alu_set_u) begin
       // slt(i)u
-      set_res  = { 31'b0, (A[31] & ~B[31]) | (alu_res[31] & (~A[31] ^ B[31])) };
+      set_res  = { 31'b0, ~flag_carry };
     end
     else begin
       // slt(i)
-      set_res  = { 31'b0, ~flag_carry };
+      set_res  = { 31'b0, (A[31] & ~B[31]) | (alu_res[31] & (~A[31] ^ B[31])) };
     end
   end
 endmodule
