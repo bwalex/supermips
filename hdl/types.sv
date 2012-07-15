@@ -18,8 +18,11 @@ package pipTypes;
                 OP_SLA,
                 OP_SRA,
                 OP_LUI,
+                OP_MUL_LO,
                 OP_PASS_A,
-                OP_PASS_B
+                OP_PASS_B,
+                OP_MOVZ,
+                OP_MOVN
                 } alu_op_t;
 
   typedef enum {

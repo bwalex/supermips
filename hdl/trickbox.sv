@@ -56,6 +56,7 @@ module trickbox #(
     if (read) begin
       case (addr)
         TIME_PORT: begin
+          $display("TRICKBOX TAKEN");
           taken     = 1'b1;
           data_out  = cycle_count/TIME_SCALE_FACTOR;
         end
@@ -64,6 +65,7 @@ module trickbox #(
     else if (write) begin
       case (addr)
         PUTC_PORT: begin
+          $display("TRICKBOX TAKEN");
           taken  = 1'b1;
           if (data_in[7:0] == 8'b0)
             flush_char   = 1'b1;

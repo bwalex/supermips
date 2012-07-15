@@ -26,6 +26,7 @@ ncv:
 		$(HDL_BASE)/pipreg_mem_wb.sv \
 		$(HDL_BASE)/rfile.sv \
 		$(HDL_BASE)/tcm.sv \
+		$(HDL_BASE)/trickbox.sv \
 		$(HDL_BASE)/wb.sv
 
 ncv_clean:

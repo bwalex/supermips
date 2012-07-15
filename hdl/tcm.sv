@@ -1,7 +1,7 @@
 module tcm #(
   parameter ADDR_WIDTH = 32,
             DATA_WIDTH = 32,
-            MEM_DEPTH  = 65536,
+            MEM_DEPTH  = 8*1024*1024, /* 8M words -> 32 MB */
             MEM_FILE   = "",
             BE_WIDTH   = DATA_WIDTH/8
 )(
@@ -31,11 +31,12 @@ module tcm #(
     end
   endgenerate
 
+  initial begin
+    $readmemh(MEM_FILE, mem);
+  end
 
-  always_ff @(posedge clock, negedge reset_n)
-    if (~reset_n)
-      $readmemh(MEM_FILE, mem);
-    else if (cpu_wr)
+  always_ff @(posedge clock)
+    if (cpu_wr)
       mem[mem_addr] <=  (mem[mem_addr] & ~be_expanded)
                       | (cpu_wr_data   &  be_expanded);
 

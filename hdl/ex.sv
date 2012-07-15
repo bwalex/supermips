@@ -41,7 +41,8 @@ module ex #(
   output [31:0]            result,
   output [31:0]            result_2,
   output [31:0]            new_pc,
-  output                   new_pc_valid
+  output                   new_pc_valid,
+  output                   inval_dest_reg
 );
 
 
@@ -57,6 +58,7 @@ module ex #(
   wire                      AB_equal;
   wire                      AB_gez;
   wire                      A_gtz;
+  wire                      B_eqz;
 
   reg [31:0]                alu_res;
   reg [31:0]                set_res;
@@ -145,6 +147,8 @@ module ex #(
   assign A_gtz     = (A >  0);
   assign A_gez     = (A >= 0);
 
+  assign B_eqz     = (B == 0);
+
   assign result_2  = B_forwarded;
 
 
@@ -175,6 +179,11 @@ module ex #(
                  : (muldiv_op == OP_MFHI)   ? hi_r
                  : (muldiv_op == OP_MFLO)   ? lo_r
                  :                            set_res;
+
+
+  assign inval_dest_reg =  (alu_op == OP_MOVZ) ? ~B_eqz
+                         : (alu_op == OP_MOVN) ?  B_eqz
+                         :                        1'b0;
 
 
   // XXX: should factor out (barrel) shifter
@@ -209,6 +218,12 @@ module ex #(
         alu_res  = B >>> shift_val;
       OP_LUI:
         alu_res  = { B[15:0], 16'b0 };
+      OP_MUL_LO:
+        alu_res  = next_lo;
+      OP_MOVZ:
+        alu_res  = A;
+      OP_MOVN:
+        alu_res  = A;
     endcase // case (alu_op)
   end
 

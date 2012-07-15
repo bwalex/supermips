@@ -70,6 +70,8 @@ module pipeline#(
   wire        id_imm_valid;//
   wire [ 4:0] id_shamt;//
   wire        id_alu_inst;//
+  muldiv_op_t id_muldiv_op;
+  wire        id_muldiv_op_u;
   wire        id_load_inst;//
   wire        id_store_inst;//
   wire        id_jmp_inst;//
@@ -92,6 +94,8 @@ module pipeline#(
   wire [31:0] ex_result_2;//
   wire [31:0] ex_new_pc;//
   wire        ex_new_pc_valid;//
+  wire        ex_inval_dest_reg;
+  wire        ex_new_dest_reg_valid;
 
   // Exports from MEM
   wire [31:0] mem_result;//
@@ -116,6 +120,8 @@ module pipeline#(
   wire        id_imm_valid_r;//
   wire [ 4:0] id_shamt_r;//
   wire        id_alu_inst_r;//
+  muldiv_op_t id_muldiv_op_r;
+  wire        id_muldiv_op_u_r;
   wire        id_load_inst_r;//
   wire        id_store_inst_r;//
   wire        id_jmp_inst_r;//
@@ -173,6 +179,9 @@ module pipeline#(
   assign mem_wb_dest_reg_valid_i = ex_dest_reg_valid_r  & ~mem_stall;
 
 
+  // Allow EX stage to invalidate destination register (used for MOVZ,MOVN)
+  assign ex_new_dest_reg_valid  = id_dest_reg_valid_r & ~ex_inval_dest_reg;
+
 
   ifetch IF(
             // Outputs
@@ -195,6 +204,7 @@ module pipeline#(
           .B_fwd_from                   (id_B_fwd_from),
           .alu_op                       (id_alu_op),
           .alu_res_sel                  (id_alu_res_sel),
+          .muldiv_op                    (id_muldiv_op),
           .ls_op                        (id_ls_op),
           // Outputs
           .stall                        (id_stall),
@@ -214,6 +224,7 @@ module pipeline#(
           .alu_set_u                    (id_alu_set_u),
           .ls_sext                      (id_ls_sext),
           .alu_inst                     (id_alu_inst),
+          .muldiv_op_u                  (id_muldiv_op_u),
           .load_inst                    (id_load_inst),
           .store_inst                   (id_store_inst),
           .jmp_inst                     (id_jmp_inst),
@@ -241,11 +252,13 @@ module pipeline#(
         .B_fwd_from                     (id_B_fwd_from_r),
         .alu_op                         (id_alu_op_r),
         .alu_res_sel                    (id_alu_res_sel_r),
+        .muldiv_op                      (id_muldiv_op_r),
         // Outputs
         .result                         (ex_result[31:0]),
         .result_2                       (ex_result_2[31:0]),
         .new_pc                         (ex_new_pc),
         .new_pc_valid                   (ex_new_pc_valid),
+        .inval_dest_reg                 (ex_inval_dest_reg),
         // Inputs
         .clock                          (clock),
         .reset_n                        (reset_n),
@@ -264,6 +277,7 @@ module pipeline#(
         .shamt                          (id_shamt_r),
         .alu_set_u                      (id_alu_set_u_r),
         .alu_inst                       (id_alu_inst_r),
+        .muldiv_op_u                    (id_muldiv_op_u_r),
         .load_inst                      (id_load_inst_r),
         .store_inst                     (id_store_inst_r),
         .jmp_inst                       (id_jmp_inst_r),
@@ -329,11 +343,13 @@ module pipeline#(
                        .id_B_fwd_from   (id_B_fwd_from),
                        .id_alu_op       (id_alu_op),
                        .id_alu_res_sel  (id_alu_res_sel),
+                       .id_muldiv_op    (id_muldiv_op),
                        .id_ls_op        (id_ls_op),
                        .ex_A_fwd_from   (id_A_fwd_from_r),
                        .ex_B_fwd_from   (id_B_fwd_from_r),
                        .ex_alu_op       (id_alu_op_r),
                        .ex_alu_res_sel  (id_alu_res_sel_r),
+                       .ex_muldiv_op    (id_muldiv_op_r),
                        .ex_ls_op        (id_ls_op_r),
                        // Outputs
                        .ex_pc           (id_pc_r),
@@ -351,6 +367,7 @@ module pipeline#(
                        .ex_shamt        (id_shamt_r),
                        .ex_alu_inst     (id_alu_inst_r),
                        .ex_alu_set_u    (id_alu_set_u_r),
+                       .ex_muldiv_op_u  (id_muldiv_op_u_r),
                        .ex_ls_sext      (id_ls_sext_r),
                        .ex_load_inst    (id_load_inst_r),
                        .ex_store_inst   (id_store_inst_r),
@@ -375,6 +392,7 @@ module pipeline#(
                        .id_shamt        (id_shamt),
                        .id_alu_inst     (id_ex_alu_inst_i),
                        .id_alu_set_u    (id_alu_set_u),
+                       .id_muldiv_op_u  (id_muldiv_op_u),
                        .id_ls_sext      (id_ls_sext),
                        .id_load_inst    (id_ex_load_inst_i),
                        .id_store_inst   (id_ex_store_inst_i),
@@ -416,7 +434,7 @@ module pipeline#(
                          .ex_result             (ex_result),
                          .ex_result_2           (ex_result_2),
                          .ex_dest_reg           (id_dest_reg_r),
-                         .ex_dest_reg_valid     (id_dest_reg_valid_r),
+                         .ex_dest_reg_valid     (ex_new_dest_reg_valid),
                          .stall                 (stall_ex),
                          .clock                 (clock),
                          .reset_n               (reset_n));

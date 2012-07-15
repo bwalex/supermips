@@ -1,8 +1,8 @@
 `timescale 1ns/10ps
 
 module top#(
-           parameter IMEM_FILE = "../software/simple.vmem",
-           parameter DMEM_FILE = "../software/simple.vmem"
+           parameter IMEM_FILE = "../software/coremark.vmem",
+           parameter DMEM_FILE = "../software/coremark.vmem"
 )(
 );
   logic clock;
@@ -105,12 +105,26 @@ module top#(
   string                inst_str_mem;
   string                inst_str_wb;
 
-  text_idec tdec_if(.inst_word(CPU.if_inst_word), .inst_str(inst_str_if));
-  text_idec tdec_id(.inst_word(CPU.if_inst_word_r), .inst_str(inst_str_id));
-  text_idec tdec_ex(.inst_word(CPU.id_inst_word_r), .inst_str(inst_str_ex));
-  text_idec tdec_mem(.inst_word(CPU.ex_inst_word_r), .inst_str(inst_str_mem));
-  text_idec tdec_wb(.inst_word(CPU.mem_inst_word_r), .inst_str(inst_str_wb));
+  text_idec tdec_if(.inst_word(CPU.if_inst_word),    .pc(CPU.if_pc),    .inst_str(inst_str_if));
+  text_idec tdec_id(.inst_word(CPU.if_inst_word_r),  .pc(CPU.if_pc_r),  .inst_str(inst_str_id));
+  text_idec tdec_ex(.inst_word(CPU.id_inst_word_r),  .pc(CPU.id_pc_r),  .inst_str(inst_str_ex));
+  text_idec tdec_mem(.inst_word(CPU.ex_inst_word_r), .pc(CPU.ex_pc_r),  .inst_str(inst_str_mem));
+  text_idec tdec_wb(.inst_word(CPU.mem_inst_word_r), .pc(CPU.mem_pc_r), .inst_str(inst_str_wb));
 
+  always @(posedge clock) begin
+    if (CPU.MEM.load_inst) begin
+      $display("LS trace: load (pc=%x), addr=%x => %x (%x)", CPU.ex_pc_r, CPU.MEM.cache_addr, CPU.MEM.cache_data, CPU.MEM.result);
+    end
+    if (CPU.MEM.store_inst) begin
+      $display("LS trace: store (pc=%x), addr=%x => %x, be=%b", CPU.ex_pc_r, CPU.MEM.cache_addr, CPU.MEM.cache_wr_data, CPU.MEM.cache_wr_be);
+    end
+  end
+
+  always @(posedge clock) begin
+    if (CPU.WB.dest_reg_valid) begin
+      $display("RFILE trace: write (pc =%x), $%d => %x", CPU.mem_pc_r, CPU.WB.dest_reg, CPU.WB.result);
+    end
+  end
 
   // 100 MHz clock
   always

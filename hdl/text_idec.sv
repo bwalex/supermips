@@ -1,6 +1,7 @@
 module text_idec(
-  input [31:0]      inst_word,
-  output string     inst_str
+  input [31:0]  inst_word,
+  input [31:0]  pc,
+  output string inst_str
 );
 
 
@@ -12,6 +13,8 @@ module text_idec(
   wire [25:0]                inst_addr;
   wire [4:0]                 inst_shamt;
   wire [5:0]                 inst_funct;
+  wire [31:0]                jmp_addr;
+  wire [31:0]                pc_plus_4;
 
 
   assign inst_opc   = inst_word[31:26];
@@ -22,6 +25,10 @@ module text_idec(
   assign inst_addr  = inst_word[25: 0];
   assign inst_shamt = inst_word[10: 6];
   assign inst_funct = inst_word[ 5: 0];
+
+  assign pc_plus_4  = pc+4;
+  assign jmp_addr   = { pc_plus_4[31:28], inst_addr, 2'b00 };
+
 
 
   always_comb begin
@@ -107,7 +114,7 @@ module text_idec(
             $sformat(inst_str, "sltu $%0d, $%0d, $%0d", inst_rd, inst_rs, inst_rt);
           end
           default: begin
-            $display("Unknown instruction: opc: %x, funct: %0d", inst_opc, inst_funct);
+            $sformat(inst_str, "Unknown instruction: opc: %x, funct: %0d", inst_opc, inst_funct);
           end
         endcase // case (inst_funct)
       end // case: 6'h00
@@ -127,17 +134,17 @@ module text_idec(
             $sformat(inst_str, "bgezal $%0d, 0x%x", inst_rs, inst_imm);
           end
           default: begin
-            $display("Unknown instruction: opc: %x, rt: %0d", inst_opc, inst_rt);
+            $sformat(inst_str, "Unknown instruction: opc: %x, rt: %0d", inst_opc, inst_rt);
           end
         endcase // case (inst_rt)
       end // case: 6'h01
 
       6'h02: begin // j
-        $sformat(inst_str, "j 0x%x", inst_addr);
+        $sformat(inst_str, "j 0x%x", jmp_addr);
       end
 
       6'h03: begin // jal
-        $sformat(inst_str, "jal 0x%x", inst_addr);
+        $sformat(inst_str, "jal 0x%x", jmp_addr);
       end
 
       6'h04: begin // beq
@@ -221,7 +228,7 @@ module text_idec(
       end
 
       default: begin
-        $display("Unknown instruction: opc: %x", inst_opc);
+        $sformat(inst_str, "Unknown instruction: opc: %x", inst_opc);
       end
     endcase // case (inst_opc)
   end // always_comb

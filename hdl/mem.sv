@@ -81,7 +81,7 @@ module mem #(
   assign stall  = cache_waitrequest;
 
   assign result        = (load_inst) ? (trickbox_taken) ? trickbox_out : word_from_cache : alu_result;
-  assign cache_addr    = alu_result >> 2;
+  assign cache_addr    = alu_result;
   assign cache_wr      = ~trickbox_taken & store_inst;
   assign cache_rd      = ~trickbox_taken & load_inst;
   assign cache_wr_data = word_to_cache;
@@ -105,11 +105,13 @@ module mem #(
 
     if (ls_op == OP_LS_BYTE) begin
       word_to_cache[31-(word_idx << 3) -: 8]  = word_st[7:0];
+      cache_wr_be                             = 4'b0000;
       cache_wr_be[3-word_idx]                 = 1'b1;
     end
     else if (ls_op == OP_LS_HALFWORD) begin
       word_to_cache[31-(word_idx << 3) -: 8]  = word_st[15:0];
-      cache_wr_be[3-word_idx -: 1]            = 2'b11;
+      cache_wr_be                             = 4'b0000;
+      cache_wr_be[3-word_idx -: 2]            = 2'b11;
     end
   end
 endmodule // mem

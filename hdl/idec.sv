@@ -201,6 +201,18 @@ module idec #(
             jmp_inst     = 1'b1;
             A_reg_valid  = 1'b1;
           end
+          6'd10: begin // movz
+            alu_inst        = 1'b1;
+            alu_op          = OP_MOVZ;
+            A_reg_valid     = 1'b1;
+            B_reg_valid     = 1'b1;
+          end
+          6'd11: begin // movn
+            alu_inst        = 1'b1;
+            alu_op          = OP_MOVN;
+            A_reg_valid     = 1'b1;
+            B_reg_valid     = 1'b1;
+          end
           6'd16: begin // mfhi
             muldiv_op  = OP_MFHI;
           end
@@ -311,7 +323,7 @@ module idec #(
             dest_reg_valid  = 1'b0;
             load_inst       = 1'b0;
             store_inst      = 1'b0;
-            $display("Unknown instruction: opc: %x, funct: %d", inst_opc, inst_funct);
+            $display("Unknown instruction: opc: %x, funct: %d (pc: %x)", inst_opc, inst_funct, pc);
           end
         endcase // case (inst_funct)
       end // case: 6'h00
@@ -350,10 +362,10 @@ module idec #(
           end
 
           default: begin
-            dest_reg_valid = 1'b0;
-            load_inst      = 1'b0;
-            store_inst     = 1'b0;
-            $display("Unknown instruction: opc: %x, rt: %d", inst_opc, inst_rt);
+            dest_reg_valid  = 1'b0;
+            load_inst       = 1'b0;
+            store_inst      = 1'b0;
+            $display("Unknown instruction: opc: %x, rt: %d (pc: %x)", inst_opc, inst_rt, pc);
           end
         endcase // case (inst_rt)
       end // case: 6'h01
@@ -456,6 +468,33 @@ module idec #(
         alu_op    = OP_LUI;
       end
 
+      6'h1c: begin
+        inst_rformat  = 1'b1;
+        inst_iformat  = 1'b0;
+        dest_reg      = inst_rd;
+
+        shamt         = inst_shamt;
+
+        case (inst_funct)
+          6'd02: begin // mul
+            alu_inst        = 1'b1;
+            muldiv_op       = OP_MUL;
+            muldiv_op_u     = 1'b1;
+            A_reg_valid     = 1'b1;
+            B_reg_valid     = 1'b1;
+            dest_reg_valid  = 1'b1;
+            alu_op          = OP_MUL_LO;
+          end
+
+          default: begin
+            dest_reg_valid  = 1'b0;
+            load_inst       = 1'b0;
+            store_inst      = 1'b0;
+            $display("Unknown instruction: opc: %x, funct: %d (pc: %x)", inst_opc, inst_funct, pc);
+          end
+        endcase
+      end
+
       6'h20: begin // lb
         alu_op       = OP_ADD;
         imm_sext     = 1'b1;
@@ -533,7 +572,7 @@ module idec #(
         dest_reg_valid  = 1'b0;
         load_inst       = 1'b0;
         store_inst      = 1'b0;
-        $display("Unknown instruction: opc: %x", inst_opc);
+        $display("Unknown instruction: opc: %x (pc: %x)", inst_opc, pc);
       end
     endcase // case (inst_opc)
 
@@ -542,11 +581,13 @@ module idec #(
       dest_reg_valid  = 1'b0;
 
     if (stall) begin
-      $display("Introducing a bubble and stalling.");
+      $display("Introducing a bubble and stalling (pc: %x)", pc);
       dest_reg_valid  = 1'b0;
       load_inst       = 1'b0;
       store_inst      = 1'b0;
       jmp_inst        = 1'b0;
+      branch_inst     = 1'b0;
+      muldiv_op       = OP_NONE;
     end
   end
 
