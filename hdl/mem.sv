@@ -109,7 +109,7 @@ module mem #(
       cache_wr_be[3-word_idx]                 = 1'b1;
     end
     else if (ls_op == OP_LS_HALFWORD) begin
-      word_to_cache[31-(word_idx << 3) -: 8]  = word_st[15:0];
+      word_to_cache[31-(word_idx << 3) -: 16] = word_st[15:0];
       cache_wr_be                             = 4'b0000;
       cache_wr_be[3-word_idx -: 2]            = 2'b11;
     end
