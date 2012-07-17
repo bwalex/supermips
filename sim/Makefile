@@ -1,4 +1,5 @@
 HDL_BASE?=../hdl
+TRICK_ITERATIONS?=100
 
 all:
 	echo "Targets: ncv, ncv_batch, modelsim, vcs"
@@ -12,7 +13,7 @@ modelsim_clean:
 
 vcs:
 	# Not including text_idec, as it VCS doesn't support a string as a non-ref port
-	vcs -sverilog \
+	vcs -sverilog -pvalue+top/CPU/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/ex.sv \
@@ -28,12 +29,13 @@ vcs:
 		$(HDL_BASE)/tcm.sv \
 		$(HDL_BASE)/trickbox.sv \
 		$(HDL_BASE)/wb.sv
+	./simv
 
 vcs_clean:
 	rm -rf simv DVEfiles inter.vpd csrc simv.daidir simv.vdb ucli.key
 
 ncv:
-	ncverilog -sv +access+r +gui +ncaccess+r +define+TRACE_ENABLE +tcl+ncv.tcl \
+	ncverilog -sv +access+r +gui +ncaccess+r +define+TRACE_ENABLE +defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) +tcl+ncv.tcl \
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/text_idec.sv \
@@ -52,7 +54,7 @@ ncv:
 		$(HDL_BASE)/wb.sv
 
 ncv_batch:
-	ncverilog -sv +access+r +ncbatch \
+	ncverilog -sv +access+r +ncbatch +defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) \
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/text_idec.sv \
