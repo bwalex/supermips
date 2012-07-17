@@ -56,9 +56,10 @@ module ex #(
 
   wire                      branch_cond_ok;
   wire                      AB_equal;
-  wire                      AB_gez;
+  wire                      A_gez;
   wire                      A_gtz;
   wire                      B_eqz;
+  wire                      A_eqz;
 
   reg [31:0]                alu_res;
   reg [31:0]                set_res;
@@ -150,9 +151,10 @@ module ex #(
   // Use B_forwarded for AB_equal, which is used for branches, since
   // B will contain the PC because imm_valid is true.
   assign AB_equal  = (A == B_forwarded);
-  assign A_gtz     = (A >  0);
-  assign A_gez     = (A >= 0);
+  assign A_gtz     = A_gez & ~A_eqz;
+  assign A_gez     = (A[31] == 1'b0);
 
+  assign A_eqz     = (A == 0);
   assign B_eqz     = (B == 0);
 
   assign result_2  = B_forwarded;
@@ -235,7 +237,13 @@ module ex #(
       OP_SEH:
         alu_res  = { {16{B[15]}}, B[15:0] };
       OP_EXT:
+        // XXX: both EXT and INS are impractical like this. should probably be multi-cycle
         alu_res  = (A >> ext_lsb) & ((1 << ext_msbd) -1);
+      OP_INS:
+        // B_forwarded, since imm_valid overrides B
+        alu_res  =  (A << ext_lsb) & (( 1 << (ext_msbd)) -1) // bit field in position
+                  | (B_forwarded & ~((1 << (ext_msbd)) -1))  // keep top bits
+                  | (B_forwarded & (( 1 << (ext_lsb)) -1));  // keep bottom bits
     endcase // case (alu_op)
   end
 
@@ -243,7 +251,7 @@ module ex #(
   always_comb begin
     if (alu_set_u) begin
       // slt(i)u
-      set_res  = { 31'b0, ~flag_carry };
+      set_res  = { 31'b0, flag_carry }; //~
     end
     else begin
       // slt(i)

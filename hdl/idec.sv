@@ -213,6 +213,11 @@ module idec #(
             A_reg_valid     = 1'b1;
             B_reg_valid     = 1'b1;
           end
+          6'd13: begin // break
+            // XXX: this is not really a break exception; it halts simulation.
+            $display("BREAK!");
+            $stop(); // XXX: consider $finish()
+          end
           6'd16: begin // mfhi
             muldiv_op  = OP_MFHI;
           end
@@ -317,6 +322,10 @@ module idec #(
             alu_set_u    = 1'b1;
             A_reg_valid  = 1'b1;
             B_reg_valid  = 1'b1;
+          end
+
+          6'd52: begin // teq
+            // XXX: teq is not implemented, but we don't care - it's used to check for div-by-zero
           end
 
           default: begin
@@ -503,6 +512,13 @@ module idec #(
             A_reg_valid  = 1'b1;
           end
 
+          6'd04: begin // ins
+            alu_inst     = 1'b1;
+            alu_op       = OP_INS;
+            A_reg_valid  = 1'b1;
+            B_reg_valid  = 1'b1;
+          end
+
           6'd32: begin
             inst_rformat  = 1'b1;
             inst_iformat  = 1'b0;
@@ -625,7 +641,9 @@ module idec #(
       dest_reg_valid  = 1'b0;
 
     if (stall) begin
+`ifdef TRACE_ENABLE
       $display("Introducing a bubble and stalling (pc: %x)", pc);
+`endif
       dest_reg_valid  = 1'b0;
       load_inst       = 1'b0;
       store_inst      = 1'b0;
