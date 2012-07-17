@@ -2,7 +2,9 @@ module trickbox #(
   parameter ADDR_WIDTH = 32,
             TIME_PORT  = 32'hAAAA0000,
             PUTC_PORT  = 32'hAAAA0008,
-            TIME_SCALE_FACTOR = 10
+            ITER_PORT  = 32'hAAAA000C,
+            TIME_SCALE_FACTOR = 10,
+            ITERATIONS = 32'd100
 )(
   input                  clock,
   input                  reset_n,
@@ -37,11 +39,14 @@ module trickbox #(
     end
     else if (append_char) begin
       char_count <= char_count + 1;
+      strbuf = { strbuf, " " };
       strbuf.putc(char_count, char);
     end
     else if (flush_char) begin
       char_count <= 0;
-      $display("trickbox: %s", strbuf);
+      while (strbuf[strbuf.len()-1] == "\n")
+        strbuf = strbuf.substr(0,strbuf.len()-2);
+      $display("%d: trickbox: %s", $time, strbuf);
       strbuf      = "";
     end
 
@@ -56,16 +61,21 @@ module trickbox #(
     if (read) begin
       case (addr)
         TIME_PORT: begin
-          $display("TRICKBOX TAKEN");
+          $display("TRICKBOX TAKEN (TIME_PORT)");
           taken     = 1'b1;
           data_out  = cycle_count/TIME_SCALE_FACTOR;
+        end
+
+        ITER_PORT: begin
+          taken     = 1'b1;
+          data_out  = ITERATIONS;
+          $display("TRICKBOX TAKEN (ITER_PORT)");
         end
       endcase
     end
     else if (write) begin
       case (addr)
         PUTC_PORT: begin
-          $display("TRICKBOX TAKEN");
           taken  = 1'b1;
           if (data_in[7:0] == 8'b0)
             flush_char   = 1'b1;
