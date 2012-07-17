@@ -16,10 +16,15 @@ module ex #(
   input [31:0]             result_from_mem_wb,
   input [ 4:0]             A_reg,
   input                    A_reg_valid,
-  input fwd_t              A_fwd_from,
+
   input [ 4:0]             B_reg,
   input                    B_reg_valid,
-  input fwd_t              B_fwd_from,
+
+  input [ 4:0]             ex_mem_dest_reg,
+  input [ 4:0]             mem_wb_dest_reg,
+  input                    ex_mem_dest_reg_valid,
+  input                    mem_wb_dest_reg_valid,
+
   input [31:0]             imm,
   input                    imm_valid,
   input [ 4:0]             shamt,
@@ -45,6 +50,10 @@ module ex #(
   output                   inval_dest_reg
 );
 
+  wire                     A_fwd_ex_mem;
+  wire                     A_fwd_mem_wb;
+  wire                     B_fwd_ex_mem;
+  wire                     B_fwd_mem_wb;
 
   wire [6:0]                inst_opc;
   wire [6:0]                inst_funct;
@@ -79,6 +88,7 @@ module ex #(
 
   wire                      load_hi;
   wire                      load_lo;
+
 
 
   // MUL, DIV "unit"
@@ -130,15 +140,21 @@ module ex #(
   // END MUL, DIV "unit"
 
 
-
   // Forward results as required
-  assign B_forwarded =  (B_fwd_from == FWD_FROM_EXMEM) ? result_from_ex_mem
-                      : (B_fwd_from == FWD_FROM_MEMWB) ? result_from_mem_wb
-                      :                                  B_val;
+  assign A_fwd_ex_mem  = ex_mem_dest_reg_valid && A_reg_valid && (A_reg == ex_mem_dest_reg);
+  assign A_fwd_mem_wb  = mem_wb_dest_reg_valid && A_reg_valid && (A_reg == mem_wb_dest_reg);
 
-  assign A  =  (A_fwd_from == FWD_FROM_EXMEM) ? result_from_ex_mem
-             : (A_fwd_from == FWD_FROM_MEMWB) ? result_from_mem_wb
-             :                                  A_val;
+  assign B_fwd_ex_mem  = ex_mem_dest_reg_valid && B_reg_valid && (B_reg == ex_mem_dest_reg);
+  assign B_fwd_mem_wb  = mem_wb_dest_reg_valid && B_reg_valid && (B_reg == mem_wb_dest_reg);
+
+
+  assign B_forwarded =  (B_fwd_ex_mem) ? result_from_ex_mem
+                      : (B_fwd_mem_wb) ? result_from_mem_wb
+                      :                  B_val;
+
+  assign A  =  (A_fwd_ex_mem) ? result_from_ex_mem
+             : (A_fwd_mem_wb) ? result_from_mem_wb
+             :                  A_val;
 
 
   assign B  = (imm_valid) ? imm : B_forwarded;

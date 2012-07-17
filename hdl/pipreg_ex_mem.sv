@@ -7,7 +7,6 @@ module pipreg_ex_mem(
   input [31:0] ex_pc,
   input [31:0] ex_inst_word,
   input [11:0] ex_opc,
-  input fwd_t ex_B_fwd_from,
   input ls_op_t ex_ls_op,
   input [0:0] ex_ls_sext,
   input [0:0] ex_load_inst,
@@ -15,6 +14,8 @@ module pipreg_ex_mem(
   input [0:0] ex_jmp_inst,
   input [31:0] ex_result,
   input [31:0] ex_result_2,
+  input [4:0] ex_result_2_reg,
+  input [0:0] ex_result_2_reg_valid,
   input [4:0] ex_dest_reg,
   input [0:0] ex_dest_reg_valid,
 
@@ -22,7 +23,6 @@ module pipreg_ex_mem(
   output reg [31:0] mem_pc,
   output reg [31:0] mem_inst_word,
   output reg [11:0] mem_opc,
-  output fwd_t mem_B_fwd_from,
   output ls_op_t mem_ls_op,
   output reg [0:0] mem_ls_sext,
   output reg [0:0] mem_load_inst,
@@ -30,6 +30,8 @@ module pipreg_ex_mem(
   output reg [0:0] mem_jmp_inst,
   output reg [31:0] mem_result,
   output reg [31:0] mem_result_2,
+  output reg [4:0] mem_result_2_reg,
+  output reg [0:0] mem_result_2_reg_valid,
   output reg [4:0] mem_dest_reg,
   output reg [0:0] mem_dest_reg_valid,
 
@@ -44,7 +46,6 @@ module pipreg_ex_mem(
       mem_pc<= 'b0;
       mem_inst_word<= 'b0;
       mem_opc<= 'b0;
-      mem_B_fwd_from<= FWD_NONE;
       mem_ls_op<= OP_LS_WORD;
       mem_ls_sext<= 'b0;
       mem_load_inst<= 'b0;
@@ -52,6 +53,8 @@ module pipreg_ex_mem(
       mem_jmp_inst<= 'b0;
       mem_result<= 'b0;
       mem_result_2<= 'b0;
+      mem_result_2_reg<= 'b0;
+      mem_result_2_reg_valid<= 'b0;
       mem_dest_reg<= 'b0;
       mem_dest_reg_valid<= 'b0;
     end
@@ -60,7 +63,6 @@ module pipreg_ex_mem(
       mem_pc <= ex_pc;
       mem_inst_word <= ex_inst_word;
       mem_opc <= ex_opc;
-      mem_B_fwd_from <= ex_B_fwd_from;
       mem_ls_op <= ex_ls_op;
       mem_ls_sext <= ex_ls_sext;
       mem_load_inst <= ex_load_inst;
@@ -68,6 +70,8 @@ module pipreg_ex_mem(
       mem_jmp_inst <= ex_jmp_inst;
       mem_result <= ex_result;
       mem_result_2 <= ex_result_2;
+      mem_result_2_reg <= ex_result_2_reg;
+      mem_result_2_reg_valid <= ex_result_2_reg_valid;
       mem_dest_reg <= ex_dest_reg;
       mem_dest_reg_valid <= ex_dest_reg_valid;
     end

@@ -27,8 +27,12 @@ module mem #(
 
   input [31:0]              alu_result, // soon to be agu_result
   input [31:0]              result_2,
+  input [ 4:0]              result_2_reg,
+  input                     result_2_reg_valid,
   input [31:0]              result_from_mem_wb,
-  input fwd_t               B_fwd_from,
+
+  input [ 4:0]              mem_wb_dest_reg,
+  input                     mem_wb_dest_reg_valid,
 
   output [31:0]             result,
   output                    stall
@@ -36,6 +40,7 @@ module mem #(
 
   wire                      trickbox_taken;
   wire [31:0]               trickbox_out;
+  wire                      fwd;
 
 
   wire [31:0]               word_st;
@@ -75,7 +80,9 @@ module mem #(
       result_from_mem_wb_retained <= result_from_mem_wb;
 
 
-  assign word_st  = (B_fwd_from == FWD_FROM_MEMWB_LATE) ? (stall_d1) ? result_from_mem_wb_retained : result_from_mem_wb : result_2;
+  assign fwd = mem_wb_dest_reg_valid && result_2_reg_valid && (result_2_reg == mem_wb_dest_reg);
+
+  assign word_st  = (fwd) ? (stall_d1) ? result_from_mem_wb_retained : result_from_mem_wb : result_2;
   assign word_idx = alu_result[1:0];
 
   assign stall  = cache_waitrequest;

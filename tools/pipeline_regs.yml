@@ -11,11 +11,9 @@ ID_EX:
  - B/32
  - A_reg/5
  - A_reg_valid/1
- - A_fwd_from/fwd_t/FWD_NONE
  - B_reg/5
  - B_reg_valid/1
  - B_need_late/1
- - B_fwd_from/fwd_t/FWD_NONE
  - imm/32
  - imm_valid/1
  - shamt/5
@@ -40,7 +38,6 @@ EX_MEM:
  - pc/32
  - inst_word/32
  - opc/12
- - B_fwd_from/fwd_t/FWD_NONE
  - ls_op/ls_op_t/OP_LS_WORD
  - ls_sext/1
  - load_inst/1
@@ -48,6 +45,8 @@ EX_MEM:
  - jmp_inst/1
  - result/32
  - result_2/32
+ - result_2_reg/5
+ - result_2_reg_valid/1
  - dest_reg/5
  - dest_reg_valid/1
 

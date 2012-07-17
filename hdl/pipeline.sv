@@ -81,8 +81,6 @@ module pipeline#(
   wire        id_dest_reg_valid;//
   wire        id_alu_set_u;//
   wire        id_ls_sext;//
-  fwd_t       id_A_fwd_from;//
-  fwd_t       id_B_fwd_from;//
   alu_op_t    id_alu_op;//
   alu_res_t   id_alu_res_sel;//
   ls_op_t     id_ls_op;//
@@ -131,8 +129,6 @@ module pipeline#(
   wire        id_dest_reg_valid_r;//
   wire        id_alu_set_u_r;//
   wire        id_ls_sext_r;//
-  fwd_t       id_A_fwd_from_r;//
-  fwd_t       id_B_fwd_from_r;//
   alu_op_t    id_alu_op_r;//
   alu_res_t   id_alu_res_sel_r;//
   ls_op_t     id_ls_op_r;//
@@ -146,11 +142,12 @@ module pipeline#(
   wire        ex_jmp_inst_r;//
   wire [31:0] ex_result_r;//
   wire [31:0] ex_result_2_r;//
+  wire [ 4:0] ex_result_2_reg_r;
+  wire        ex_result_2_reg_valid_r;
   wire [ 4:0] ex_dest_reg_r;//
   wire        ex_dest_reg_valid_r;//
   wire        ex_ls_sext_r;//
   ls_op_t     ex_ls_op_r;//
-  fwd_t       ex_B_fwd_from_r;//
 
   wire [31:0] mem_pc_r;//
   wire [31:0] mem_inst_word_r;//
@@ -200,8 +197,6 @@ module pipeline#(
 
   idec ID(
           // Interfaces
-          .A_fwd_from                   (id_A_fwd_from),
-          .B_fwd_from                   (id_B_fwd_from),
           .alu_op                       (id_alu_op),
           .alu_res_sel                  (id_alu_res_sel),
           .muldiv_op                    (id_muldiv_op),
@@ -248,8 +243,6 @@ module pipeline#(
 
   ex EX(
         // Interfaces
-        .A_fwd_from                     (id_A_fwd_from_r),
-        .B_fwd_from                     (id_B_fwd_from_r),
         .alu_op                         (id_alu_op_r),
         .alu_res_sel                    (id_alu_res_sel_r),
         .muldiv_op                      (id_muldiv_op_r),
@@ -268,6 +261,10 @@ module pipeline#(
         .B_val                          (id_B_r),
         .result_from_ex_mem             (ex_result_r),
         .result_from_mem_wb             (mem_result_r),
+        .ex_mem_dest_reg                (ex_dest_reg_r),
+        .ex_mem_dest_reg_valid          (ex_dest_reg_valid_r),
+        .mem_wb_dest_reg                (mem_dest_reg_r),
+        .mem_wb_dest_reg_valid          (mem_dest_reg_valid_r),
         .A_reg                          (id_A_reg_r),
         .A_reg_valid                    (id_A_reg_valid_r),
         .B_reg                          (id_B_reg_r),
@@ -289,7 +286,6 @@ module pipeline#(
   mem MEM(
           // Interfaces
           .ls_op                        (ex_ls_op_r),
-          .B_fwd_from                   (ex_B_fwd_from_r),
           // Outputs
           .cache_rd                     (dcache_rd),
           .cache_wr                     (dcache_wr),
@@ -310,6 +306,10 @@ module pipeline#(
           .dest_reg_valid               (ex_dest_reg_valid_r),
           .alu_result                   (ex_result_r),
           .result_2                     (ex_result_2_r),
+          .result_2_reg                 (ex_result_2_reg_r),
+          .result_2_reg_valid           (ex_result_2_reg_valid_r),
+          .mem_wb_dest_reg              (mem_dest_reg_r),
+          .mem_wb_dest_reg_valid        (mem_dest_reg_valid_r),
           .result_from_mem_wb           (mem_result_r));
 
   wb WB(
@@ -339,14 +339,10 @@ module pipeline#(
 
   pipreg_id_ex R_ID_EX(
                        // Interfaces
-                       .id_A_fwd_from   (id_A_fwd_from),
-                       .id_B_fwd_from   (id_B_fwd_from),
                        .id_alu_op       (id_alu_op),
                        .id_alu_res_sel  (id_alu_res_sel),
                        .id_muldiv_op    (id_muldiv_op),
                        .id_ls_op        (id_ls_op),
-                       .ex_A_fwd_from   (id_A_fwd_from_r),
-                       .ex_B_fwd_from   (id_B_fwd_from_r),
                        .ex_alu_op       (id_alu_op_r),
                        .ex_alu_res_sel  (id_alu_res_sel_r),
                        .ex_muldiv_op    (id_muldiv_op_r),
@@ -407,9 +403,7 @@ module pipeline#(
 
   pipreg_ex_mem R_EX_MEM(
                          // Interfaces
-                         .ex_B_fwd_from         (id_B_fwd_from_r),
                          .ex_ls_op              (id_ls_op_r),
-                         .mem_B_fwd_from        (ex_B_fwd_from_r),
                          .mem_ls_op             (ex_ls_op_r),
                          // Outputs
                          .mem_pc                (ex_pc_r),
@@ -421,6 +415,8 @@ module pipeline#(
                          .mem_jmp_inst          (ex_jmp_inst_r),
                          .mem_result            (ex_result_r),
                          .mem_result_2          (ex_result_2_r),
+                         .mem_result_2_reg      (ex_result_2_reg_r),
+                         .mem_result_2_reg_valid(ex_result_2_reg_valid_r),
                          .mem_dest_reg          (ex_dest_reg_r),
                          .mem_dest_reg_valid    (ex_dest_reg_valid_r),
                          // Inputs
@@ -433,6 +429,8 @@ module pipeline#(
                          .ex_jmp_inst           (id_jmp_inst_r),
                          .ex_result             (ex_result),
                          .ex_result_2           (ex_result_2),
+                         .ex_result_2_reg       (id_B_reg_r),
+                         .ex_result_2_reg_valid (id_B_reg_valid_r),
                          .ex_dest_reg           (id_dest_reg_r),
                          .ex_dest_reg_valid     (ex_new_dest_reg_valid),
                          .stall                 (stall_ex),

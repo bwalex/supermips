@@ -11,11 +11,9 @@ module pipreg_id_ex(
   input [31:0] id_B,
   input [4:0] id_A_reg,
   input [0:0] id_A_reg_valid,
-  input fwd_t id_A_fwd_from,
   input [4:0] id_B_reg,
   input [0:0] id_B_reg_valid,
   input [0:0] id_B_need_late,
-  input fwd_t id_B_fwd_from,
   input [31:0] id_imm,
   input [0:0] id_imm_valid,
   input [4:0] id_shamt,
@@ -43,11 +41,9 @@ module pipreg_id_ex(
   output reg [31:0] ex_B,
   output reg [4:0] ex_A_reg,
   output reg [0:0] ex_A_reg_valid,
-  output fwd_t ex_A_fwd_from,
   output reg [4:0] ex_B_reg,
   output reg [0:0] ex_B_reg_valid,
   output reg [0:0] ex_B_need_late,
-  output fwd_t ex_B_fwd_from,
   output reg [31:0] ex_imm,
   output reg [0:0] ex_imm_valid,
   output reg [4:0] ex_shamt,
@@ -82,11 +78,9 @@ module pipreg_id_ex(
       ex_B<= 'b0;
       ex_A_reg<= 'b0;
       ex_A_reg_valid<= 'b0;
-      ex_A_fwd_from<= FWD_NONE;
       ex_B_reg<= 'b0;
       ex_B_reg_valid<= 'b0;
       ex_B_need_late<= 'b0;
-      ex_B_fwd_from<= FWD_NONE;
       ex_imm<= 'b0;
       ex_imm_valid<= 'b0;
       ex_shamt<= 'b0;
@@ -115,11 +109,9 @@ module pipreg_id_ex(
       ex_B <= id_B;
       ex_A_reg <= id_A_reg;
       ex_A_reg_valid <= id_A_reg_valid;
-      ex_A_fwd_from <= id_A_fwd_from;
       ex_B_reg <= id_B_reg;
       ex_B_reg_valid <= id_B_reg_valid;
       ex_B_need_late <= id_B_need_late;
-      ex_B_fwd_from <= id_B_fwd_from;
       ex_imm <= id_imm;
       ex_imm_valid <= id_imm_valid;
       ex_shamt <= id_shamt;
