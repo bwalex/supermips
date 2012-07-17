@@ -17,7 +17,7 @@
 GCC=		mips-sde-elf-gcc
 
 
-GCCOPTIM=       -O2 -fomit-frame-pointer
+GCCOPTIM=       -O1 -fomit-frame-pointer
 
 GCCFLAGS= $(GCCOPTIM) -g -T simple.ld -mno-float
 
