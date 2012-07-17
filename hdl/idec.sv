@@ -468,6 +468,21 @@ module idec #(
         shamt         = inst_shamt;
 
         case (inst_funct)
+          6'd00: begin // madd
+            muldiv_op       = OP_MADD;
+            A_reg_valid     = 1'b1;
+            B_reg_valid     = 1'b1;
+            dest_reg_valid  = 1'b0;
+          end
+
+          6'd00: begin // maddu
+            muldiv_op       = OP_MADD;
+            muldiv_op_u     = 1'b1;
+            A_reg_valid     = 1'b1;
+            B_reg_valid     = 1'b1;
+            dest_reg_valid  = 1'b0;
+          end
+
           6'd02: begin // mul
             alu_inst        = 1'b1;
             muldiv_op       = OP_MUL;

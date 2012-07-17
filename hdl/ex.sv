@@ -110,11 +110,13 @@ module ex #(
 
   assign load_hi =  (muldiv_op == OP_MTHI)
                  || (muldiv_op == OP_MUL)
-                 || (muldiv_op == OP_DIV);
+                 || (muldiv_op == OP_DIV)
+                 || (muldiv_op == OP_MADD);
 
   assign load_lo =  (muldiv_op == OP_MTLO)
                  || (muldiv_op == OP_MUL)
-                 || (muldiv_op == OP_DIV);
+                 || (muldiv_op == OP_DIV)
+                 || (muldiv_op == OP_MADD);
 
   always_comb begin
     next_hi        = A;
@@ -124,6 +126,12 @@ module ex #(
         {next_hi, next_lo}  = A*B;
       else
         {next_hi, next_lo}  = $signed(A)*$signed(B);
+    end
+    else if (muldiv_op == OP_MADD) begin
+      if (muldiv_op_u)
+        {next_hi, next_lo}  = {hi_r, lo_r} + A*B;
+      else
+        {next_hi, next_lo}  = {hi_r, lo_r} + $signed(A)*$signed(B);
     end
     else if (muldiv_op == OP_DIV) begin
       if (muldiv_op_u) begin

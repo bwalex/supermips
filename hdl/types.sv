@@ -33,6 +33,7 @@ package pipTypes;
                 OP_NONE,
                 OP_MUL,
                 OP_DIV,
+                OP_MADD,
                 OP_MFHI,
                 OP_MFLO,
                 OP_MTHI,

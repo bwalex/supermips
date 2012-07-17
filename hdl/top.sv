@@ -1,8 +1,8 @@
 `timescale 1ns/10ps
 
 module top#(
-           parameter IMEM_FILE = "../software/dhry.vmem",
-           parameter DMEM_FILE = "../software/dhry.vmem"
+           parameter IMEM_FILE = "../software/coremark.vmem",
+           parameter DMEM_FILE = "../software/coremark.vmem"
 )(
 );
   logic clock;

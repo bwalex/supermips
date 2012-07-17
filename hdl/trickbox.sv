@@ -61,7 +61,6 @@ module trickbox #(
     if (read) begin
       case (addr)
         TIME_PORT: begin
-          $display("TRICKBOX TAKEN (TIME_PORT)");
           taken     = 1'b1;
           data_out  = cycle_count/TIME_SCALE_FACTOR;
         end
@@ -69,7 +68,6 @@ module trickbox #(
         ITER_PORT: begin
           taken     = 1'b1;
           data_out  = ITERATIONS;
-          $display("TRICKBOX TAKEN (ITER_PORT)");
         end
       endcase
     end

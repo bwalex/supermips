@@ -13,4 +13,5 @@ _start:
 
 _exit:
 	#jal _fini
+	break
 	b _exit
