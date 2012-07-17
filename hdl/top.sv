@@ -1,8 +1,8 @@
 `timescale 1ns/10ps
 
 module top#(
-           parameter IMEM_FILE = "../software/coremark.vmem",
-           parameter DMEM_FILE = "../software/coremark.vmem"
+           parameter IMEM_FILE = "../software/dhry.vmem",
+           parameter DMEM_FILE = "../software/dhry.vmem"
 )(
 );
   logic clock;
@@ -105,6 +105,7 @@ module top#(
   string                inst_str_mem;
   string                inst_str_wb;
 
+`ifdef TRACE_ENABLE
   text_idec tdec_if(.inst_word(CPU.if_inst_word),    .pc(CPU.if_pc),    .inst_str(inst_str_if));
   text_idec tdec_id(.inst_word(CPU.if_inst_word_r),  .pc(CPU.if_pc_r),  .inst_str(inst_str_id));
   text_idec tdec_ex(.inst_word(CPU.id_inst_word_r),  .pc(CPU.id_pc_r),  .inst_str(inst_str_ex));
@@ -125,6 +126,7 @@ module top#(
       $display("RFILE trace: write (pc =%x), $%d => %x", CPU.mem_pc_r, CPU.WB.dest_reg, CPU.WB.result);
     end
   end
+`endif
 
   // 100 MHz clock
   always
