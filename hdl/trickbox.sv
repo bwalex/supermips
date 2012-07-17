@@ -21,7 +21,7 @@ module trickbox #(
   string                 strbuf;
   integer                char_count;
 
-  byte                   char;
+  byte                   character;
   reg                    flush_char;
   reg                    append_char;
 
@@ -40,7 +40,7 @@ module trickbox #(
     else if (append_char) begin
       char_count <= char_count + 1;
       strbuf = { strbuf, " " };
-      strbuf.putc(char_count, char);
+      strbuf.putc(char_count, character);
     end
     else if (flush_char) begin
       char_count <= 0;
@@ -56,7 +56,7 @@ module trickbox #(
     taken        = 1'b0;
     flush_char   = 1'b0;
     append_char  = 1'b0;
-    char         = data_in[7:0];
+    character    = data_in[7:0];
 
     if (read) begin
       case (addr)
