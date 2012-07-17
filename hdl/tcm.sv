@@ -31,12 +31,14 @@ module tcm #(
     end
   endgenerate
 
-  initial begin
-    $readmemh(MEM_FILE, mem);
-  end
+  //initial begin
+  //  $readmemh(MEM_FILE, mem);
+  //end
 
-  always_ff @(posedge clock)
-    if (cpu_wr)
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      $readmemh(MEM_FILE, mem);
+    else if (cpu_wr)
       mem[mem_addr] <=  (mem[mem_addr] & ~be_expanded)
                       | (cpu_wr_data   &  be_expanded);
 
