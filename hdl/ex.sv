@@ -262,7 +262,7 @@ module ex #(
         alu_res  = { {16{B[15]}}, B[15:0] };
       OP_EXT:
         // XXX: both EXT and INS are impractical like this. should probably be multi-cycle
-        alu_res  = (A >> ext_lsb) & ((1 << ext_msbd) -1);
+        alu_res  = (A >> ext_lsb) & ((1 << (ext_msbd+1)) -1);
       OP_INS:
         // B_forwarded, since imm_valid overrides B
         alu_res  =  (A << ext_lsb) & (( 1 << (ext_msbd)) -1) // bit field in position
