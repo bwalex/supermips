@@ -32,7 +32,7 @@ coremark.elf:
 	ruby post_process.rb $*.bin > $@
 
 %.dis: %.elf
-	mips-sde-elf-objdump -D -M reg-names=numeric $*.elf > $@
+	mips-sde-elf-objdump -d -M reg-names=numeric $*.elf > $@
 
 clean:
 	rm -f *.elf *.bin *.vmem *.dis
