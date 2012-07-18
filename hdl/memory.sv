@@ -3,8 +3,11 @@ module memory #(
                           DATA_WIDTH = 32,
                           BURSTLEN_WIDTH = 2,
                           MEM_FILE = "",
-                          DEPTH = 2*1024*1024
+                          DEPTH = 16*1024*1024 // 16Mwords
 )(
+  input                       clock,
+  input                       reset_n,
+
   input [ADDR_WIDTH-1:0]      addr,
   input [BURSTLEN_WIDTH-1:0]  burst_len,
   output reg [DATA_WIDTH-1:0] data_out,
@@ -21,7 +24,7 @@ module memory #(
   reg [BURSTLEN_WIDTH-1:0]   burst_count_r;
 
   reg [DATA_WIDTH-1:0]       mem[DEPTH];
-  reg [BURSTLEN_WIDTH-1:0]   rem_bursts;
+
   wire [ADDR_WIDTH-1:0]      addr_int;
   reg [ADDR_WIDTH-1:0]       burst_addr;
 
@@ -32,6 +35,8 @@ module memory #(
   state_t                    next_state;
   state_t                    state;
 
+
+  assign waitrequest  = 1'b0;
 
   assign addr_int  = addr >> $clog2(DATA_WIDTH/8);
 

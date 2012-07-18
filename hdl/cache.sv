@@ -7,7 +7,7 @@ module generic_cache #(
                        NWORDS = CLINE_WIDTH/DATA_WIDTH,
                        MEM_NWORDS = CLINE_WIDTH/MEM_DATA_WIDTH,
                        NWORDSLOG2 = $clog2(NWORDS),
-                       MEM_NWORDSLOG2        = $clog2(MEM_NWORDS),
+                       MEM_NWORDSLOG2        = $clog2(MEM_NWORDS)+1,
                        MEM_ADDR_BITWIDTH     = $clog2(MEM_DATA_WIDTH/8),
                        LFSR_SEED             = 11'd101,
                        ASSOC                 = 4,
@@ -16,29 +16,31 @@ module generic_cache #(
                        MEM_DATA_WIDTH_BYTES  = MEM_DATA_WIDTH/8,
                        BE_WIDTH              = DATA_WIDTH_BYTES
 )(
-  input                       clock,
-  input                       reset_n,
+  input                           clock,
+  input                           reset_n,
 
-  input [ADDR_WIDTH-1:0]      cpu_addr,
-  input                       cpu_rd,
-  input                       cpu_wr,
-  input [BE_WIDTH-1:0]        cpu_wr_be,
-  output                      cpu_rd_valid,
-  output [DATA_WIDTH-1:0]     cpu_rd_data,
-  output                      cpu_waitrequest,
+  input [ADDR_WIDTH-1:0]          cpu_addr,
+  input                           cpu_rd,
+  input                           cpu_wr,
+  input [BE_WIDTH-1:0]            cpu_wr_be,
+  input [DATA_WIDTH-1:0]          cpu_wr_data,
+  output                          cpu_rd_valid,
+  output [DATA_WIDTH-1:0]         cpu_rd_data,
+  output                          cpu_waitrequest,
 
-  output [ADDR_WIDTH-1:0]     mem_addr_r,
-  output [MEM_NWORDSLOG2-1:0] mem_burst_len,
-  input [MEM_DATA_WIDTH-1:0]  mem_rd_data,
-  input                       mem_rd_valid,
-  input                       mem_waitrequest,
-  output [CLINE_WIDTH-1:0]    mem_wr_data_r,
-  output reg                  mem_wr_r,
-  output reg                  mem_rd_r
+  output reg [ADDR_WIDTH-1:0]     mem_addr_r,
+  output [MEM_NWORDSLOG2-1:0]     mem_burst_len,
+  input [MEM_DATA_WIDTH-1:0]      mem_rd_data,
+  input                           mem_rd_valid,
+  input                           mem_waitrequest,
+  output reg [MEM_DATA_WIDTH-1:0] mem_wr_data_r,
+  output reg                      mem_wr_r,
+  output reg                      mem_rd_r
 );
 
   localparam LINE_ADDR_WIDTH  = $clog2(NLINES);
-  localparam LINE_WIDTH  = $clog2(CLINE_WIDTH);
+  localparam LINE_WIDTH  = $clog2(CLINE_WIDTH) - $clog2(DATA_WIDTH) + 2;
+  // [ TAG ( )  |   INDEX ( )      |    block_idx ( ) |
 
   localparam TAG_WIDTH  = ADDR_WIDTH - LINE_ADDR_WIDTH - LINE_WIDTH;
 
@@ -56,14 +58,13 @@ module generic_cache #(
   } tagmem_t;
 
 
-  reg [ADDR_WIDTH-1:0]        mem_addr_r;
+
 
   reg [10:0]                  lfsr;
   reg                         lfsr_enable;
   wire [1:0]                  rand_bits;
   reg [CLINE_WIDTH-1:0]       cpu_rd_line;
 
-  reg [MEM_NWORDSLOG2-1:0]    mem_word_count;
   reg                         mem_word_count_load;
   wire                        mem_word_count_dec;
 
@@ -80,10 +81,10 @@ module generic_cache #(
   tagmem_t                    new_tag;
   reg [CLINE_WIDTH-1:0]       new_data;
 
-  reg [NWORDSLOG2-1:0]        wr_count;
-  reg [NWORDSLOG2-1:0]        rd_count;
+  reg [MEM_NWORDSLOG2-1:0]    wr_count;
+  reg [MEM_NWORDSLOG2-1:0]    rd_count;
 
-  wire [FULL_CLINE_WIDTH-1:0] bank_cur_cline[ASSOC];
+  wire [CLINE_WIDTH-1:0]      bank_cur_cline[ASSOC];
 
   wire [LINE_ADDR_WIDTH-1:0]  cpu_line_addr;
   wire [TAG_WIDTH-1:0]        cpu_addr_tag;
@@ -96,10 +97,19 @@ module generic_cache #(
   wire                        bank_line_dirty[ASSOC];
   wire                        bank_hit[ASSOC];
 
-  wire                        cache_hit;
+  reg                         cache_hit;
 
   cctl_state_t                state;
   cctl_state_t                next_state;
+
+  reg                         mem_rd;
+  reg                         mem_wr;
+  reg [MEM_DATA_WIDTH-1:0]    mem_wr_data;
+  reg                         inc_addr;
+  reg                         load_cpu_addr;
+  reg                         load_wrap_addr;
+
+
 
   /*
    11-bit LFSR with basic equation x^11 + x^9 + 1, modified to generate two bits of entropy per cycle using a leap-forward structure.
@@ -147,7 +157,7 @@ module generic_cache #(
 
   assign cpu_line_addr = cpu_addr[ADDR_WIDTH-TAG_WIDTH-1 -: LINE_ADDR_WIDTH];
   assign cpu_addr_tag  = cpu_addr[ADDR_WIDTH-1 -: TAG_WIDTH];
-  assign cpu_block_idx  = cpu_addr[NWORDSLOG2-1:0];
+  assign cpu_block_idx  = cpu_addr[ADDR_WIDTH-TAG_WIDTH-LINE_ADDR_WIDTH-1 -: NWORDSLOG2];
 
 
   genvar i;
@@ -165,7 +175,11 @@ module generic_cache #(
     end
   endgenerate
 
-  assign cache_hit  = (| bank_hit);
+  always_comb begin
+    cache_hit       = 1'b0;
+    for (integer i = 0; i < ASSOC; i++)
+      cache_hit  = cache_hit | bank_hit[i];
+  end
 
 
   assign cpu_waitrequest  = (cpu_rd | cpu_wr) & ~cache_hit;
@@ -174,9 +188,11 @@ module generic_cache #(
 
 
   always_comb begin
-    cpu_rd_line  = bank_cur_cline[0];
-    bank_sel     = 'b0;
-    bit found    = 1'b0;
+    automatic bit found  = 1'b0;
+    automatic integer j  = rand_bits;
+    cpu_rd_line          = bank_cur_cline[0];
+    bank_sel             = 'b0;
+
 
     for (integer k = 0; k < ASSOC; k++)
       if (~tag_banks[k][cpu_line_addr].valid) begin
@@ -186,20 +202,20 @@ module generic_cache #(
       end
 
     if (!found) begin
-      integer k  = rand_bits;
+      j  = rand_bits;
 
       do begin
-        if (k == ASSOC-1)
-          k  = 0;
+        if (j == ASSOC-1)
+          j  = 0;
         else
-          k += 1;
+          j += 1;
 
-        if (~tag_banks[k][cpu_line_addr].dirty) begin
-          bank_sel  = k;
+        if (~tag_banks[j][cpu_line_addr].dirty) begin
+          bank_sel  = j;
           found     = 1'b1;
           break;
         end
-      end while (k != rand_bits);
+      end while (j != rand_bits);
     end
 
     if (!found)
@@ -215,23 +231,23 @@ module generic_cache #(
   end
 
   /* MUX right word from line to output */
-  assign cpu_rd_data  = cpu_rd_line[CLINE_WIDTH
+  assign cpu_rd_data  = cpu_rd_line[CLINE_WIDTH -1
                                     - ((NWORDSLOG2 == 0) ? 0 : DATA_WIDTH*cpu_block_idx)
                                     -: DATA_WIDTH];
 
-  assign mem_wr_data  = cpu_rd_line[CLINE_WIDTH
-                                    - ((NWORDSLOG2 == 0) ? 0 : DATA_WIDTH*wr_count)
-                                    -: DATA_WIDTH];
+  assign mem_wr_data  = cpu_rd_line[CLINE_WIDTH -1
+                                    - ((NWORDSLOG2 == 0) ? 0 : MEM_DATA_WIDTH*wr_count)
+                                    -: MEM_DATA_WIDTH];
 
   // DATA memory writes
   always_ff @(posedge clock)
     if (data_write_cpu)
-      data_banks[bank_sel][cpu_line_addr][CLINE_WIDTH
+      data_banks[bank_sel][cpu_line_addr][CLINE_WIDTH -1
                                           - ((NWORDSLOG2 == 0) ? 0 : DATA_WIDTH*cpu_block_idx)
                                           -: DATA_WIDTH] <=  (cpu_rd_data  & ~be_expanded)
                                                            | (cpu_wr_data  &  be_expanded);
     else if (data_write_mem)
-      data_banks[bank_sel][cpu_line_addr][CLINE_WIDTH
+      data_banks[bank_sel][cpu_line_addr][CLINE_WIDTH -1
                                           - ((MEM_NWORDSLOG2 == 0) ? 0 : MEM_DATA_WIDTH*rd_count)
                                           -: MEM_DATA_WIDTH] <= mem_rd_data;
 
@@ -275,14 +291,15 @@ module generic_cache #(
 
       case (state)
         IDLE: begin
-          if (cpu_rd | cpu_wr) begin
-            if (cache_hit)
+          if (cpu_rd || cpu_wr) begin
+            if (cache_hit) begin
               if (cpu_wr) begin
                 data_write_cpu  = 1'b1;
                 tag_write       = 1'b1;
                 new_tag.valid   = 1'b1;
                 new_tag.dirty   = 1'b1;
               end
+            end
             else if (  tag_banks[bank_sel][cpu_line_addr].dirty
                      & tag_banks[bank_sel][cpu_line_addr].valid ) begin
               next_state      = WRITEBACK;
@@ -297,12 +314,16 @@ module generic_cache #(
               tag_write       = 1'b1;
             end
             else begin
+              // In this case, we consumed some entropy, so generate new one
+              lfsr_enable     = 1'b1;
+
               mem_word_count_load  = 1'b1;
               mem_rd               = 1'b1;
               next_state           = ALLOCATE;
               data_write_mem       = 1'b1;
               load_cpu_addr        = 1'b1;
-            end
+            end // else: !if(  tag_banks[bank_sel][cpu_line_addr].dirty...
+          end
         end
 
         ALLOCATE: begin
@@ -335,6 +356,7 @@ module generic_cache #(
             next_state           = ALLOCATE;
             data_write_mem       = 1'b1;
             load_cpu_addr        = 1'b1;
+          end
           else
             mem_wr  = 1'b1;
         end
@@ -368,11 +390,5 @@ module generic_cache #(
     else if (inc_addr)
       mem_addr_r  <= mem_addr_r + MEM_DATA_WIDTH_BYTES;
 
-
-  // Either read or write
-  assert property (~(cpu_wr & cpu_rd));
-
-  // Either memory read or write
-  assert property (~(mem_rd & mem_wr));
 
 endmodule
