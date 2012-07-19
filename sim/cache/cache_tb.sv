@@ -1,15 +1,18 @@
 module cache_tb;
 
+  parameter CPU_DATA_WIDTH  = 32;
+  localparam CPU_BE_WIDTH  = CPU_DATA_WIDTH/8;
+
   logic clock;
   logic reset_n;
 
   logic [31:0] cpu_addr;
   logic        cpu_rd;
   logic        cpu_wr;
-  logic [3:0]  cpu_wr_be;
-  wire [31:0]  cpu_rd_data;
-  wire         cpu_waitrequest;
-  logic [31:0] cpu_wr_data;
+  logic [CPU_BE_WIDTH-1:0] cpu_wr_be;
+  wire [CPU_DATA_WIDTH-1:0] cpu_rd_data;
+  wire                      cpu_waitrequest;
+  logic [CPU_DATA_WIDTH-1:0] cpu_wr_data;
 
   wire [31:0]  cm_addr;
   wire [ 1:0]  cm_burst_len;
@@ -19,6 +22,7 @@ module cache_tb;
   wire [31:0]  cm_wr_data;
   wire         cm_wr;
   wire         cm_rd;
+
 
 
   memory #
@@ -47,7 +51,7 @@ module cache_tb;
     (
      .CLINE_WIDTH(128),
      .ADDR_WIDTH(32),
-     .DATA_WIDTH(32),
+     .DATA_WIDTH(CPU_DATA_WIDTH),
      .MEM_DATA_WIDTH(32),
      .NLINES(64),
      .ASSOC(4)
@@ -78,7 +82,7 @@ module cache_tb;
 
 
 
-  task cache_read(input [31:0] addr, output [31:0] word, output integer latency);
+  task cache_read(input [31:0] addr, output [CPU_DATA_WIDTH-1:0] word, output integer latency);
     @(negedge clock);
     latency  = 0;
 
@@ -91,11 +95,35 @@ module cache_tb;
 
     cpu_rd  = 1'b0;
     word      = cpu_rd_data;
-  endtask
+  endtask // cache_read
+
+
+  task cache_write(input [31:0] addr, input [CPU_DATA_WIDTH-1:0] word, input[CPU_BE_WIDTH-1:0] be, output integer latency);
+    @(negedge clock);
+    latency  = 0;
+
+    do begin
+      cpu_wr       = 1'b1;
+      cpu_wr_be    = be;
+      cpu_wr_data  = word;
+      cpu_addr     = addr;
+      @(posedge clock);
+      latency++;
+    end while(cpu_waitrequest);
+
+    cpu_wr  = 1'b0;
+  endtask // cache_write
+
+
 
   task read_tests;
     automatic integer lat;
-    automatic logic [31:0] data;
+    automatic logic [CPU_DATA_WIDTH-1:0] data;
+
+    for (integer i = 0; i < 32; i++) begin
+      cache_write(.addr(i << 2), .word(i << 4), .be(4'b1111), .latency(lat));
+      $display("Cache write at %x => %x (latency: %d cycles)", (i << 2), (i << 4), lat);
+    end
 
     for (integer i = 0; i < 16; i++) begin
       cache_read(.addr(i << 2), .word(data), .latency(lat));
@@ -107,6 +135,27 @@ module cache_tb;
       cache_read(.addr(i << 2), .word(data), .latency(lat));
       $display("Cache read at %x => %x (latency: %d cycles)", (i << 2), data, lat);
        assert(data == i);
+    end
+
+    for (integer i = 0; i < 16; i++) begin
+      cache_write(.addr(i << 2), .word(i << 4), .be(4'b1111), .latency(lat));
+      $display("Cache write at %x => %x (latency: %d cycles)", (i << 2), (i << 4), lat);
+    end
+
+    for (integer i = 2048; i < 2060; i++) begin
+      cache_write(.addr(i << 2), .word(i << 4), .be(4'b1111), .latency(lat));
+      $display("Cache write at %x => %x (latency: %d cycles)", (i << 2), (i << 4), lat);
+    end
+
+    // XXX: problem with write to non-preallocated line?
+    for (integer i = 4096; i < 4110/*5010*/; i++) begin
+      cache_write(.addr(i << 2), .word(i << 4), .be(4'b1111), .latency(lat));
+      $display("Cache write at %x => %x (latency: %d cycles)", (i << 2), (i << 4), lat);
+    end
+
+    for (integer i = 8192; i < 8201; i++) begin
+      cache_write(.addr(i << 2), .word(i << 4), .be(4'b1111), .latency(lat));
+      $display("Cache write at %x => %x (latency: %d cycles)", (i << 2), (i << 4), lat);
     end
 
     for (integer i = 0; i < 16; i++) begin
@@ -137,6 +186,11 @@ module cache_tb;
       cache_read(.addr(i << 2), .word(data), .latency(lat));
       $display("Cache read at %x => %x (latency: %d cycles)", (i << 2), data, lat);
       assert(data == i);
+    end
+
+    for (integer i = 4096; i < 5010; i++) begin
+      cache_write(.addr(i << 2), .word(i << 4), .be(4'b1111), .latency(lat));
+      $display("Cache write at %x => %x (latency: %d cycles)", (i << 2), (i << 4), lat);
     end
 
   endtask

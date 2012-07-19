@@ -68,10 +68,12 @@ module generic_cache #(
   reg                         mem_word_count_load;
   wire                        mem_word_count_dec;
 
-  wire [CLINE_WIDTH-1:0]      be_expanded;
+  wire [DATA_WIDTH-1:0]       be_expanded;
 
-  tagmem_t                    tag_banks[NLINES][ASSOC];
-  reg [CLINE_WIDTH-1:0]       data_banks[NLINES][ASSOC];
+  // SystemVerilog's array indices are "the wrong way around" when multidimensional unpacked.
+  // Unlike C, foo[a][b] is indexed as foo[a][b] not foo[b][a]...
+  tagmem_t                    tag_banks[ASSOC][NLINES];
+  reg [CLINE_WIDTH-1:0]       data_banks[ASSOC][NLINES];
   reg [$clog2(ASSOC)-1:0]     bank_sel;
 
   reg                         tag_write;
@@ -109,6 +111,12 @@ module generic_cache #(
   reg                         load_cpu_addr;
   reg                         load_wrap_addr;
 
+
+  reg [63:0]                  stat_access;
+  reg [63:0]                  stat_misses;
+  reg [63:0]                  stat_allocs;
+  reg [63:0]                  stat_wbacks;
+  reg [63:0]                  stat_evicts;
 
 
   /*
@@ -201,6 +209,8 @@ module generic_cache #(
         break;
       end
 
+    // Make sure we evict a random line, not always the first one; we do so
+    // by starting at a random index looking for a non-dirty line in the set.
     if (!found) begin
       j  = rand_bits;
 
@@ -218,6 +228,7 @@ module generic_cache #(
       end while (j != rand_bits);
     end
 
+    // If all the lines in the set are dirty, just pick a line at random.
     if (!found)
       bank_sel  = rand_bits;
 
@@ -261,7 +272,7 @@ module generic_cache #(
           tag_banks[i][j].dirty  = 1'b0;
         end
     else if (tag_write)
-      tag_banks[bank_sel][cpu_line_addr] <= new_tag;
+      tag_banks[bank_sel][cpu_line_addr]       <= new_tag;
 
 
   always_ff @(posedge clock, negedge reset_n)
@@ -302,16 +313,17 @@ module generic_cache #(
             end
             else if (  tag_banks[bank_sel][cpu_line_addr].dirty
                      & tag_banks[bank_sel][cpu_line_addr].valid ) begin
-              next_state      = WRITEBACK;
-              mem_wr          = 1'b1;
-              load_wrap_addr  = 1'b1;
+              next_state           = WRITEBACK;
+              mem_word_count_load  = 1'b1;
+              mem_wr               = 1'b1;
+              load_wrap_addr       = 1'b1;
 
               // In this case, we consumed some entropy, so generate new one
-              lfsr_enable     = 1'b1;
+              lfsr_enable          = 1'b1;
 
-              new_tag.valid   = 1'b0;
-              new_tag.dirty   = 1'b1;
-              tag_write       = 1'b1;
+              new_tag.valid        = 1'b0;
+              new_tag.dirty        = 1'b1;
+              tag_write            = 1'b1;
             end
             else begin
               // In this case, we consumed some entropy, so generate new one
@@ -390,5 +402,28 @@ module generic_cache #(
     else if (inc_addr)
       mem_addr_r  <= mem_addr_r + MEM_DATA_WIDTH_BYTES;
 
+
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n) begin
+      stat_access <= 'b0;
+      stat_misses <= 'b0;
+      stat_allocs <= 'b0;
+      stat_wbacks <= 'b0;
+      stat_evicts <= 'b0;
+    end
+    else begin
+      if (state != ALLOCATE  && next_state == ALLOCATE)
+        stat_allocs <= stat_allocs + 1;
+      if (state != WRITEBACK && next_state == WRITEBACK)
+        stat_wbacks <= stat_wbacks + 1;
+      if (state == IDLE && ~cache_hit && (cpu_rd || cpu_wr))
+        stat_misses <= stat_misses + 1;
+      if (state == IDLE && (cpu_rd || cpu_wr))
+        stat_access <= stat_access + 1;
+      if (state == IDLE && (cpu_rd || cpu_wr) && ~cache_hit && tag_banks[bank_sel][cpu_line_addr].valid)
+        stat_evicts <= stat_evicts + 1;
+    end
 
 endmodule
