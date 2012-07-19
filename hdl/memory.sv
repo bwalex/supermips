@@ -43,8 +43,10 @@ module memory #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       $readmemh(MEM_FILE, mem);
-    else if (wr)
+    else if (wr) begin
+      //$display("mem write: %x (%x) => %x", addr, addr_int, data_in);
       mem[addr_int] <= data_in;
+    end
 
 
 
@@ -59,8 +61,12 @@ module memory #(
     end
     else if (dec_burst_count && burst_count_r > 0) begin
       burst_count_r <= burst_count_r - 1;
-      // XXX: insert wrap burst logic here
-      burst_addr    <= burst_addr + 1;
+
+      // wrap burst logic; we always assume wrap bursts
+      if ((burst_addr & burst_len)  == burst_len)
+        burst_addr <= burst_addr & ~burst_len;
+      else
+        burst_addr <= burst_addr + 1;
     end
 
 
@@ -71,6 +77,9 @@ module memory #(
     end
     else begin
       rd_valid <= dec_burst_count;
+      if (dec_burst_count)
+        //$display("mem read: %x (%x) => %x", burst_addr << 2, burst_addr, mem[burst_addr]);
+
       data_out <= mem[burst_addr];
     end
 
