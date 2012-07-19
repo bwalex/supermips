@@ -93,7 +93,7 @@ module generic_cache #(
   wire [NWORDSLOG2-1:0]       cpu_block_idx;
 
   wire                        cache_miss;
-  wire                        cache_evict;
+  reg                         cache_evict;
 
   wire                        bank_line_valid[ASSOC];
   wire                        bank_line_dirty[ASSOC];
@@ -110,6 +110,7 @@ module generic_cache #(
   reg                         inc_addr;
   reg                         load_cpu_addr;
   reg                         load_wrap_addr;
+  reg                         load_wb_wrap_addr;
 
 
   reg [63:0]                  stat_access;
@@ -285,7 +286,7 @@ module generic_cache #(
   always_comb
     begin
       next_state           = state;
-      new_tag.tag          = cpu_addr_tag;
+      new_tag.tag          = tag_banks[bank_sel][cpu_line_addr].tag;
       new_tag.valid        = 1'b0;
       new_tag.dirty        = 1'b0;
       tag_write            = 1'b0;
@@ -298,6 +299,8 @@ module generic_cache #(
       inc_addr             = 1'b0;
       load_cpu_addr        = 1'b0;
       load_wrap_addr       = 1'b0;
+      load_wb_wrap_addr    = 1'b0;
+      cache_evict          = 1'b0;
 
 
       case (state)
@@ -316,7 +319,7 @@ module generic_cache #(
               next_state           = WRITEBACK;
               mem_word_count_load  = 1'b1;
               mem_wr               = 1'b1;
-              load_wrap_addr       = 1'b1;
+              load_wb_wrap_addr    = 1'b1;
 
               // In this case, we consumed some entropy, so generate new one
               lfsr_enable          = 1'b1;
@@ -324,16 +327,22 @@ module generic_cache #(
               new_tag.valid        = 1'b0;
               new_tag.dirty        = 1'b1;
               tag_write            = 1'b1;
+
+              cache_evict          = 1'b1;
             end
             else begin
               // In this case, we consumed some entropy, so generate new one
-              lfsr_enable     = 1'b1;
+              lfsr_enable          = 1'b1;
 
               mem_word_count_load  = 1'b1;
               mem_rd               = 1'b1;
               next_state           = ALLOCATE;
               data_write_mem       = 1'b1;
-              load_cpu_addr        = 1'b1;
+              // XXX: use load_wrap_addr for now, since we don't support wrapped bursts in the memory
+              //load_cpu_addr        = 1'b1;
+              load_wrap_addr       = 1'b1;
+
+              cache_evict          = tag_banks[bank_sel][cpu_line_addr].valid;
             end // else: !if(  tag_banks[bank_sel][cpu_line_addr].dirty...
           end
         end
@@ -354,6 +363,7 @@ module generic_cache #(
             tag_write      = 1'b1;
             new_tag.dirty  = 1'b0;
             new_tag.valid  = 1'b1;
+            new_tag.tag    = cpu_addr_tag;
 
             next_state     = IDLE;
           end
@@ -367,7 +377,9 @@ module generic_cache #(
             mem_rd               = 1'b1;
             next_state           = ALLOCATE;
             data_write_mem       = 1'b1;
-            load_cpu_addr        = 1'b1;
+            // XXX: use load_wrap_addr for now, since we don't support wrapped bursts in the memory
+            //load_cpu_addr        = 1'b1;
+            load_wrap_addr       = 1'b1;
           end
           else
             mem_wr  = 1'b1;
@@ -399,6 +411,8 @@ module generic_cache #(
       mem_addr_r <= cpu_addr;
     else if (load_wrap_addr)
       mem_addr_r <= { cpu_addr[ADDR_WIDTH-1:MEM_ADDR_BITWIDTH], {MEM_ADDR_BITWIDTH{1'b0}} };
+    else if (load_wb_wrap_addr)
+      mem_addr_r <= { tag_banks[bank_sel][cpu_line_addr].tag, cpu_line_addr, {LINE_WIDTH{1'b0}} };
     else if (inc_addr)
       mem_addr_r  <= mem_addr_r + MEM_DATA_WIDTH_BYTES;
 
@@ -422,8 +436,22 @@ module generic_cache #(
         stat_misses <= stat_misses + 1;
       if (state == IDLE && (cpu_rd || cpu_wr))
         stat_access <= stat_access + 1;
-      if (state == IDLE && (cpu_rd || cpu_wr) && ~cache_hit && tag_banks[bank_sel][cpu_line_addr].valid)
+      if (cache_evict)
         stat_evicts <= stat_evicts + 1;
     end
+
+`ifdef TRACE_ENABLE
+  always_ff @(posedge clock)
+    begin
+      if (cache_evict)
+        $display("%d %m evict:     [%d:%x,tag: %x] (%s) for %x", $time, bank_sel, cpu_line_addr, tag_banks[bank_sel][cpu_line_addr].tag, (tag_banks[bank_sel][cpu_line_addr].dirty ? "dirty" : "clean"), cpu_addr);
+
+      if (state != ALLOCATE && next_state == ALLOCATE)
+        $display("%d %m allocate:  [%d:%x,tag: %x]         for %x", $time, bank_sel, cpu_line_addr, cpu_addr_tag, cpu_addr);
+
+      if (state != WRITEBACK && next_state == WRITEBACK)
+        $display("%d %m writeback: [%d:%x,tag: %x]         for %x", $time, bank_sel, cpu_line_addr, tag_banks[bank_sel][cpu_line_addr].tag, cpu_addr);
+    end
+`endif
 
 endmodule

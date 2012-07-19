@@ -128,18 +128,18 @@ module cache_tb;
     for (integer i = 0; i < 16; i++) begin
       cache_read(.addr(i << 2), .word(data), .latency(lat));
       $display("Cache read at %x = > %x (latency: %d cycles)", (i << 2), data, lat);
-      assert(data == i);
+      assert(data == (i << 4));
     end
 
     for (integer i = 256; i < 272; i++) begin
       cache_read(.addr(i << 2), .word(data), .latency(lat));
       $display("Cache read at %x => %x (latency: %d cycles)", (i << 2), data, lat);
-       assert(data == i);
+      assert(data == i);
     end
 
     for (integer i = 0; i < 16; i++) begin
-      cache_write(.addr(i << 2), .word(i << 4), .be(4'b1111), .latency(lat));
-      $display("Cache write at %x => %x (latency: %d cycles)", (i << 2), (i << 4), lat);
+      cache_write(.addr(i << 2), .word(i << 5), .be(4'b1111), .latency(lat));
+      $display("Cache write at %x => %x (latency: %d cycles)", (i << 2), (i << 5), lat);
     end
 
     for (integer i = 2048; i < 2060; i++) begin
@@ -147,8 +147,7 @@ module cache_tb;
       $display("Cache write at %x => %x (latency: %d cycles)", (i << 2), (i << 4), lat);
     end
 
-    // XXX: problem with write to non-preallocated line?
-    for (integer i = 4096; i < 4110/*5010*/; i++) begin
+    for (integer i = 4096; i < 4110; i++) begin
       cache_write(.addr(i << 2), .word(i << 4), .be(4'b1111), .latency(lat));
       $display("Cache write at %x => %x (latency: %d cycles)", (i << 2), (i << 4), lat);
     end
@@ -161,7 +160,7 @@ module cache_tb;
     for (integer i = 0; i < 16; i++) begin
       cache_read(.addr(i << 2), .word(data), .latency(lat));
       $display("Cache read at %x => %x (latency: %d cycles)", (i << 2), data, lat);
-       assert(data == i);
+       assert(data == (i << 5));
     end
 
     for (integer i = 256; i < 272; i++) begin
