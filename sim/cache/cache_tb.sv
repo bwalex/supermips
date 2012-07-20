@@ -148,6 +148,9 @@ module cache_tb;
       wrtests++;
       data  = $random;
       cache_write(.addr(addr_l << 2), .word(data), .be(4'b1111), .latency(lat));
+`ifdef TRACE_ENABLE
+      $display("Cache write at %x => %x (latency: %d cycles)", (addr_l << 2), data, lat);
+`endif
     end
   endtask
 

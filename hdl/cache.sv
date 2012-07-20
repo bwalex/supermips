@@ -44,7 +44,6 @@ module generic_cache #(
 
   localparam TAG_WIDTH  = ADDR_WIDTH - LINE_ADDR_WIDTH - LINE_WIDTH;
 
-
   typedef enum {
     IDLE,
     WRITEBACK,
@@ -54,10 +53,23 @@ module generic_cache #(
   typedef struct packed {
     bit                 valid;
     bit                 dirty;
+    bit                 lfill;
     bit [TAG_WIDTH-1:0] tag;
   } tagmem_t;
 
 
+  typedef struct packed {
+    bit                       in_progress;
+    bit [$clog2(ASSOC)-1:0]   bank;
+    bit [MEM_NWORDS-1:0]      valid;
+    bit                       dirty;
+    bit [TAG_WIDTH-1:0]       tag;
+    bit [LINE_ADDR_WIDTH-1:0] index;
+
+    bit [MEM_NWORDSLOG2-1:0]  mem_idx;
+
+    bit [CLINE_WIDTH-1:0]     line;
+  } lfbuf_t;
 
 
   reg [10:0]                  lfsr;
@@ -67,7 +79,6 @@ module generic_cache #(
 
   reg                         mem_word_count_load;
   wire                        mem_word_count_dec;
-  reg                         mem_word_idx_load;
 
   wire [DATA_WIDTH-1:0]       be_expanded;
 
@@ -114,6 +125,14 @@ module generic_cache #(
   reg                         load_wrap_addr;
   reg                         load_wb_wrap_addr;
 
+  lfbuf_t                     linefillbuf;
+  wire                        lfill_hit;
+  wire                        lfill_all_valid;
+  reg                         data_write_cpu_linefill;
+  reg                         linefill_load_addr;
+  wire                        linefill_inval;
+  wire                        load_linefill;
+  reg                         lfill_stall;
 
   reg [63:0]                  stat_access;
   reg [63:0]                  stat_misses;
@@ -157,26 +176,11 @@ module generic_cache #(
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
-      rd_idx <= 0;
-    else if (mem_word_idx_load)
-      rd_idx <= mem_block_idx;
-    else if (mem_rd_valid) begin
-      if ((rd_idx & (MEM_NWORDS - 1))  == (MEM_NWORDS - 1))
-        rd_idx <= 0;
-      else
-        rd_idx <= rd_idx + 1;
-    end
-
-
-
-  always_ff @(posedge clock, negedge reset_n)
-    if (~reset_n)
       wr_count <= 0;
     else if (mem_word_count_load)
       wr_count <= 0;
     else if (~mem_waitrequest && mem_wr)
       wr_count <= wr_count + 1;
-
 
 
   assign cpu_line_addr = cpu_addr[ADDR_WIDTH-TAG_WIDTH-1 -: LINE_ADDR_WIDTH];
@@ -193,6 +197,7 @@ module generic_cache #(
       assign bank_line_valid[i] =  tag_banks[i][cpu_line_addr].valid;
       assign bank_line_dirty[i] =  tag_banks[i][cpu_line_addr].dirty;
       assign bank_hit[i]        =  bank_line_valid[i]
+                                & (~tag_banks[i][cpu_line_addr].lfill)
                                 & (tag_banks[i][cpu_line_addr].tag == cpu_addr_tag);
     end
 
@@ -202,7 +207,7 @@ module generic_cache #(
   endgenerate
 
   always_comb begin
-    cache_hit       = 1'b0;
+    cache_hit       = lfill_hit;
     for (integer i = 0; i < ASSOC; i++)
       cache_hit  = cache_hit | bank_hit[i];
   end
@@ -221,7 +226,7 @@ module generic_cache #(
 
 
     for (integer k = 0; k < ASSOC; k++)
-      if (~tag_banks[k][cpu_line_addr].valid) begin
+      if (~tag_banks[k][cpu_line_addr].valid & ~tag_banks[k][cpu_line_addr].lfill) begin
         bank_sel  = k;
         found     = 1'b1;
         break;
@@ -238,7 +243,7 @@ module generic_cache #(
         else
           j += 1;
 
-        if (~tag_banks[j][cpu_line_addr].dirty) begin
+        if (~tag_banks[j][cpu_line_addr].dirty & ~tag_banks[j][cpu_line_addr].lfill) begin
           bank_sel  = j;
           found     = 1'b1;
           break;
@@ -248,7 +253,7 @@ module generic_cache #(
 
     // If all the lines in the set are dirty, just pick a line at random.
     if (!found)
-      bank_sel  = rand_bits;
+      bank_sel  = rand_bits; // XXX: could optimize to never choose the line with lfill set
 
     // XXX: can use case(1'b1) instead in general, when not parameterized?
     for (integer k = 0; k < ASSOC; k++)
@@ -259,10 +264,15 @@ module generic_cache #(
       end
   end
 
-  /* MUX right word from line to output */
-  assign cpu_rd_data  = cpu_rd_line[CLINE_WIDTH -1
-                                    - ((NWORDSLOG2 == 0) ? 0 : DATA_WIDTH*cpu_block_idx)
-                                    -: DATA_WIDTH];
+  /* MUX right word from line or linefill buffer to output */
+    assign cpu_rd_data  = (lfill_hit)
+                         ? linefillbuf.line[CLINE_WIDTH -1
+                                            - ((NWORDSLOG2 == 0) ? 0 : DATA_WIDTH*cpu_block_idx)
+                                            -: DATA_WIDTH]
+                         : cpu_rd_line[CLINE_WIDTH -1
+                                       - ((NWORDSLOG2 == 0) ? 0 : DATA_WIDTH*cpu_block_idx)
+                                       -: DATA_WIDTH];
+
 
   assign mem_wr_data  = data_banks[bank_sel][cpu_line_addr][CLINE_WIDTH -1
                                     - ((MEM_NWORDSLOG2 == 0) ? 0 : MEM_DATA_WIDTH*wr_count)
@@ -275,10 +285,66 @@ module generic_cache #(
                                           - ((NWORDSLOG2 == 0) ? 0 : DATA_WIDTH*cpu_block_idx)
                                           -: DATA_WIDTH] <=  (cpu_rd_data  & ~be_expanded)
                                                            | (cpu_wr_data  &  be_expanded);
-    else if (mem_rd_valid)
-      data_banks[bank_sel][cpu_line_addr][CLINE_WIDTH -1
-                                          - ((MEM_NWORDSLOG2 == 0) ? 0 : MEM_DATA_WIDTH*rd_idx)
-                                          -: MEM_DATA_WIDTH] <= mem_rd_data;
+    else if (load_linefill & cpu_wr & lfill_hit)
+      data_banks[linefillbuf.bank][linefillbuf.index] <=  (linefillbuf.line & ~be_expanded)
+                                                        | (cpu_wr_data      &  be_expanded);
+    else if (load_linefill)
+      data_banks[linefillbuf.bank][linefillbuf.index]  <= linefillbuf.line;
+
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n) begin
+      linefillbuf.valid       <= {MEM_NWORDS{1'b0}};
+      linefillbuf.in_progress <= 1'b0;
+    end
+    else begin
+      if (linefill_inval) begin
+        linefillbuf.valid       <= {MEM_NWORDS{1'b0}};
+        linefillbuf.in_progress <= 1'b0;
+      end
+
+      if (linefill_load_addr) begin
+        linefillbuf.valid       <= {MEM_NWORDS{1'b0}};
+        linefillbuf.bank        <= bank_sel;
+        linefillbuf.index       <= cpu_line_addr;
+        linefillbuf.tag         <= cpu_addr_tag;
+        linefillbuf.mem_idx     <= mem_block_idx;
+        linefillbuf.in_progress <= 1'b1;
+      end
+
+      if (mem_rd_valid) begin
+        linefillbuf.line[CLINE_WIDTH -1
+                         - ((MEM_NWORDSLOG2 == 0) ? 0 : MEM_DATA_WIDTH*linefillbuf.mem_idx)
+                         -: MEM_DATA_WIDTH] <= mem_rd_data;
+
+        if ((linefillbuf.mem_idx & (MEM_NWORDS - 1))  == (MEM_NWORDS - 1))
+          linefillbuf.mem_idx <= 0;
+        else
+          linefillbuf.mem_idx <= linefillbuf.mem_idx + 1;
+
+        linefillbuf.valid[linefillbuf.mem_idx] <= 1'b1;
+      end // if (mem_rd_valid)
+
+      if (data_write_cpu_linefill) begin
+        linefillbuf.line[CLINE_WIDTH -1
+                         - ((NWORDSLOG2 == 0) ? 0 : DATA_WIDTH*cpu_block_idx)
+                         -: DATA_WIDTH] <=  (cpu_rd_data  & ~be_expanded)
+                                          | (cpu_wr_data  &  be_expanded);
+
+        linefillbuf.dirty <= 1'b1;
+      end
+    end // else: !if(~reset_n)
+
+
+  assign lfill_all_valid  = (& linefillbuf.valid);
+  assign linefill_inval   = lfill_all_valid;
+  assign load_linefill    = lfill_all_valid;
+
+
+  assign lfill_hit =    linefillbuf.valid[mem_block_idx]
+                    && (linefillbuf.tag   == cpu_addr_tag)
+                    && (linefillbuf.index == cpu_line_addr);
 
 
   // TAG memory writes
@@ -290,7 +356,12 @@ module generic_cache #(
           tag_banks[i][j].dirty  = 1'b0;
         end
     else if (tag_write)
-      tag_banks[bank_sel][cpu_line_addr]       <= new_tag;
+      tag_banks[bank_sel][cpu_line_addr] <= new_tag;
+    else if (load_linefill) begin
+      tag_banks[linefillbuf.bank][linefillbuf.index].valid  = 1'b1;
+      tag_banks[linefillbuf.bank][linefillbuf.index].dirty  = linefillbuf.dirty;
+      tag_banks[linefillbuf.bank][linefillbuf.index].lfill  = 1'b0;
+    end
 
 
   always_ff @(posedge clock, negedge reset_n)
@@ -302,22 +373,25 @@ module generic_cache #(
 
   always_comb
     begin
-      next_state           = state;
-      new_tag.tag          = tag_banks[bank_sel][cpu_line_addr].tag;
-      new_tag.valid        = 1'b0;
-      new_tag.dirty        = 1'b0;
-      tag_write            = 1'b0;
-      data_write_cpu       = 1'b0;
-      lfsr_enable          = 1'b0;
-      mem_word_count_load  = 1'b0;
-      mem_rd               = 1'b0;
-      mem_wr               = 1'b0;
-      inc_addr             = 1'b0;
-      load_cpu_addr        = 1'b0;
-      load_wrap_addr       = 1'b0;
-      load_wb_wrap_addr    = 1'b0;
-      cache_evict          = 1'b0;
-      mem_word_idx_load    = 1'b0;
+      next_state               = state;
+      new_tag.tag              = tag_banks[bank_sel][cpu_line_addr].tag;
+      new_tag.valid            = 1'b0;
+      new_tag.dirty            = 1'b0;
+      new_tag.lfill            = 1'b0;
+      tag_write                = 1'b0;
+      data_write_cpu           = 1'b0;
+      data_write_cpu_linefill  = 1'b0;
+      lfsr_enable              = 1'b0;
+      mem_word_count_load      = 1'b0;
+      mem_rd                   = 1'b0;
+      mem_wr                   = 1'b0;
+      inc_addr                 = 1'b0;
+      load_cpu_addr            = 1'b0;
+      load_wrap_addr           = 1'b0;
+      load_wb_wrap_addr        = 1'b0;
+      cache_evict              = 1'b0;
+      linefill_load_addr       = 1'b0;
+      lfill_stall              = 1'b0;
 
 
       case (state)
@@ -325,82 +399,77 @@ module generic_cache #(
           if (cpu_rd || cpu_wr) begin
             if (cache_hit) begin
               if (cpu_wr) begin
-                data_write_cpu  = 1'b1;
-                tag_write       = 1'b1;
-                new_tag.valid   = 1'b1;
-                new_tag.dirty   = 1'b1;
+                data_write_cpu           = ~lfill_hit;//tag_banks[bank_sel][cpu_line_addr].lfill;
+                data_write_cpu_linefill  =  lfill_hit;//tag_banks[bank_sel][cpu_line_addr].lfill;
+
+                tag_write                = ~lfill_hit;//tag_banks[bank_sel][cpu_line_addr].lfill;
+                new_tag.valid            = 1'b1;
+                new_tag.dirty            = 1'b1;
               end
             end
-            else if (  tag_banks[bank_sel][cpu_line_addr].dirty
-                     & tag_banks[bank_sel][cpu_line_addr].valid ) begin
-              next_state           = WRITEBACK;
-              //mem_word_count_load  = 1'b1;
-              mem_wr               = 1'b1;
-              load_wb_wrap_addr    = 1'b1;
-
-              new_tag.valid        = 1'b0;
-              new_tag.dirty        = 1'b1;
-              tag_write            = 1'b1;
-
-              cache_evict          = 1'b1;
-            end
             else begin
-              //mem_word_count_load  = 1'b1;
-              mem_rd             = 1'b1;
-              next_state         = ALLOCATE;
+              if (  tag_banks[bank_sel][cpu_line_addr].dirty
+                    & tag_banks[bank_sel][cpu_line_addr].valid ) begin
+                lfill_stall  = linefillbuf.in_progress;
 
-              load_cpu_addr      = 1'b1;
+                if (~lfill_stall) begin
+                  next_state         = WRITEBACK;
+                  //mem_word_count_load  = 1'b1;
+                  mem_wr             = 1'b1;
+                  load_wb_wrap_addr  = 1'b1;
 
-              mem_word_idx_load  = 1'b1;
+                  new_tag.valid      = 1'b0;
+                  new_tag.dirty      = 1'b1;
+                  tag_write          = 1'b1;
 
-              cache_evict        = tag_banks[bank_sel][cpu_line_addr].valid;
-            end // else: !if(  tag_banks[bank_sel][cpu_line_addr].dirty...
-          end
-        end
+                  cache_evict        = 1'b1;
+                end // if (~lfill_stall)
+              end // if (  tag_banks[bank_sel][cpu_line_addr].dirty...
+              else begin
+                lfill_stall  = linefillbuf.in_progress;
 
-        ALLOCATE: begin
-          if (mem_waitrequest)
-            mem_rd        = 1'b1;
+                // Make sure only one linefill is in progress at any one time.
+                if (~lfill_stall) begin
+                  mem_word_count_load  = 1'b1;
+                  mem_rd               = 1'b1;
+                  linefill_load_addr   = 1'b1;
+                  load_cpu_addr        = 1'b1;
 
+                  new_tag.tag          = cpu_addr_tag;
+                  new_tag.valid        = 1'b1; // XXX: ??
+                  new_tag.lfill        = 1'b1;
+                  tag_write            = 1'b1;
 
-          // XXX: Disable early-valid - too problematic for now
-//          if (rd_count*MEM_DATA_WIDTH >= DATA_WIDTH) begin
-//            tag_write      = 1'b1;
-//            new_tag.dirty  = 1'b0;
-//            new_tag.valid  = 1'b1;
-//          end
-          if (rd_count == MEM_NWORDS) begin
-            tag_write            = 1'b1;
-            new_tag.dirty        = 1'b0;
-            new_tag.valid        = 1'b1;
-            new_tag.tag          = cpu_addr_tag;
+                  lfsr_enable          = 1'b1;
+                  cache_evict          = tag_banks[bank_sel][cpu_line_addr].valid;
+                end // if (~lfill_stall)
+              end // else: !if(  tag_banks[bank_sel][cpu_line_addr].dirty...
+            end // else: !if(cache_hit)
+          end // if (cpu_rd || cpu_wr)
+        end // case: IDLE
 
-            // In this case, we consumed some entropy, so generate new one
-            lfsr_enable          = 1'b1;
-
-            mem_word_count_load  = 1'b1;
-
-            next_state           = IDLE;
-          end
-        end
 
         WRITEBACK: begin
           inc_addr  = ~mem_waitrequest;
 
-          if (wr_count == MEM_NWORDS) begin // XXX: NWORDS -1 ?
+          if (wr_count == MEM_NWORDS) begin
             mem_word_count_load  = 1'b1;
             mem_rd               = 1'b1;
-            next_state           = ALLOCATE;
-
+            linefill_load_addr   = 1'b1;
             load_cpu_addr        = 1'b1;
 
-            mem_word_idx_load    = 1'b1;
+            new_tag.tag          = cpu_addr_tag;
+            new_tag.valid        = 1'b1; // XXX: ??
+            new_tag.lfill        = 1'b1;
+            tag_write            = 1'b1;
+
+            next_state           = IDLE;
           end
           else
             mem_wr  = 1'b1;
-        end
-      endcase
-    end
+        end // case: WRITEBACK
+      endcase // case (state)
+    end // always_comb
 
 
   assign mem_burst_len = MEM_NWORDS - 1; /* since 0 means 1 */
@@ -413,8 +482,12 @@ module generic_cache #(
     end
     else begin
       mem_wr_r      <= mem_wr;
-      mem_rd_r      <= mem_rd;
       mem_wr_data_r <= mem_wr_data;
+
+      if (mem_rd_r & mem_waitrequest)
+        mem_rd_r    <= mem_rd_r;
+      else
+        mem_rd_r    <= mem_rd;
     end
 
 
@@ -461,7 +534,7 @@ module generic_cache #(
       if (cache_evict)
         $display("%d %m evict:     [%d:%x,tag: %x] (%s) for %x", $time, bank_sel, cpu_line_addr, tag_banks[bank_sel][cpu_line_addr].tag, (tag_banks[bank_sel][cpu_line_addr].dirty ? "dirty" : "clean"), cpu_addr);
 
-      if (state != ALLOCATE && next_state == ALLOCATE)
+      if (linefillbuf.valid == 1 && $past(linefillbuf.valid) == 0)
         $display("%d %m allocate:  [%d:%x,tag: %x]         for %x", $time, bank_sel, cpu_line_addr, cpu_addr_tag, cpu_addr);
 
       if (state != WRITEBACK && next_state == WRITEBACK)
