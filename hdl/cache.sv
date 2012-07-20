@@ -301,6 +301,7 @@ module generic_cache #(
     else begin
       if (linefill_inval) begin
         linefillbuf.valid       <= {MEM_NWORDS{1'b0}};
+        linefillbuf.dirty       <= 1'b0;
         linefillbuf.in_progress <= 1'b0;
       end
 
@@ -310,6 +311,7 @@ module generic_cache #(
         linefillbuf.index       <= cpu_line_addr;
         linefillbuf.tag         <= cpu_addr_tag;
         linefillbuf.mem_idx     <= mem_block_idx;
+        linefillbuf.dirty       <= 1'b0;
         linefillbuf.in_progress <= 1'b1;
       end
 
@@ -516,7 +518,7 @@ module generic_cache #(
       stat_evicts <= 'b0;
     end
     else begin
-      if (state != ALLOCATE  && next_state == ALLOCATE)
+      if (linefill_load_addr)
         stat_allocs <= stat_allocs + 1;
       if (state != WRITEBACK && next_state == WRITEBACK)
         stat_wbacks <= stat_wbacks + 1;
@@ -534,7 +536,7 @@ module generic_cache #(
       if (cache_evict)
         $display("%d %m evict:     [%d:%x,tag: %x] (%s) for %x", $time, bank_sel, cpu_line_addr, tag_banks[bank_sel][cpu_line_addr].tag, (tag_banks[bank_sel][cpu_line_addr].dirty ? "dirty" : "clean"), cpu_addr);
 
-      if (linefillbuf.valid == 1 && $past(linefillbuf.valid) == 0)
+      if (linefill_load_addr)
         $display("%d %m allocate:  [%d:%x,tag: %x]         for %x", $time, bank_sel, cpu_line_addr, cpu_addr_tag, cpu_addr);
 
       if (state != WRITEBACK && next_state == WRITEBACK)
