@@ -134,6 +134,7 @@ module generic_cache #(
   wire                        load_linefill;
   reg                         lfill_stall;
 
+  reg                         cpu_waitrequest_d1;
   reg [63:0]                  stat_access;
   reg [63:0]                  stat_misses;
   reg [63:0]                  stat_allocs;
@@ -285,9 +286,15 @@ module generic_cache #(
                                           - ((NWORDSLOG2 == 0) ? 0 : DATA_WIDTH*cpu_block_idx)
                                           -: DATA_WIDTH] <=  (cpu_rd_data  & ~be_expanded)
                                                            | (cpu_wr_data  &  be_expanded);
-    else if (load_linefill & cpu_wr & lfill_hit)
-      data_banks[linefillbuf.bank][linefillbuf.index] <=  (linefillbuf.line & ~be_expanded)
-                                                        | (cpu_wr_data      &  be_expanded);
+    else if (load_linefill & cpu_wr & lfill_hit) begin
+      for (integer i = 0; i < NWORDS; i++) begin
+        data_banks[linefillbuf.bank][linefillbuf.index][CLINE_WIDTH-1-i*DATA_WIDTH
+                                                        -: DATA_WIDTH] <= (cpu_block_idx == i)
+          ?   (linefillbuf.line[CLINE_WIDTH-1-i*DATA_WIDTH -: DATA_WIDTH] & ~be_expanded)
+            | (cpu_wr_data                                                &  be_expanded)
+          :    linefillbuf.line[CLINE_WIDTH-1-i*DATA_WIDTH -: DATA_WIDTH];
+      end
+    end
     else if (load_linefill)
       data_banks[linefillbuf.bank][linefillbuf.index]  <= linefillbuf.line;
 
@@ -508,7 +515,13 @@ module generic_cache #(
 
 
 
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      cpu_waitrequest_d1 <= 1'b0;
+    else
+      cpu_waitrequest_d1 <= cpu_waitrequest;
 
+`define _FIRST_CYCLE (~cpu_waitrequest_d1)
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n) begin
       stat_access <= 'b0;
@@ -522,13 +535,14 @@ module generic_cache #(
         stat_allocs <= stat_allocs + 1;
       if (state != WRITEBACK && next_state == WRITEBACK)
         stat_wbacks <= stat_wbacks + 1;
-      if (state == IDLE && ~cache_hit && (cpu_rd || cpu_wr))
+      if (`_FIRST_CYCLE && state == IDLE && ~cache_hit && (cpu_rd || cpu_wr))
         stat_misses <= stat_misses + 1;
-      if (state == IDLE && (cpu_rd || cpu_wr))
+      if (`_FIRST_CYCLE && state == IDLE && (cpu_rd || cpu_wr))
         stat_access <= stat_access + 1;
       if (cache_evict)
         stat_evicts <= stat_evicts + 1;
-    end
+    end // else: !if(~reset_n)
+`undef _FIRST_CYCLE
 
 `ifdef TRACE_ENABLE
   always_ff @(posedge clock)

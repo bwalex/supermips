@@ -259,8 +259,15 @@ module cache_tb;
 
     while(1) begin
       rand_test();
-      if ((ntests % 100) == 0)
+      if ((ntests % 10000) == 0) begin
         $display("Ran %d random tests (%d read, %d write)", ntests, rdtests, wrtests);
+        $display("Access: %d", c1.stat_access);
+        $display("Hit:    %d", c1.stat_access-c1.stat_misses);
+        $display("Miss:   %d", c1.stat_misses);
+        $display("Alloc:  %d", c1.stat_allocs);
+        $display("Evict:  %d", c1.stat_evicts);
+        $display("WBack:  %d", c1.stat_wbacks);
+      end
     end
   end
 

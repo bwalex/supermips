@@ -77,7 +77,7 @@ module memory #(
     end
     else begin
       rd_valid <= dec_burst_count;
-      if (dec_burst_count)
+      //if (dec_burst_count)
         //$display("mem read: %x (%x) => %x", burst_addr << 2, burst_addr, mem[burst_addr]);
 
       data_out <= mem[burst_addr];
