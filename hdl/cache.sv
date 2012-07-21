@@ -368,7 +368,8 @@ module generic_cache #(
       tag_banks[bank_sel][cpu_line_addr] <= new_tag;
     else if (load_linefill) begin
       tag_banks[linefillbuf.bank][linefillbuf.index].valid  = 1'b1;
-      tag_banks[linefillbuf.bank][linefillbuf.index].dirty  = linefillbuf.dirty;
+      tag_banks[linefillbuf.bank][linefillbuf.index].dirty  =  (linefillbuf.dirty)
+                                                             | (cpu_wr & lfill_hit);
       tag_banks[linefillbuf.bank][linefillbuf.index].lfill  = 1'b0;
     end
 
@@ -408,10 +409,10 @@ module generic_cache #(
           if (cpu_rd || cpu_wr) begin
             if (cache_hit) begin
               if (cpu_wr) begin
-                data_write_cpu           = ~lfill_hit;//tag_banks[bank_sel][cpu_line_addr].lfill;
-                data_write_cpu_linefill  =  lfill_hit;//tag_banks[bank_sel][cpu_line_addr].lfill;
+                data_write_cpu           = ~lfill_hit;
+                data_write_cpu_linefill  =  lfill_hit;
 
-                tag_write                = ~lfill_hit;//tag_banks[bank_sel][cpu_line_addr].lfill;
+                tag_write                = ~lfill_hit;
                 new_tag.valid            = 1'b1;
                 new_tag.dirty            = 1'b1;
               end

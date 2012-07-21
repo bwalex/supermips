@@ -140,9 +140,11 @@ module cache_tb;
       rdtests++;
 
       cache_read(.addr(addr_l << 2), .word(data), .latency(lat));
-      assert(data == valmem[addr_l]);
-      if (data != valmem[addr_l])
-        $display("addr: %x, expected %x, got %x, memory %x", addr_l << 2, valmem[addr_l], data, m1.mem[addr_l]);
+      assert(data == valmem[addr_l]) begin
+      end else begin
+        $error("addr: %x, expected %x, got %x, memory %x", addr_l << 2, valmem[addr_l], data, m1.mem[addr_l]);
+        $stop();
+      end
     end
     else begin
       wrtests++;
