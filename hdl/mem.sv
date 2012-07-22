@@ -49,6 +49,7 @@ module mem #(
   reg [31:0]                word_to_cache;
   reg [31:0]                result_from_mem_wb_retained;
   reg                       stall_d1;
+  reg                       fwd_d1;
 
 
   trickbox#(
@@ -73,6 +74,13 @@ module mem #(
       stall_d1 <= stall;
 
 
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      fwd_d1 <= 1'b0;
+    else if (~stall_d1)
+      fwd_d1 <= fwd;
+
+
   always @(posedge clock, negedge reset_n)
     if (~reset_n)
       result_from_mem_wb_retained <= 32'b0;
@@ -82,7 +90,9 @@ module mem #(
 
   assign fwd = mem_wb_dest_reg_valid && result_2_reg_valid && (result_2_reg == mem_wb_dest_reg);
 
-  assign word_st  = (fwd) ? (stall_d1) ? result_from_mem_wb_retained : result_from_mem_wb : result_2;
+  assign word_st  = (stall_d1) ? ((fwd_d1) ? result_from_mem_wb_retained : result_2) : (fwd) ? result_from_mem_wb : result_2;
+  //assign word_st  = (fwd) ? (stall_d1) ? result_from_mem_wb_retained : result_from_mem_wb : result_2;
+
   assign word_idx = alu_result[1:0];
 
   assign stall  = cache_waitrequest;
