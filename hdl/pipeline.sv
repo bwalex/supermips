@@ -50,6 +50,12 @@ module pipeline#(
   wire                    id_ex_alu_inst_i;
   wire                    id_ex_branch_inst_i;
 
+  muldiv_op_t             id_ex_muldiv_op_i;
+
+  wire                    ex_mem_load_inst_i;
+  wire                    ex_mem_store_inst_i;
+  wire                    ex_mem_dest_reg_valid_i;
+
   wire                    mem_wb_dest_reg_valid_i;
 
 
@@ -94,6 +100,8 @@ module pipeline#(
   wire        ex_new_pc_valid;//
   wire        ex_inval_dest_reg;
   wire        ex_new_dest_reg_valid;
+  wire        ex_stall;
+
 
   // Exports from MEM
   wire [31:0] mem_result;//
@@ -159,21 +167,32 @@ module pipeline#(
 
 
   assign stall_mem  = 1'b0;
-  assign stall_ex   = mem_stall;
-  assign stall_id   = mem_stall;
-  assign stall_if   = mem_stall | id_stall;
+  assign stall_ex   = mem_stall; // stall ex -> mem pipeline register
+  assign stall_id   = mem_stall | ex_stall;
+  assign stall_if   = mem_stall | ex_stall | id_stall;
 
   // Signals requiring gating: dest_reg_valid, load_inst, store_inst, jmp_inst, alu_inst
   // Stages able to stall: (IF), ID, MEM   (in the future EX, if it has iterative ops)
+  // this generates bubbles, effectively
   assign id_ex_dest_reg_valid_i  = id_dest_reg_valid    & ~id_stall;
   assign id_ex_load_inst_i       = id_load_inst         & ~id_stall;
   assign id_ex_store_inst_i      = id_store_inst        & ~id_stall;
   assign id_ex_jmp_inst_i        = id_jmp_inst          & ~id_stall;
   assign id_ex_alu_inst_i        = id_alu_inst          & ~id_stall;
   assign id_ex_branch_inst_i     = id_branch_inst       & ~id_stall;
+  // XXX: need to "gate" muldiv_op
+  assign id_ex_muldiv_op_i       = (~id_stall) ? id_muldiv_op : OP_NONE; // XXX: can I do this with a non-wire?
 
+  // XXX: need to "gate" other ex -> mem signals
+  //       - id_load_inst_r
+  //       - id_store_inst_r
+  //       - id_dest_reg_valid_r (or rather ex_new_dest_reg_valid)
+  assign ex_mem_load_inst_i      = id_load_inst_r        & ~ex_stall;
+  assign ex_mem_store_inst_i     = id_store_inst_r       & ~ex_stall;
+  assign ex_mem_dest_reg_valid_i = ex_new_dest_reg_valid & ~ex_stall;
 
   assign mem_wb_dest_reg_valid_i = ex_dest_reg_valid_r  & ~mem_stall;
+
 
 
   // Allow EX stage to invalidate destination register (used for MOVZ,MOVN)
@@ -252,6 +271,7 @@ module pipeline#(
         .new_pc                         (ex_new_pc),
         .new_pc_valid                   (ex_new_pc_valid),
         .inval_dest_reg                 (ex_inval_dest_reg),
+        .stall                          (ex_stall),
         // Inputs
         .clock                          (clock),
         .reset_n                        (reset_n),
@@ -341,7 +361,7 @@ module pipeline#(
                        // Interfaces
                        .id_alu_op       (id_alu_op),
                        .id_alu_res_sel  (id_alu_res_sel),
-                       .id_muldiv_op    (id_muldiv_op),
+                       .id_muldiv_op    (id_ex_muldiv_op_i),
                        .id_ls_op        (id_ls_op),
                        .ex_alu_op       (id_alu_op_r),
                        .ex_alu_res_sel  (id_alu_res_sel_r),
@@ -424,15 +444,15 @@ module pipeline#(
                          .ex_inst_word          (id_inst_word_r),
                          .ex_opc                (id_opc_r),
                          .ex_ls_sext            (id_ls_sext_r),
-                         .ex_load_inst          (id_load_inst_r),
-                         .ex_store_inst         (id_store_inst_r),
+                         .ex_load_inst          (ex_mem_load_inst_i),
+                         .ex_store_inst         (ex_mem_store_inst_i),
                          .ex_jmp_inst           (id_jmp_inst_r),
                          .ex_result             (ex_result),
                          .ex_result_2           (ex_result_2),
                          .ex_result_2_reg       (id_B_reg_r),
                          .ex_result_2_reg_valid (id_B_reg_valid_r),
                          .ex_dest_reg           (id_dest_reg_r),
-                         .ex_dest_reg_valid     (ex_new_dest_reg_valid),
+                         .ex_dest_reg_valid     (ex_mem_dest_reg_valid_i),
                          .stall                 (stall_ex),
                          .clock                 (clock),
                          .reset_n               (reset_n));
