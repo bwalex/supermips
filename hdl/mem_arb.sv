@@ -4,6 +4,9 @@ module mem_arb #(
                  BURSTLEN_WIDTH = 2
 
 )(
+  input                       clock,
+  input                       reset_n,
+
   input [ADDR_WIDTH-1:0]      c1_addr,
   input [BURSTLEN_WIDTH-1:0]  c1_burst_len,
   output [DATA_WIDTH-1:0]     c1_data_out,
