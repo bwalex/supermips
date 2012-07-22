@@ -1,7 +1,10 @@
 import pipTypes::*;
 
 module ex #(
-  parameter ALU_OP_WIDTH = 12
+  parameter ALU_OP_WIDTH = 12,
+            MUL_CYCLES   = 32,
+            DIV_CYCLES   = 32,
+            DIVCOUNT_WIDTH = $clog2(DIV_CYCLES)+1 // assume div always takes longer than mul/madd
 )(
   input                    clock,
   input                    reset_n,
@@ -47,7 +50,8 @@ module ex #(
   output [31:0]            result_2,
   output [31:0]            new_pc,
   output                   new_pc_valid,
-  output                   inval_dest_reg
+  output                   inval_dest_reg,
+  output                   stall
 );
 
   wire                     A_fwd_ex_mem;
@@ -74,9 +78,9 @@ module ex #(
   reg [31:0]                set_res;
 
 
-  wire [31:0]               A;
+  reg  [31:0]               A;
   wire [31:0]               B;
-  wire [31:0]               B_forwarded;
+  reg  [31:0]               B_forwarded;
 
   wire [4:0]                ext_msbd;
   wire [4:0]                ext_lsb;
@@ -89,6 +93,56 @@ module ex #(
   wire                      load_hi;
   wire                      load_lo;
 
+  wire                      load_muldiv_count;
+
+  reg                       A_fwd_ex_mem_d1;
+  reg                       A_fwd_mem_wb_d1;
+  reg                       B_fwd_ex_mem_d1;
+  reg                       B_fwd_mem_wb_d1;
+
+  reg [31:0]                result_from_mem_wb_retained;
+  reg [31:0]                result_from_ex_mem_retained;
+  reg                       stall_d1;
+
+  reg [DIVCOUNT_WIDTH-1:0]  muldiv_count;
+
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n) begin
+      A_fwd_ex_mem_d1 <= 1'b0;
+      A_fwd_mem_wb_d1 <= 1'b0;
+      B_fwd_ex_mem_d1 <= 1'b0;
+      B_fwd_mem_wb_d1 <= 1'b0;
+    end
+    else if (~stall_d1) begin
+      A_fwd_ex_mem_d1 <= A_fwd_ex_mem;
+      A_fwd_mem_wb_d1 <= A_fwd_mem_wb;
+      B_fwd_ex_mem_d1 <= B_fwd_ex_mem;
+      B_fwd_mem_wb_d1 <= B_fwd_mem_wb;
+    end
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      stall_d1 <= 1'b0;
+    else
+      stall_d1 <= stall;
+
+
+  always @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      result_from_mem_wb_retained <= 32'b0;
+    else if (stall & ~stall_d1)
+      result_from_mem_wb_retained <= result_from_mem_wb;
+
+
+  always @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      result_from_ex_mem_retained <= 32'b0;
+    else if (stall & ~stall_d1)
+      result_from_ex_mem_retained <= result_from_ex_mem;
+
 
 
   // MUL, DIV "unit"
@@ -96,18 +150,42 @@ module ex #(
   // XXX: not really synthesizable and/or practical. need proper
   // multiplication and division algorithms.
 
+
+  assign stall =  (muldiv_op == OP_MUL ) ? (muldiv_count != MUL_CYCLES)
+                : (muldiv_op == OP_MADD) ? (muldiv_count != MUL_CYCLES)
+                : (muldiv_op == OP_DIV ) ? (muldiv_count != DIV_CYCLES)
+                :                           1'b0;
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      muldiv_count <= 0;
+    else if (load_muldiv_count)
+      muldiv_count <= 1;
+    else
+      muldiv_count <= muldiv_count + 1;
+
+
+  assign load_muldiv_count =  (muldiv_op == OP_MUL)
+                           || (muldiv_op == OP_DIV)
+                           || (muldiv_op == OP_MADD);
+
+
   always @(posedge clock, negedge reset_n)
     if (~reset_n)
       hi_r <= 32'b0;
-    else if (load_hi)
+    else if (load_hi & ~stall)
       hi_r <= next_hi;
+
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       lo_r <= 32'b0;
-    else if (load_lo)
+    else if (load_lo & ~stall)
       lo_r <= next_lo;
 
+
+  // XXX: would be cleaner to integrate ~stall with load_hi,lo
   assign load_hi =  (muldiv_op == OP_MTHI)
                  || (muldiv_op == OP_MUL)
                  || (muldiv_op == OP_DIV)
@@ -156,13 +234,40 @@ module ex #(
   assign B_fwd_mem_wb  = mem_wb_dest_reg_valid && B_reg_valid && (B_reg == mem_wb_dest_reg);
 
 
-  assign B_forwarded =  (B_fwd_ex_mem) ? result_from_ex_mem
-                      : (B_fwd_mem_wb) ? result_from_mem_wb
-                      :                  B_val;
+  always_comb
+    begin
+      A  = A_val;
+      if (stall_d1) begin
+        if (A_fwd_ex_mem_d1)
+          A  = result_from_ex_mem_retained;
+        else if (A_fwd_mem_wb_d1)
+          A  = result_from_mem_wb_retained;
+      end
+      else begin
+        if (A_fwd_ex_mem)
+          A  = result_from_ex_mem;
+        else if (A_fwd_mem_wb)
+          A  = result_from_mem_wb;
+      end
+    end
 
-  assign A  =  (A_fwd_ex_mem) ? result_from_ex_mem
-             : (A_fwd_mem_wb) ? result_from_mem_wb
-             :                  A_val;
+
+  always_comb
+    begin
+      B_forwarded  = B_val;
+      if (stall_d1) begin
+        if (B_fwd_ex_mem_d1)
+          B_forwarded  = result_from_ex_mem_retained;
+        else if (B_fwd_mem_wb_d1)
+          B_forwarded  = result_from_mem_wb_retained;
+      end
+      else begin
+        if (B_fwd_ex_mem)
+          B_forwarded  = result_from_ex_mem;
+        else if (B_fwd_mem_wb)
+          B_forwarded  = result_from_mem_wb;
+      end
+    end
 
 
   assign B  = (imm_valid) ? imm : B_forwarded;
