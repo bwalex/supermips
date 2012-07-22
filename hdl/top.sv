@@ -1,8 +1,9 @@
 `timescale 1ns/10ps
 
 module top#(
-           parameter IMEM_FILE = "../software/coremark.vmem",
-           parameter DMEM_FILE = "../software/coremark.vmem"
+           parameter MEM_FILE  = "../software/coremark.vmem",
+                     MEM_WIDTH = 32,
+                     BURSTLEN_WIDTH = 2
 )(
 );
   logic clock;
@@ -30,6 +31,35 @@ module top#(
   // End of automatics
   wire [31:0]           rfile_rd_data1;
   wire [31:0]           rfile_rd_data2;
+
+`ifdef REAL_CACHE
+  wire [31:0]           cm_addr;
+  wire [BURSTLEN_WIDTH-1:0] cm_burst_len;
+  wire [MEM_WIDTH-1:0]  cm_rd_data;
+  wire                  cm_rd_valid;
+  wire                  cm_waitrequest;
+  wire [MEM_WIDTH-1:0]  cm_wr_data;
+  wire                  cm_wr;
+  wire                  cm_rd;
+
+  wire [31:0]           icm_addr;
+  wire [BURSTLEN_WIDTH-1:0] icm_burst_len;
+  wire [MEM_WIDTH-1:0]  icm_rd_data;
+  wire                  icm_rd_valid;
+  wire                  icm_waitrequest;
+  wire [MEM_WIDTH-1:0]  icm_wr_data;
+  wire                  icm_wr;
+  wire                  icm_rd;
+
+  wire [31:0]           dcm_addr;
+  wire [BURSTLEN_WIDTH-1:0] dcm_burst_len;
+  wire [MEM_WIDTH-1:0]  dcm_rd_data;
+  wire                  dcm_rd_valid;
+  wire                  dcm_waitrequest;
+  wire [MEM_WIDTH-1:0]  dcm_wr_data;
+  wire                  dcm_wr;
+  wire                  dcm_rd;
+`endif
 
 
   pipeline CPU(
@@ -69,8 +99,141 @@ module top#(
                 .wr_enable1             (rfile_wr_enable1),
                 .wr_data1               (rfile_wr_data1));
 
+
+`ifdef REAL_CACHE
+
+  memory #
+    (
+     .MEM_FILE(MEM_FILE),
+     .ADDR_WIDTH(32),
+     .DATA_WIDTH(MEM_WIDTH),
+     .BURSTLEN_WIDTH(BURSTLEN_WIDTH),
+     .DEPTH(64*1024*1024) // 64M Words
+     )
+  memory
+    (
+     .clock(clock),
+     .reset_n(reset_n),
+
+     .addr(cm_addr),
+     .burst_len(cm_burst_len),
+     .data_out(cm_rd_data),
+     .data_in(cm_wr_data),
+     .wr(cm_wr),
+     .rd(cm_rd),
+     .waitrequest(cm_waitrequest),
+     .rd_valid(cm_rd_valid)
+     );
+
+
+  mem_arb #
+    (
+     .DATA_WIDTH(MEM_WIDTH),
+     .BURSTLEN_WIDTH(BURSTLEN_WIDTH)
+     )
+  mem_arb
+    (
+     .clock(clock),
+     .reset_n(reset_n),
+
+     .c1_addr(icm_addr),
+     .c1_burst_len(icm_burst_len),
+     .c1_data_out(icm_rd_data),
+     .c1_data_in(icm_wr_data),
+     .c1_wr(icm_wr),
+     .c1_rd(icm_rd),
+     .c1_waitrequest(icm_waitrequest),
+     .c1_rd_valid(icm_rd_valid),
+
+     .c2_addr(dcm_addr),
+     .c2_burst_len(dcm_burst_len),
+     .c2_data_out(dcm_rd_data),
+     .c2_data_in(dcm_wr_data),
+     .c2_wr(dcm_wr),
+     .c2_rd(dcm_rd),
+     .c2_waitrequest(dcm_waitrequest),
+     .c2_rd_valid(dcm_rd_valid),
+
+     .mm_addr(cm_addr),
+     .mm_burst_len(cm_burst_len),
+     .mm_data_in(cm_rd_data),
+     .mm_data_out(cm_wr_data),
+     .mm_wr(cm_wr),
+     .mm_rd(cm_rd),
+     .mm_waitrequest(cm_waitrequest),
+     .mm_rd_valid(cm_rd_valid)
+     );
+
+
+  generic_cache #
+    (
+     .CLINE_WIDTH(128),
+     .ADDR_WIDTH(32),
+     .DATA_WIDTH(32),
+     .MEM_DATA_WIDTH(MEM_WIDTH),
+     .NLINES(128),
+     .ASSOC(4)
+     )
+  icache
+    (
+     .clock(clock),
+     .reset_n(reset_n),
+
+     .cpu_addr(icache_addr),
+     .cpu_rd(icache_rd),
+     .cpu_wr(1'b0),
+     .cpu_wr_be('b0),
+     .cpu_wr_data('b0),
+     .cpu_rd_data(icache_data),
+     .cpu_waitrequest(icache_waitrequest),
+
+     .mem_addr_r(icm_addr),
+     .mem_burst_len(icm_burst_len),
+     .mem_rd_data(icm_rd_data),
+     .mem_rd_valid(icm_rd_valid),
+     .mem_waitrequest(icm_waitrequest),
+     .mem_wr_data_r(icm_wr_data),
+     .mem_wr_r(icm_wr),
+     .mem_rd_r(icm_rd)
+     );
+
+
+  generic_cache #
+    (
+     .CLINE_WIDTH(128),
+     .ADDR_WIDTH(32),
+     .DATA_WIDTH(32),
+     .MEM_DATA_WIDTH(MEM_WIDTH),
+     .NLINES(128),
+     .ASSOC(4)
+     )
+  dcache
+    (
+     .clock(clock),
+     .reset_n(reset_n),
+
+     .cpu_addr(dcache_addr),
+     .cpu_rd(dcache_rd),
+     .cpu_wr(dcache_wr),
+     .cpu_wr_be(dcache_wr_be),
+     .cpu_wr_data(dcache_wr_data),
+     .cpu_rd_data(dcache_data),
+     .cpu_waitrequest(dcache_waitrequest),
+
+     .mem_addr_r(dcm_addr),
+     .mem_burst_len(dcm_burst_len),
+     .mem_rd_data(dcm_rd_data),
+     .mem_rd_valid(dcm_rd_valid),
+     .mem_waitrequest(dcm_waitrequest),
+     .mem_wr_data_r(dcm_wr_data),
+     .mem_wr_r(dcm_wr),
+     .mem_rd_r(dcm_rd)
+     );
+
+`else // !`ifdef REAL_CACHE
+
   tcm #(
-            .MEM_FILE(IMEM_FILE)
+            .MEM_FILE(MEM_FILE)
           ) ITCM (
            // Outputs
            .cpu_rd_data                 (icache_data),
@@ -85,7 +248,7 @@ module top#(
            .cpu_wr                      (1'b0));
 
   tcm #(
-             .MEM_FILE(DMEM_FILE)
+             .MEM_FILE(MEM_FILE)
            ) DTCM (
            // Outputs
            .cpu_rd_data                 (dcache_data),
@@ -98,6 +261,7 @@ module top#(
            .cpu_wr_be                   (dcache_wr_be),
            .cpu_rd                      (dcache_rd),
            .cpu_wr                      (dcache_wr));
+`endif
 
   string                inst_str_if;
   string                inst_str_id;
