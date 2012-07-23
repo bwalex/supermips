@@ -1,5 +1,8 @@
 HDL_BASE?=../hdl
+SOFTWARE_BASE?=../software
 TRICK_ITERATIONS?=100
+PROG?=coremark.vmem
+MEM_FILE?="\"$(SOFTWARE_BASE)/$(PROG)\""
 
 all:
 	echo "Targets: ncv, ncv_batch, modelsim, vcs"
@@ -13,7 +16,13 @@ modelsim_clean:
 
 vcs:
 	# Not including text_idec, as it VCS doesn't support a string as a non-ref port
-	vcs -sverilog -pvalue+top/CPU/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
+	#
+	# For some weird reason, vcs doesn't like overriding string parameters via
+	# -pvalue; not even after escaping the string all over.
+	@echo assign $(MEM_FILE) top/MEM_FILE > .vcs.params
+	vcs -sverilog \
+		-parameters ./.vcs.params \
+		-pvalue+top/CPU/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/ex.sv \
