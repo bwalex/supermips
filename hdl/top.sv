@@ -3,7 +3,9 @@
 module top#(
            parameter MEM_FILE  = "../software/coremark.vmem",
                      MEM_WIDTH = 32,
-                     BURSTLEN_WIDTH = 2
+                     BURSTLEN_WIDTH = 2,
+                     LSTRACE_FILE = "ls.trace",
+                     RFTRACE_FILE = "rf.trace"
 )(
 );
   logic clock;
@@ -276,18 +278,26 @@ module top#(
   text_idec tdec_mem(.inst_word(CPU.ex_inst_word_r), .pc(CPU.ex_pc_r),  .inst_str(inst_str_mem));
   text_idec tdec_wb(.inst_word(CPU.mem_inst_word_r), .pc(CPU.mem_pc_r), .inst_str(inst_str_wb));
 
+  integer               lstrace_file;
+  integer               rftrace_file;
+
+  initial begin
+    lstrace_file  = $fopen(LSTRACE_FILE, "w");
+    rftrace_file  = $fopen(RFTRACE_FILE, "w");
+  end
+
   always @(posedge clock) begin
     if (CPU.MEM.load_inst) begin
-      $display("LS trace: load (pc=%x), addr=%x => %x (%x)", CPU.ex_pc_r, CPU.MEM.cache_addr, CPU.MEM.cache_data, CPU.MEM.result);
+      $fwrite(lstrace_file, "%d load (pc=%x), addr=%x => %x (%x)\n", $time, CPU.ex_pc_r, CPU.MEM.cache_addr, CPU.MEM.cache_data, CPU.MEM.result);
     end
     if (CPU.MEM.store_inst) begin
-      $display("LS trace: store (pc=%x), addr=%x => %x, be=%b", CPU.ex_pc_r, CPU.MEM.cache_addr, CPU.MEM.cache_wr_data, CPU.MEM.cache_wr_be);
+      $fwrite(lstrace_file, "%d store (pc=%x), addr=%x => %x, be=%b\n", $time, CPU.ex_pc_r, CPU.MEM.cache_addr, CPU.MEM.cache_wr_data, CPU.MEM.cache_wr_be);
     end
   end
 
   always @(posedge clock) begin
     if (CPU.WB.dest_reg_valid) begin
-      $display("RFILE trace: write (pc =%x), $%d => %x", CPU.mem_pc_r, CPU.WB.dest_reg, CPU.WB.result);
+      $fwrite(rftrace_file, "%d write (pc =%x), $%d => %x\n", $time, CPU.mem_pc_r, CPU.WB.dest_reg, CPU.WB.result);
     end
   end
 `endif
