@@ -104,6 +104,11 @@ module cache_tb;
 
 
   task cache_write(input [31:0] addr, input [CPU_DATA_WIDTH-1:0] word, input[CPU_BE_WIDTH-1:0] be, output integer latency);
+    automatic bit [CPU_DATA_WIDTH-1:0] be_expanded;
+
+    for (integer i = 0; i < CPU_BE_WIDTH; i++)
+      be_expanded[CPU_DATA_WIDTH-1-i*8 -: 8]  = { 8{be[CPU_BE_WIDTH-1-i]} };
+
     @(negedge clock);
     latency  = 0;
 
@@ -117,7 +122,7 @@ module cache_tb;
     end while(cpu_waitrequest);
 
     // Write written word to validation memory
-    valmem[addr >> 2]  = word;
+    valmem[addr >> 2]  = ((valmem[addr >> 2] & ~be_expanded) | (word & be_expanded));
     cpu_wr             = 1'b0;
   endtask // cache_write
 
@@ -126,6 +131,7 @@ module cache_tb;
     automatic integer lat;
     automatic logic [CPU_DATA_WIDTH-1:0] data;
     automatic logic [31:0] addr_l;
+    automatic logic [CPU_BE_WIDTH-1:0] be;
     automatic bit read;
 
     read       = $random;
@@ -149,7 +155,8 @@ module cache_tb;
     else begin
       wrtests++;
       data  = $random;
-      cache_write(.addr(addr_l << 2), .word(data), .be(4'b1111), .latency(lat));
+      be    = $random;
+      cache_write(.addr(addr_l << 2), .word(data), .be(be), .latency(lat));
 `ifdef TRACE_ENABLE
       $display("Cache write at %x => %x (latency: %d cycles)", (addr_l << 2), data, lat);
 `endif
