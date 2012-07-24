@@ -280,13 +280,16 @@ module generic_cache #(
                                     -: MEM_DATA_WIDTH];
 
   // DATA memory writes
-  always_ff @(posedge clock)
+  always_ff @(posedge clock) begin
     if (data_write_cpu)
       data_banks[bank_sel][cpu_line_addr][CLINE_WIDTH -1
                                           - ((NWORDSLOG2 == 0) ? 0 : DATA_WIDTH*cpu_block_idx)
                                           -: DATA_WIDTH] <=  (cpu_rd_data  & ~be_expanded)
                                                            | (cpu_wr_data  &  be_expanded);
-    else if (load_linefill & cpu_wr & lfill_hit) begin
+    if (load_linefill & cpu_wr & lfill_hit) begin
+`ifdef TRACE_ENABLE
+      $display("Loading linefill buffer (%x) into [%d:%d] with simultaneous write", linefillbuf.line, linefillbuf.bank, linefillbuf.index);
+`endif
       for (integer i = 0; i < NWORDS; i++) begin
         data_banks[linefillbuf.bank][linefillbuf.index][CLINE_WIDTH-1-i*DATA_WIDTH
                                                         -: DATA_WIDTH] <= (cpu_block_idx == i)
@@ -295,8 +298,13 @@ module generic_cache #(
           :    linefillbuf.line[CLINE_WIDTH-1-i*DATA_WIDTH -: DATA_WIDTH];
       end
     end
-    else if (load_linefill)
-      data_banks[linefillbuf.bank][linefillbuf.index]  <= linefillbuf.line;
+    else if (load_linefill) begin
+`ifdef TRACE_ENABLE
+      $display("Loading linefill buffer (%x) into [%d:%d]", linefillbuf.line, linefillbuf.bank, linefillbuf.index);
+`endif
+      data_banks[linefillbuf.bank][linefillbuf.index] <= linefillbuf.line;
+    end
+  end
 
 
 
@@ -364,13 +372,16 @@ module generic_cache #(
           tag_banks[i][j].valid  = 1'b0;
           tag_banks[i][j].dirty  = 1'b0;
         end
-    else if (tag_write)
-      tag_banks[bank_sel][cpu_line_addr] <= new_tag;
-    else if (load_linefill) begin
-      tag_banks[linefillbuf.bank][linefillbuf.index].valid  = 1'b1;
-      tag_banks[linefillbuf.bank][linefillbuf.index].dirty  =  (linefillbuf.dirty)
-                                                             | (cpu_wr & lfill_hit);
-      tag_banks[linefillbuf.bank][linefillbuf.index].lfill  = 1'b0;
+    else begin
+      if (tag_write)
+        tag_banks[bank_sel][cpu_line_addr] <= new_tag;
+
+      if (load_linefill) begin
+        tag_banks[linefillbuf.bank][linefillbuf.index].valid  = 1'b1;
+        tag_banks[linefillbuf.bank][linefillbuf.index].dirty  =  (linefillbuf.dirty)
+                                                               | (cpu_wr & lfill_hit);
+        tag_banks[linefillbuf.bank][linefillbuf.index].lfill  = 1'b0;
+      end
     end
 
 
