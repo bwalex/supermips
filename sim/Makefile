@@ -3,6 +3,7 @@ SOFTWARE_BASE?=../software
 TRICK_ITERATIONS?=100
 PROG?=coremark.vmem
 MEM_FILE?="\"$(SOFTWARE_BASE)/$(PROG)\""
+VCS_FLAGS?=
 
 all:
 	echo "Targets: ncv, ncv_batch, modelsim, vcs"
@@ -20,7 +21,8 @@ vcs:
 	# For some weird reason, vcs doesn't like overriding string parameters via
 	# -pvalue; not even after escaping the string all over.
 	@echo assign $(MEM_FILE) top/MEM_FILE > .vcs.params
-	vcs -sverilog \
+	vcs $(VCS_FLAGS) -sverilog \
+		+define+REAL_CACHE \
 		-parameters ./.vcs.params \
 		-pvalue+top/CPU/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
 		$(HDL_BASE)/top.sv \
@@ -36,6 +38,9 @@ vcs:
 		$(HDL_BASE)/pipreg_mem_wb.sv \
 		$(HDL_BASE)/rfile.sv \
 		$(HDL_BASE)/tcm.sv \
+		$(HDL_BASE)/memory.sv \
+		$(HDL_BASE)/cache.sv \
+		$(HDL_BASE)/mem_arb.sv \
 		$(HDL_BASE)/trickbox.sv \
 		$(HDL_BASE)/wb.sv
 	./simv
@@ -44,7 +49,10 @@ vcs_clean:
 	rm -rf simv DVEfiles inter.vpd csrc simv.daidir simv.vdb ucli.key
 
 ncv:
-	ncverilog -sv +access+r +gui +ncaccess+r +define+TRACE_ENABLE +defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) +tcl+ncv.tcl \
+	ncverilog -sv +access+r +gui +ncaccess+r +define+TRACE_ENABLE \
+		+defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) \
+		+defparam+top.MEM_FILE=$(MEM_FILE) \
+		+tcl+ncv.tcl \
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/text_idec.sv \
@@ -63,7 +71,9 @@ ncv:
 		$(HDL_BASE)/wb.sv
 
 ncv_batch:
-	ncverilog -sv +access+r +ncbatch +defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) \
+	ncverilog -sv +access+r +ncbatch \
+		+defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) \
+		+defparam+top.MEM_FILE=$(MEM_FILE) \
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/text_idec.sv \

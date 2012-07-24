@@ -1,7 +1,8 @@
 module mem_arb #(
                  parameter ADDR_WIDTH = 32,
                  DATA_WIDTH = 32,
-                 BURSTLEN_WIDTH = 2
+                 BURSTLEN_WIDTH = 2,
+		 LFSR_SEED = 11'd110
 
 )(
   input                       clock,
@@ -40,14 +41,14 @@ module mem_arb #(
 
   reg [BURSTLEN_WIDTH-1:0]    rd_count;
 
-  wire                        burst_len_int;
+  wire [BURSTLEN_WIDTH-1:0]   burst_len_int;
   wire                        rd_int;
 
 
   reg                        load_count;
   wire                       dec_count;
 
-  typedef enum               { IDLE, RD_BURST } state_t;
+  typedef enum               { IDLE, BURST_READ } state_t;
   state_t state;
   state_t next_state;
 
@@ -99,7 +100,6 @@ module mem_arb #(
     end
 
   assign rand_bit  = lfsr_r[0];
-
 
 
   always_ff @(posedge clock, negedge reset_n)

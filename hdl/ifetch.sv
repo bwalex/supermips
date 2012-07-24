@@ -19,23 +19,25 @@ module ifetch #(
   output [DATA_WIDTH-1:0] pc_out
 );
 
+  wire                    stall_i;
   reg [DATA_WIDTH-1:0]    pc;
 
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       pc <= 'b0;
-    else if (~stall && load_pc)
+    else if (load_pc)
       pc <= new_pc;
-    else if (~stall)
+    else if (~stall_i)
       pc <= pc + 4;
 
 
   // XXX: need to deal with pipeline and cache stalls
+  assign stall_i    = stall | cache_waitrequest;
 
   assign cache_rd   = 1'b1;
   assign cache_addr = pc;
 
-  assign inst_word  = (load_pc) ? 32'b0 : cache_data;
+  assign inst_word  = (load_pc | cache_waitrequest) ? 32'b0 : cache_data;
   assign pc_out     = pc;
 endmodule
