@@ -26,7 +26,7 @@ module cache_tb;
   wire         cm_rd;
 
   reg [31:0]   valmem[1024*1024];
-  logic [19:0] rand_addr; // should match size in words of valmem and memory
+  logic [11:0] rand_addr; // should match size in words of valmem and memory
 
   integer      ntests, rdtests, wrtests;
 
