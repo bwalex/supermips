@@ -839,8 +839,6 @@ module idec #(
   assign A_eqz     = (A_forwarded == 0);
   assign B_eqz     = (B_forwarded == 0);
 
-  assign result_2  = B_forwarded;
-
   assign new_imm_pc  = (jmp_inst)        ? { pc_plus_4[31:28], inst_addr, 2'b00 }
                      : /* branch_inst */   pc_plus_4 + { {14{inst_imm[15]}}, inst_imm, 2'b00 };
 
