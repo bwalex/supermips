@@ -271,13 +271,17 @@ module top#(
   string                inst_str_mem;
   string                inst_str_wb;
 
-`ifdef TRACE_ENABLE
+
+`ifdef TEXT_IDEC_ENABLE
   text_idec tdec_if(.inst_word(CPU.if_inst_word),    .pc(CPU.if_pc),    .inst_str(inst_str_if));
   text_idec tdec_id(.inst_word(CPU.if_inst_word_r),  .pc(CPU.if_pc_r),  .inst_str(inst_str_id));
   text_idec tdec_ex(.inst_word(CPU.id_inst_word_r),  .pc(CPU.id_pc_r),  .inst_str(inst_str_ex));
   text_idec tdec_mem(.inst_word(CPU.ex_inst_word_r), .pc(CPU.ex_pc_r),  .inst_str(inst_str_mem));
   text_idec tdec_wb(.inst_word(CPU.mem_inst_word_r), .pc(CPU.mem_pc_r), .inst_str(inst_str_wb));
+`endif
 
+
+`ifdef TRACE_ENABLE
   integer               lstrace_file;
   integer               rftrace_file;
 

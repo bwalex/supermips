@@ -16,7 +16,9 @@ module ifetch #(
   input                   load_pc,
   input [DATA_WIDTH-1:0]  new_pc,
 
-  output [DATA_WIDTH-1:0] pc_out
+  output [DATA_WIDTH-1:0] pc_out,
+
+  output                  branch_stall
 );
 
   wire                    stall_i;
@@ -26,11 +28,13 @@ module ifetch #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       pc <= 'b0;
-    else if (load_pc)
+    else if (load_pc & ~stall_i)
       pc <= new_pc;
     else if (~stall_i)
       pc <= pc + 4;
 
+
+  assign branch_stall  = cache_waitrequest;
 
   // XXX: need to deal with pipeline and cache stalls
   assign stall_i    = stall | cache_waitrequest;

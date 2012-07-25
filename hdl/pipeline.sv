@@ -62,6 +62,7 @@ module pipeline#(
   // Exports from IF
   wire [31:0] if_pc;//
   wire [31:0] if_inst_word;//
+  wire        if_branch_stall;
 
   // Exports from ID
   wire [31:0] id_A;//
@@ -205,6 +206,7 @@ module pipeline#(
             .cache_rd                   (icache_rd),
             .inst_word                  (if_inst_word),
             .pc_out                     (if_pc),
+            .branch_stall               (if_branch_stall),
             // Inputs
             .clock                      (clock),
             .reset_n                    (reset_n),
@@ -277,6 +279,7 @@ module pipeline#(
         .reset_n                        (reset_n),
         .pc                             (id_pc_r),
         .pc_plus_8                      (if_pc),
+        .branch_stall                   (if_branch_stall),
         .A_val                          (id_A_r),
         .B_val                          (id_B_r),
         .result_from_ex_mem             (ex_result_r),

@@ -69,7 +69,9 @@ module ex #(
   output [31:0]            new_pc,
   output                   new_pc_valid,
   output                   inval_dest_reg,
-  output                   stall
+  output                   stall,
+
+  input                    branch_stall
 );
 
   wire                     A_fwd_ex_mem;
@@ -169,10 +171,12 @@ module ex #(
   // multiplication and division algorithms.
 
 
-  assign stall =  (muldiv_op == OP_MUL ) ? (muldiv_count != MUL_CYCLES)
-                : (muldiv_op == OP_MADD) ? (muldiv_count != MUL_CYCLES)
-                : (muldiv_op == OP_DIV ) ? (muldiv_count != DIV_CYCLES)
-                :                           1'b0;
+  assign stall =  (muldiv_op == OP_MUL )                    ? (muldiv_count != MUL_CYCLES)
+                : (muldiv_op == OP_MADD)                    ? (muldiv_count != MUL_CYCLES)
+                : (muldiv_op == OP_DIV )                    ? (muldiv_count != DIV_CYCLES)
+                : (branch_stall & (jmp_inst | branch_inst)) ? 1'b1
+                :                                             1'b0;
+
 
 
   always_ff @(posedge clock, negedge reset_n)
