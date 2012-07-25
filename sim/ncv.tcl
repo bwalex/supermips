@@ -223,7 +223,7 @@ simvision {
     register addtype -page Page-1 -type signalvalue -x0 576.0 -y0 510.0 -fontsize regfont-12 -fill white -radix {} [subst -nobackslashes -nocommands {simulator::top.REGFILE.regfile[20]} ]
     register addtype -page Page-1 -type signalvalue -x0 576.0 -y0 527.0 -fontsize regfont-12 -fill white -radix {} [subst -nobackslashes -nocommands {simulator::top.REGFILE.regfile[21]} ]
     register addtype -page Page-1 -type signalvalue -x0 576.0 -y0 544.0 -fontsize regfont-12 -fill white -radix {} [subst -nobackslashes -nocommands {simulator::top.REGFILE.regfile[22]} ]
-    register addtype -page Page-1 -type signalvalue -x0 576.0 -y0 561.0 -fontsize regfont-12 -fill white -radix {} [subst -nobackslashes -nocommands {simulator::top.REGFILE.regfile[22]} ]
+    register addtype -page Page-1 -type signalvalue -x0 576.0 -y0 561.0 -fontsize regfont-12 -fill white -radix {} [subst -nobackslashes -nocommands {simulator::top.REGFILE.regfile[23]} ]
     register addtype -page Page-1 -type signalvalue -x0 796.0 -y0 442.0 -fontsize regfont-12 -fill white -radix {} [subst -nobackslashes -nocommands {simulator::top.REGFILE.regfile[24]} ]
     register addtype -page Page-1 -type signalvalue -x0 796.0 -y0 459.0 -fontsize regfont-12 -fill white -radix {} [subst -nobackslashes -nocommands {simulator::top.REGFILE.regfile[25]} ]
     register addtype -page Page-1 -type signalvalue -x0 796.0 -y0 476.0 -fontsize regfont-12 -fill white -radix {} [subst -nobackslashes -nocommands {simulator::top.REGFILE.regfile[26]} ]
