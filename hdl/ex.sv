@@ -177,7 +177,6 @@ module ex #(
   assign stall =  (muldiv_op == OP_MUL )                    ? (muldiv_count != MUL_CYCLES)
                 : (muldiv_op == OP_MADD)                    ? (muldiv_count != MUL_CYCLES)
                 : (muldiv_op == OP_DIV )                    ? (muldiv_count != DIV_CYCLES)
-                : (branch_stall & (jmp_inst | branch_inst)) ? 1'b1
                 :                                             front_stall;
 
 
@@ -315,18 +314,6 @@ module ex #(
   assign result_2  = B_forwarded;
 
 
-  assign new_pc    = (imm_valid) ? imm : A;
-
-  assign new_pc_valid    = jmp_inst | (branch_inst & branch_cond_ok);
-  assign branch_cond_ok  = (branch_cond == COND_UNCONDITIONAL)
-                         | (branch_cond == COND_EQ && AB_equal)
-                         | (branch_cond == COND_NE && ~AB_equal)
-                         | (branch_cond == COND_GT && A_gtz)
-                         | (branch_cond == COND_GE && A_gez)
-                         | (branch_cond == COND_LT && ~A_gez)
-                         | (branch_cond == COND_LE && ~A_gtz);
-
-
   assign inst_opc   = alu_op[11:6];
   assign inst_funct = alu_op[5:0];
 
@@ -337,8 +324,7 @@ module ex #(
 
   assign flag_zero  = (alu_res == 0);
 
-  assign result  = (jmp_inst | branch_inst) ? pc_plus_8
-                 : (muldiv_op == OP_MFHI)   ? hi_r
+  assign result  = (muldiv_op == OP_MFHI)   ? hi_r
                  : (muldiv_op == OP_MFLO)   ? lo_r
                  : (alu_res_sel == RES_ALU) ? alu_res
                  :                            set_res;

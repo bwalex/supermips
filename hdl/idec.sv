@@ -12,6 +12,9 @@ module idec #(
 
   input [31:0]                  pc_plus_4,
 
+  input                         branch_stall,
+  input                         front_stall,
+
   output [ 4:0]                 rfile_rd_addr1,
   output [ 4:0]                 rfile_rd_addr2,
 
@@ -20,9 +23,15 @@ module idec #(
 
   input [ 4:0]                  id_ex_dest_reg,
   input [ 4:0]                  ex_mem_dest_reg,
+  input [ 4:0]                  mem_wb_dest_reg,
   input                         id_ex_dest_reg_valid,
   input                         ex_mem_dest_reg_valid,
+  input                         mem_wb_dest_reg_valid,
   input                         id_ex_load_inst,
+  input                         ex_mem_load_inst,
+
+  input [31:0]                  result_from_ex_mem,
+  input [31:0]                  result_from_mem_wb,
 
   output                        stall,
   output [11:0]                 opc,
@@ -75,6 +84,62 @@ module idec #(
   reg                        imm_sext;
   reg  [31:0]                imm_extended;
 
+
+  wire                       A_fwd_ex_mem;
+  wire                       A_fwd_mem_wb;
+  wire                       B_fwd_ex_mem;
+  wire                       B_fwd_mem_wb;
+
+  reg                        A_fwd_ex_mem_d1;
+  reg                        A_fwd_mem_wb_d1;
+  reg                        B_fwd_ex_mem_d1;
+  reg                        B_fwd_mem_wb_d1;
+
+  wire [31:0]                pc_plus_8;
+
+  reg  [31:0]                result_from_mem_wb_retained;
+  reg  [31:0]                result_from_ex_mem_retained;
+  reg                        stall_d1;
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n) begin
+      A_fwd_ex_mem_d1 <= 1'b0;
+      A_fwd_mem_wb_d1 <= 1'b0;
+      B_fwd_ex_mem_d1 <= 1'b0;
+      B_fwd_mem_wb_d1 <= 1'b0;
+
+    end
+    else if (~stall_d1) begin
+      A_fwd_ex_mem_d1 <= A_fwd_ex_mem;
+      A_fwd_mem_wb_d1 <= A_fwd_mem_wb;
+      B_fwd_ex_mem_d1 <= B_fwd_ex_mem;
+      B_fwd_mem_wb_d1 <= B_fwd_mem_wb;
+
+    end
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      stall_d1 <= 1'b0;
+    else
+      stall_d1 <= stall;
+
+
+  always @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      result_from_mem_wb_retained <= 32'b0;
+    else if (stall & ~stall_d1)
+      result_from_mem_wb_retained <= result_from_mem_wb;
+
+
+  always @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      result_from_ex_mem_retained <= 32'b0;
+    else if (stall & ~stall_d1)
+      result_from_ex_mem_retained <= result_from_ex_mem;
+
+
+
   // Forwarding and stalling logic
   assign A_reg_match_id_ex  = id_ex_dest_reg_valid  && A_reg_valid && (A_reg == id_ex_dest_reg);
   assign B_reg_match_id_ex  = id_ex_dest_reg_valid  && B_reg_valid && (B_reg == id_ex_dest_reg);
@@ -82,8 +147,73 @@ module idec #(
   assign A_reg_match_ex_mem = ex_mem_dest_reg_valid && A_reg_valid && (A_reg == ex_mem_dest_reg);
   assign B_reg_match_ex_mem = ex_mem_dest_reg_valid && B_reg_valid && (B_reg == ex_mem_dest_reg);
 
+  assign A_reg_match_mem_wb = mem_wb_dest_reg_valid && A_reg_valid && (A_reg == mem_wb_dest_reg);
+  assign B_reg_match_mem_wb = mem_wb_dest_reg_valid && B_reg_valid && (B_reg == mem_wb_dest_reg);
+
+
+  assign A_fwd_ex_mem  = A_reg_match_ex_mem;
+  assign A_fwd_mem_wb  = A_reg_match_mem_wb;
+  assign B_fwd_ex_mem  = B_reg_match_ex_mem;
+  assign B_fwd_mem_wb  = B_reg_match_mem_wb;
+
+
+  always_comb
+    begin
+      A_forwarded  = A;
+      if (stall_d1) begin
+        if (A_fwd_ex_mem_d1)
+          A_forwarded  = result_from_ex_mem_retained;
+        else if (A_fwd_mem_wb_d1)
+          A_forwarded  = result_from_mem_wb_retained;
+      end
+      else begin
+        if (A_fwd_ex_mem)
+          A_forwarded  = result_from_ex_mem;
+        else if (A_fwd_mem_wb)
+          A_forwarded  = result_from_mem_wb;
+      end
+    end
+
+
+  always_comb
+    begin
+      B_forwarded  = B;
+      if (stall_d1) begin
+        if (B_fwd_ex_mem_d1)
+          B_forwarded  = result_from_ex_mem_retained;
+        else if (B_fwd_mem_wb_d1)
+          B_forwarded  = result_from_mem_wb_retained;
+      end
+      else begin
+        if (B_fwd_ex_mem)
+          B_forwarded  = result_from_ex_mem;
+        else if (B_fwd_mem_wb)
+          B_forwarded  = result_from_mem_wb;
+      end
+    end
+
+
+
+
+
+
+
   // Stall when depending on a load instruction currently in the EX stage
-  assign stall  = id_ex_load_inst && (A_reg_match_id_ex || (~B_need_late && B_reg_match_id_ex));
+  // or on a conditional branch when the result-generating instruction is now entering EX
+  // or on a conditional branch when the result-generating instruction is a load now entering MEM
+  // or on a jump-register when the result-generating instruction is now entering EX
+  // or on a jump-register when the result-generating instruction is a load now entering MEM
+  // or when pipeline stages further down stall
+  // or when ifetch stalls while we are trying to load a new pc
+  assign stall  =  (id_ex_load_inst && (A_reg_match_id_ex || (~B_need_late && B_reg_match_id_ex)))
+                 | (A_reg_match_id_ex && (branch_inst && branch_cond != COND_UNCONDITIONAL))
+                 | (A_reg_match_ex_mem && ex_mem_load_inst && (branch_inst && branch_cond != COND_UNCONDITIONAL))
+                 | (B_reg_match_id_ex && (branch_inst && (branch_cond == COND_EQ || branch_cond == COND_NE)))
+                 | (B_reg_match_ex_mem && ex_mem_load_inst && (branch_inst && (branch_cond == COND_NE || branch_cond == COND_EQ)))
+                 | (A_reg_match_id_ex && (jmp_inst & ~imm_valid))
+                 | (A_reg_match_ex_mem && ex_mem_load_inst && (jmp_inst & ~imm_valid))
+                 | front_stall
+                 | (branch_stall & new_pc_valid);
 
 
 
@@ -182,6 +312,7 @@ module idec #(
           end
           6'd09: begin // jalr
             jmp_inst     = 1'b1;
+            alu_op       = OP_PASS_B;
             A_reg_valid  = 1'b1;
           end
           6'd10: begin // movz
@@ -342,7 +473,7 @@ module idec #(
             branch_inst     = 1'b1;
             branch_cond     = COND_LT;
             A_reg_valid     = 1'b1;
-
+            alu_op          = OP_PASS_B;
           end
 
           5'h11: begin // bgezal
@@ -351,6 +482,7 @@ module idec #(
             branch_inst     = 1'b1;
             branch_cond     = COND_GE;
             A_reg_valid     = 1'b1;
+            alu_op          = OP_PASS_B;
           end
 
           default: begin
@@ -661,14 +793,53 @@ module idec #(
 //      imm_extended  = (imm_sext) ? { {16{inst_imm[15]}}, inst_imm } : { 16'd0, inst_imm };
 //  end
 
-  assign imm  = (jmp_inst)    ? { pc_plus_4[31:28], inst_addr, 2'b00 }
-              : (branch_inst) ? pc_plus_4 + { {14{inst_imm[15]}}, inst_imm, 2'b00 }
-              : (imm_sext)    ? { {16{inst_imm[15]}}, inst_imm }
-              :                 { 16'd0, inst_imm };
+  assign imm  = (new_pc_valid & dest_reg_valid) ? pc_plus_8
+              : (imm_sext)                      ? { {16{inst_imm[15]}}, inst_imm }
+              :                                   { 16'd0, inst_imm };
 
   assign A   = rfile_rd_data1;
   assign B   = rfile_rd_data2;
 //  assign imm  = imm_extended;
 
-  assign imm_valid  = inst_iformat | inst_jformat;
+  assign imm_valid  = inst_iformat | inst_jformat | (new_pc_valid & dest_reg_valid);
+
+
+
+
+
+
+
+
+
+
+  // Branching logic
+  assign pc_plus_8  = pc_plus_4 + 4;
+
+  assign AB_equal  = (A_forwarded == B_forwarded);
+  assign A_gtz     = A_gez & ~A_eqz;
+  assign A_gez     = (A_forwarded[31] == 1'b0);
+
+  assign A_eqz     = (A_forwarded == 0);
+  assign B_eqz     = (B_forwarded == 0);
+
+  assign result_2  = B_forwarded;
+
+  assign new_imm_pc  = (jmp_inst)        ? { pc_plus_4[31:28], inst_addr, 2'b00 }
+                     : /* branch_inst */   pc_plus_4 + { {14{inst_imm[15]}}, inst_imm, 2'b00 };
+
+
+
+  assign new_pc    = (imm_valid) ? new_imm_pc : A_forwarded;
+
+  assign new_pc_valid    = jmp_inst | (branch_inst & branch_cond_ok);
+  assign branch_cond_ok  = (branch_cond == COND_UNCONDITIONAL)
+                         | (branch_cond == COND_EQ && AB_equal)
+                         | (branch_cond == COND_NE && ~AB_equal)
+                         | (branch_cond == COND_GT && A_gtz)
+                         | (branch_cond == COND_GE && A_gez)
+                         | (branch_cond == COND_LT && ~A_gez)
+                         | (branch_cond == COND_LE && ~A_gtz);
+
+  assign stall  = branch_stall & new_pc_valid;
+
 endmodule
