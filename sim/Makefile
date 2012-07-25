@@ -51,7 +51,9 @@ vcs_clean:
 	rm -rf simv DVEfiles inter.vpd csrc simv.daidir simv.vdb ucli.key
 
 ncv:
-	ncverilog -sv +access+r +gui +ncaccess+r +define+TRACE_ENABLE \
+	ncverilog -sv +access+rc +gui +ncaccess+rc \
+		+define+TEXT_IDEC_ENABLE \
+		+define+TRACE_$(TRACE) \
 		+defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) \
 		+defparam+top.MEM_FILE=$(MEM_FILE) \
 		+tcl+ncv.tcl \
@@ -74,6 +76,7 @@ ncv:
 
 ncv_batch:
 	ncverilog -sv +access+r +ncbatch \
+		+define+TRACE_$(TRACE) \
 		+defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) \
 		+defparam+top.MEM_FILE=$(MEM_FILE) \
 		$(HDL_BASE)/types.sv \

@@ -50,6 +50,7 @@ module ifetch #(
   assign cache_rd   = 1'b1;
   assign cache_addr = pc;
 
-  assign inst_word  = ((load_pc & ~cache_waitrequest_d1) | cache_waitrequest) ? 32'b0 : cache_data;
+  //assign inst_word  = ((load_pc & ~cache_waitrequest_d1) | cache_waitrequest) ? 32'b0 : cache_data;
+  assign inst_word  = (cache_waitrequest) ? 32'b0 : cache_data;
   assign pc_out     = pc;
 endmodule

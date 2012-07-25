@@ -248,19 +248,28 @@ module pipeline#(
           .branch_cond                  (id_branch_cond),
           .dest_reg                     (id_dest_reg),
           .dest_reg_valid               (id_dest_reg_valid),
+          .new_pc                       (ex_new_pc),
+          .new_pc_valid                 (ex_new_pc_valid),
           // Inputs
           .clock                        (clock),
           .reset_n                      (reset_n),
           .pc                           (if_pc_r),
           .pc_plus_4                    (if_pc),
           .inst_word                    (if_inst_word_r),
+          .branch_stall                 (if_branch_stall),
+	  .front_stall                  (stall_id),
           .rfile_rd_data1               (rfile_rd_data1),
           .rfile_rd_data2               (rfile_rd_data2),
           .id_ex_dest_reg               (id_dest_reg_r),
           .ex_mem_dest_reg              (ex_dest_reg_r),
+          .mem_wb_dest_reg              (mem_dest_reg_r),
           .id_ex_dest_reg_valid         (id_dest_reg_valid_r),
           .ex_mem_dest_reg_valid        (ex_dest_reg_valid_r),
-          .id_ex_load_inst              (id_load_inst_r));
+          .mem_wb_dest_reg_valid        (mem_dest_reg_valid_r),
+          .id_ex_load_inst              (id_load_inst_r),
+	  .ex_mem_load_inst             (ex_load_inst_r),
+	  .result_from_ex_mem           (ex_result_r),
+	  .result_from_mem_wb           (mem_result_r));
 
   ex EX(
         // Interfaces
@@ -270,8 +279,8 @@ module pipeline#(
         // Outputs
         .result                         (ex_result[31:0]),
         .result_2                       (ex_result_2[31:0]),
-        .new_pc                         (ex_new_pc),
-        .new_pc_valid                   (ex_new_pc_valid),
+        //.new_pc                         (ex_new_pc),
+        //.new_pc_valid                   (ex_new_pc_valid),
         .inval_dest_reg                 (ex_inval_dest_reg),
         .stall                          (ex_stall),
         // Inputs

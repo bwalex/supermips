@@ -22,7 +22,7 @@ module ex #(
   parameter ALU_OP_WIDTH = 12,
             MUL_CYCLES   = 5,
             DIV_CYCLES   = 35,
-            DIVCOUNT_WIDTH = $clog2(DIV_CYCLES)+1 // assume div always takes longer than mul/madd
+            DIVCOUNT_WIDTH = `clogb2(DIV_CYCLES)+1 // assume div always takes longer than mul/madd
 )(
   input                    clock,
   input                    reset_n,

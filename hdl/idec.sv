@@ -64,7 +64,9 @@ module idec #(
   output reg                    branch_inst,
 
   output reg [ 4:0]             dest_reg,
-  output reg                    dest_reg_valid
+  output reg                    dest_reg_valid,
+  output [31:0]                 new_pc,
+  output                        new_pc_valid
 );
 
 
@@ -84,6 +86,8 @@ module idec #(
   reg                        imm_sext;
   reg  [31:0]                imm_extended;
 
+  reg  [31:0]                A_forwarded;
+  reg  [31:0]                B_forwarded;
 
   wire                       A_fwd_ex_mem;
   wire                       A_fwd_mem_wb;
@@ -96,10 +100,20 @@ module idec #(
   reg                        B_fwd_mem_wb_d1;
 
   wire [31:0]                pc_plus_8;
+  wire [31:0]                new_imm_pc;
+
+  wire                       AB_equal;
+  wire                       A_gtz;
+  wire                       A_gez;
+  wire                       A_eqz;
+  wire                       B_eqz;
 
   reg  [31:0]                result_from_mem_wb_retained;
   reg  [31:0]                result_from_ex_mem_retained;
   reg                        stall_d1;
+
+  wire                       branch_cond_ok;
+
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n) begin
@@ -122,7 +136,7 @@ module idec #(
     if (~reset_n)
       stall_d1 <= 1'b0;
     else
-      stall_d1 <= stall;
+      stall_d1 <= (branch_stall & new_pc_valid);
 
 
   always @(posedge clock, negedge reset_n)
@@ -505,6 +519,7 @@ module idec #(
         inst_iformat = 1'b0;
         inst_jformat = 1'b1;
         dest_reg     = 5'd31;
+	alu_op       = OP_PASS_B;
         jmp_inst     = 1'b1;
       end
 
@@ -777,8 +792,10 @@ module idec #(
       dest_reg_valid  = 1'b0;
       load_inst       = 1'b0;
       store_inst      = 1'b0;
+`ifdef MOO
       jmp_inst        = 1'b0;
       branch_inst     = 1'b0;
+`endif
       muldiv_op       = OP_NONE;
     end
   end
@@ -839,7 +856,5 @@ module idec #(
                          | (branch_cond == COND_GE && A_gez)
                          | (branch_cond == COND_LT && ~A_gez)
                          | (branch_cond == COND_LE && ~A_gtz);
-
-  assign stall  = branch_stall & new_pc_valid;
 
 endmodule
