@@ -112,6 +112,8 @@ module idec #(
   reg  [31:0]                result_from_ex_mem_retained;
   reg                        stall_d1;
 
+  wire                       stall_i;
+
   wire                       branch_cond_ok;
 
 
@@ -128,7 +130,6 @@ module idec #(
       A_fwd_mem_wb_d1 <= A_fwd_mem_wb;
       B_fwd_ex_mem_d1 <= B_fwd_ex_mem;
       B_fwd_mem_wb_d1 <= B_fwd_mem_wb;
-
     end
 
 
@@ -136,7 +137,7 @@ module idec #(
     if (~reset_n)
       stall_d1 <= 1'b0;
     else
-      stall_d1 <= (branch_stall & new_pc_valid);
+      stall_d1 <= (branch_stall & new_pc_valid & ~front_stall);
 
 
   always @(posedge clock, negedge reset_n)
@@ -219,15 +220,17 @@ module idec #(
   // or on a jump-register when the result-generating instruction is a load now entering MEM
   // or when pipeline stages further down stall
   // or when ifetch stalls while we are trying to load a new pc
-  assign stall  =  (id_ex_load_inst && (A_reg_match_id_ex || (~B_need_late && B_reg_match_id_ex)))
-                 | (A_reg_match_id_ex && (branch_inst && branch_cond != COND_UNCONDITIONAL))
-                 | (A_reg_match_ex_mem && ex_mem_load_inst && (branch_inst && branch_cond != COND_UNCONDITIONAL))
-                 | (B_reg_match_id_ex && (branch_inst && (branch_cond == COND_EQ || branch_cond == COND_NE)))
-                 | (B_reg_match_ex_mem && ex_mem_load_inst && (branch_inst && (branch_cond == COND_NE || branch_cond == COND_EQ)))
-                 | (A_reg_match_id_ex && (jmp_inst & ~imm_valid))
-                 | (A_reg_match_ex_mem && ex_mem_load_inst && (jmp_inst & ~imm_valid))
-                 | front_stall
-                 | (branch_stall & new_pc_valid);
+  assign stall_i  =  (id_ex_load_inst && (A_reg_match_id_ex || (~B_need_late && B_reg_match_id_ex)))
+                   | (A_reg_match_id_ex && (branch_inst && branch_cond != COND_UNCONDITIONAL))
+                   | (A_reg_match_ex_mem && ex_mem_load_inst && (branch_inst && branch_cond != COND_UNCONDITIONAL))
+                   | (B_reg_match_id_ex && (branch_inst && (branch_cond == COND_EQ || branch_cond == COND_NE)))
+                   | (B_reg_match_ex_mem && ex_mem_load_inst && (branch_inst && (branch_cond == COND_NE || branch_cond == COND_EQ)))
+                   | (A_reg_match_id_ex && (jmp_inst & ~imm_valid))
+                   | (A_reg_match_ex_mem && ex_mem_load_inst && (jmp_inst & ~imm_valid))
+                   | front_stall;
+
+  assign stall    =  stall_i
+                   | (branch_stall & new_pc_valid);
 
 
 
@@ -846,7 +849,7 @@ module idec #(
 
   assign new_pc    = (inst_iformat | inst_jformat) ? new_imm_pc : A_forwarded;
 
-  assign new_pc_valid    = jmp_inst | (branch_inst & branch_cond_ok);
+  assign new_pc_valid    = (jmp_inst | (branch_inst & branch_cond_ok)) & ~stall_i;
   assign branch_cond_ok  = (branch_cond == COND_UNCONDITIONAL)
                          | (branch_cond == COND_EQ && AB_equal)
                          | (branch_cond == COND_NE && ~AB_equal)
