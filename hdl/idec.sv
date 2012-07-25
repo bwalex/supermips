@@ -844,7 +844,7 @@ module idec #(
 
 
 
-  assign new_pc    = (imm_valid) ? new_imm_pc : A_forwarded;
+  assign new_pc    = (inst_iformat | inst_jformat) ? new_imm_pc : A_forwarded;
 
   assign new_pc_valid    = jmp_inst | (branch_inst & branch_cond_ok);
   assign branch_cond_ok  = (branch_cond == COND_UNCONDITIONAL)
