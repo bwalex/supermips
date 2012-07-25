@@ -4,6 +4,7 @@ TRICK_ITERATIONS?=100
 PROG?=coremark.vmem
 MEM_FILE?="\"$(SOFTWARE_BASE)/$(PROG)\""
 VCS_FLAGS?=
+TRACE?=DISABLE
 
 all:
 	echo "Targets: ncv, ncv_batch, modelsim, vcs"
@@ -23,6 +24,7 @@ vcs:
 	@echo assign $(MEM_FILE) top/MEM_FILE > .vcs.params
 	vcs $(VCS_FLAGS) -sverilog \
 		+define+REAL_CACHE \
+		+define+TRACE_$(TRACE) \
 		-parameters ./.vcs.params \
 		-pvalue+top/CPU/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
 		$(HDL_BASE)/top.sv \

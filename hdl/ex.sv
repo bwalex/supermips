@@ -29,8 +29,6 @@ module ex #(
 
   input [31:0]             pc,
 
-  input [31:0]             pc_plus_8,
-
   input [31:0]             A_val,
   input [31:0]             B_val,
   input [31:0]             result_from_ex_mem,
@@ -71,6 +69,7 @@ module ex #(
   output                   inval_dest_reg,
   output                   stall,
 
+  input                    front_stall,
   input                    branch_stall
 );
 
@@ -78,6 +77,8 @@ module ex #(
   wire                     A_fwd_mem_wb;
   wire                     B_fwd_ex_mem;
   wire                     B_fwd_mem_wb;
+
+  wire [31:0]              pc_plus_8;
 
   wire [6:0]                inst_opc;
   wire [6:0]                inst_funct;
@@ -127,6 +128,8 @@ module ex #(
   reg [DIVCOUNT_WIDTH-1:0]  muldiv_count;
 
 
+  assign pc_plus_8 = pc + 8;
+
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n) begin
@@ -175,7 +178,7 @@ module ex #(
                 : (muldiv_op == OP_MADD)                    ? (muldiv_count != MUL_CYCLES)
                 : (muldiv_op == OP_DIV )                    ? (muldiv_count != DIV_CYCLES)
                 : (branch_stall & (jmp_inst | branch_inst)) ? 1'b1
-                :                                             1'b0;
+                :                                             front_stall;
 
 
 
