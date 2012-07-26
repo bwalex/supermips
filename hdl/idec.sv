@@ -63,6 +63,8 @@ module idec #(
   output reg                    jmp_inst,
   output reg                    branch_inst,
 
+  output                        nop,
+
   output reg [ 4:0]             dest_reg,
   output reg                    dest_reg_valid,
   output [31:0]                 new_pc,
@@ -250,6 +252,9 @@ module idec #(
   assign inst_funct = inst_word[ 5: 0];
 
   assign opc  = { inst_opc, inst_funct };
+
+
+  assign nop  = (inst_word == 32'b0);
 
 
   always_comb begin
