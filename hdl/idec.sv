@@ -58,6 +58,7 @@ module idec #(
   output cond_t                 branch_cond,
 
   output reg                    alu_inst,
+  output reg                    muldiv_inst,
   output reg                    load_inst,
   output reg                    store_inst,
   output reg                    jmp_inst,
@@ -266,6 +267,7 @@ module idec #(
     dest_reg        = inst_rt;
     shamt           = 0;
     alu_inst        = 1'b0;
+    muldiv_inst     = 1'b0;
     load_inst       = 1'b0;
     store_inst      = 1'b0;
     jmp_inst        = 1'b0;
@@ -355,28 +357,34 @@ module idec #(
             $stop(); // XXX: consider $finish()
           end
           6'd16: begin // mfhi
-            muldiv_op  = OP_MFHI;
+            muldiv_inst  = 1'b1;
+            muldiv_op    = OP_MFHI;
           end
           6'd17: begin // mthi
+            muldiv_inst     = 1'b1;
             muldiv_op       = OP_MTHI;
             A_reg_valid     = 1'b1;
             dest_reg_valid  = 1'b0;
           end
           6'd18: begin // mflo
-            muldiv_op  = OP_MFLO;
+            muldiv_inst  = 1'b1;
+            muldiv_op    = OP_MFLO;
           end
           6'd19: begin // mtlo
+            muldiv_inst     = 1'b1;
             muldiv_op       = OP_MTLO;
             A_reg_valid     = 1'b1;
             dest_reg_valid  = 1'b0;
           end
           6'd24: begin // mult
+            muldiv_inst     = 1'b1;
             muldiv_op       = OP_MUL;
             A_reg_valid     = 1'b1;
             B_reg_valid     = 1'b1;
             dest_reg_valid  = 1'b0;
           end
           6'd25: begin // multu
+            muldiv_inst     = 1'b1;
             muldiv_op       = OP_MUL;
             muldiv_op_u     = 1'b1;
             A_reg_valid     = 1'b1;
@@ -384,12 +392,14 @@ module idec #(
             dest_reg_valid  = 1'b0;
           end
           6'd26: begin // div
+            muldiv_inst     = 1'b1;
             muldiv_op       = OP_DIV;
             A_reg_valid     = 1'b1;
             B_reg_valid     = 1'b1;
             dest_reg_valid  = 1'b0;
           end
           6'd27: begin // divu
+            muldiv_inst     = 1'b1;
             muldiv_op       = OP_DIV;
             muldiv_op_u     = 1'b1;
             A_reg_valid     = 1'b1;
@@ -624,6 +634,7 @@ module idec #(
 
         case (inst_funct)
           6'd00: begin // madd
+            muldiv_inst     = 1'b1;
             muldiv_op       = OP_MADD;
             A_reg_valid     = 1'b1;
             B_reg_valid     = 1'b1;
@@ -631,6 +642,7 @@ module idec #(
           end
 
           6'd00: begin // maddu
+            muldiv_inst     = 1'b1;
             muldiv_op       = OP_MADD;
             muldiv_op_u     = 1'b1;
             A_reg_valid     = 1'b1;
@@ -639,6 +651,7 @@ module idec #(
           end
 
           6'd02: begin // mul
+            muldiv_inst     = 1'b1;
             alu_inst        = 1'b1;
             muldiv_op       = OP_MUL;
             muldiv_op_u     = 1'b1;
@@ -800,10 +813,11 @@ module idec #(
       dest_reg_valid  = 1'b0;
       load_inst       = 1'b0;
       store_inst      = 1'b0;
-`ifdef MOO
+`ifdef NOT_DEFINED
       jmp_inst        = 1'b0;
       branch_inst     = 1'b0;
 `endif
+      muldiv_inst     = 1'b0;
       muldiv_op       = OP_NONE;
     end
   end

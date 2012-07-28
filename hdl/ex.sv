@@ -51,6 +51,7 @@ module ex #(
   input alu_res_t          alu_res_sel,
   input                    alu_set_u,
   input                    alu_inst,
+  input                    muldiv_inst,
   input muldiv_op_t        muldiv_op,
   input                    muldiv_op_u,
   input                    load_inst,
