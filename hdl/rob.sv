@@ -28,7 +28,7 @@ module rob #(
   output reg                 slot_valid[EXT_COUNT],
   output                     empty,
 
-  output [DEPTHLOG2-1:0]     used_count
+  output reg [DEPTHLOG2:0]   used_count
 );
 
   wire                     reserve_i;
@@ -101,7 +101,15 @@ module rob #(
     end
 
 
-  assign used_count = (ins_ptr - ext_ptr);
-  assign empty      = (ext_ptr == ins_ptr);
-  assign full       = (used_count >= DEPTH-INS_COUNT-1);
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      used_count <= 0;
+    else
+      used_count <=  used_count
+                   + ((reserve_count   + 1) & {(INSCOUNTLOG2+1){reserve_i}})
+                   - ((consume_count_i + 1) & {(EXTCOUNTLOG2+1){consume_i}});
+
+
+  assign empty      = (used_count == 0);
+  assign full       = (used_count > DEPTH-INS_COUNT);
 endmodule

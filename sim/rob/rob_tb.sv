@@ -130,13 +130,13 @@ module rob_tb;
     insn.result                   = pc;//$random;
     insn.pc                       = pc;
 
-    $display("Start execute pc=%d, slot=%x", pc, insn.slot);
+    $display("Start execute pc=%d, slot=%x, result=%x", pc, insn.slot, insn.result);
 
     for (integer i = 0; i < cycles; i++)
       @(posedge clock);
 
     results.push_back(insn);
-    $display("Finish execute pc=%d, slot=%x, result=%x", insn.pc, insn.slot, insn.result);
+    //$display("Finish execute pc=%d, slot=%x, result=%x", insn.pc, insn.slot, insn.result);
   endtask // execute
 
 
@@ -189,12 +189,19 @@ module rob_tb;
 
   task commit();
     automatic integer c;
+    automatic integer expected_pc  = 0;
     automatic integer unsigned data[4];
 
     while (1) begin
       consume(.data(data), .count(c));
-      for (integer i = 0; i < c; i++)
+      for (integer i = 0; i < c; i++) begin
         $display("Commit: result=%x", data[i]);
+        assert(expected_pc == data[i]) begin
+        end else
+          $stop;
+
+        expected_pc += 1;
+      end
     end
   endtask // commit
 
@@ -204,6 +211,13 @@ module rob_tb;
     $display("empty: %b, full: %b, used: %d", cb1.empty, cb1.full, cb1.used_count);
     $display("ins_ptr: %d, ext_ptr: %d", cb1.ins_ptr, cb1.ext_ptr);
   endtask //
+
+
+  /* // XXX: my version of ModelSim doesn't support covergroups
+  covergroup cg_fill_level @(posedge clock);
+    coverpoint cb1.used_count;
+  endgroup // cg_fill_level
+   */
 
 
   initial begin
