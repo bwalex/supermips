@@ -93,14 +93,10 @@ module idec #(
   reg  [31:0]                B_forwarded;
 
   wire                       A_fwd_ex_mem;
-  wire                       A_fwd_mem_wb;
   wire                       B_fwd_ex_mem;
-  wire                       B_fwd_mem_wb;
 
   reg                        A_fwd_ex_mem_d1;
-  reg                        A_fwd_mem_wb_d1;
   reg                        B_fwd_ex_mem_d1;
-  reg                        B_fwd_mem_wb_d1;
 
   wire [31:0]                pc_plus_8;
   wire [31:0]                new_imm_pc;
@@ -111,7 +107,6 @@ module idec #(
   wire                       A_eqz;
   wire                       B_eqz;
 
-  reg  [31:0]                result_from_mem_wb_retained;
   reg  [31:0]                result_from_ex_mem_retained;
   reg                        stall_d1;
 
@@ -123,16 +118,11 @@ module idec #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n) begin
       A_fwd_ex_mem_d1 <= 1'b0;
-      A_fwd_mem_wb_d1 <= 1'b0;
       B_fwd_ex_mem_d1 <= 1'b0;
-      B_fwd_mem_wb_d1 <= 1'b0;
-
     end
     else if (~stall_d1) begin
       A_fwd_ex_mem_d1 <= A_fwd_ex_mem;
-      A_fwd_mem_wb_d1 <= A_fwd_mem_wb;
       B_fwd_ex_mem_d1 <= B_fwd_ex_mem;
-      B_fwd_mem_wb_d1 <= B_fwd_mem_wb;
     end
 
 
@@ -141,13 +131,6 @@ module idec #(
       stall_d1 <= 1'b0;
     else
       stall_d1 <= (branch_stall & new_pc_valid & ~front_stall);
-
-
-  always @(posedge clock, negedge reset_n)
-    if (~reset_n)
-      result_from_mem_wb_retained <= 32'b0;
-    else if (stall & ~stall_d1)
-      result_from_mem_wb_retained <= result_from_mem_wb;
 
 
   always @(posedge clock, negedge reset_n)
@@ -165,14 +148,9 @@ module idec #(
   assign A_reg_match_ex_mem = ex_mem_dest_reg_valid && A_reg_valid && (A_reg == ex_mem_dest_reg);
   assign B_reg_match_ex_mem = ex_mem_dest_reg_valid && B_reg_valid && (B_reg == ex_mem_dest_reg);
 
-  assign A_reg_match_mem_wb = mem_wb_dest_reg_valid && A_reg_valid && (A_reg == mem_wb_dest_reg);
-  assign B_reg_match_mem_wb = mem_wb_dest_reg_valid && B_reg_valid && (B_reg == mem_wb_dest_reg);
-
 
   assign A_fwd_ex_mem  = A_reg_match_ex_mem;
-  assign A_fwd_mem_wb  = A_reg_match_mem_wb;
   assign B_fwd_ex_mem  = B_reg_match_ex_mem;
-  assign B_fwd_mem_wb  = B_reg_match_mem_wb;
 
 
   always_comb
@@ -181,14 +159,10 @@ module idec #(
       if (stall_d1) begin
         if (A_fwd_ex_mem_d1)
           A_forwarded  = result_from_ex_mem_retained;
-        else if (A_fwd_mem_wb_d1)
-          A_forwarded  = result_from_mem_wb_retained;
       end
       else begin
         if (A_fwd_ex_mem)
           A_forwarded  = result_from_ex_mem;
-        else if (A_fwd_mem_wb)
-          A_forwarded  = result_from_mem_wb;
       end
     end
 
@@ -199,14 +173,10 @@ module idec #(
       if (stall_d1) begin
         if (B_fwd_ex_mem_d1)
           B_forwarded  = result_from_ex_mem_retained;
-        else if (B_fwd_mem_wb_d1)
-          B_forwarded  = result_from_mem_wb_retained;
       end
       else begin
         if (B_fwd_ex_mem)
           B_forwarded  = result_from_ex_mem;
-        else if (B_fwd_mem_wb)
-          B_forwarded  = result_from_mem_wb;
       end
     end
 
