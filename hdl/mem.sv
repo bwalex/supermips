@@ -91,7 +91,7 @@ module mem #(
   assign fwd = mem_wb_dest_reg_valid && result_2_reg_valid && (result_2_reg == mem_wb_dest_reg);
 
   assign word_st  = (stall_d1) ? ((fwd_d1) ? result_from_mem_wb_retained : result_2) : (fwd) ? result_from_mem_wb : result_2;
-  //assign word_st  = (fwd) ? (stall_d1) ? result_from_mem_wb_retained : result_from_mem_wb : result_2;
+
 
   assign word_idx = alu_result[1:0];
 

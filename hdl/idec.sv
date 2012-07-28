@@ -793,22 +793,12 @@ module idec #(
   end
 
 
-//  always_comb begin
-//    if (jmp_inst)
-//      imm_extended  = { pc_plus_4[31:28], inst_addr, 2'b00 };
-//    else if (branch_inst)
-//      imm_extended  = pc_plus_4 + { {14{inst_imm[15]}}, inst_imm, 2'b00 };
-//    else
-//      imm_extended  = (imm_sext) ? { {16{inst_imm[15]}}, inst_imm } : { 16'd0, inst_imm };
-//  end
-
   assign imm  = (new_pc_valid & dest_reg_valid) ? pc_plus_8
               : (imm_sext)                      ? { {16{inst_imm[15]}}, inst_imm }
               :                                   { 16'd0, inst_imm };
 
   assign A   = rfile_rd_data1;
   assign B   = rfile_rd_data2;
-//  assign imm  = imm_extended;
 
   assign imm_valid  = inst_iformat | inst_jformat | (new_pc_valid & dest_reg_valid);
 
