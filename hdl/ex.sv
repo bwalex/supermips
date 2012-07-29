@@ -106,6 +106,8 @@ module ex #(
 
   wire [4:0]                ext_msbd;
   wire [4:0]                ext_lsb;
+  reg [31:0]                ext_msbd_mask;
+  wire [31:0]               ext_msbd_mask_ins;
 
   reg [31:0]                hi_r;
   reg [31:0]                lo_r;
@@ -379,15 +381,56 @@ module ex #(
       OP_SEH:
         alu_res  = { {16{B[15]}}, B[15:0] };
       OP_EXT:
-        // XXX: both EXT and INS are impractical like this. should probably be multi-cycle
-        alu_res  = (A >> ext_lsb) & ((1 << (ext_msbd+1)) -1);
+        alu_res  = (A >> ext_lsb) & ext_msbd_mask;
       OP_INS:
         // B_forwarded, since imm_valid overrides B
-        alu_res  =  (A << ext_lsb) & (( 1 << (ext_msbd)) -1) // bit field in position
-                  | (B_forwarded & ~((1 << (ext_msbd)) -1))  // keep top bits
+        alu_res  =  (A << ext_lsb) & (ext_msbd_mask_ins)     // bit field in position
+                  | (B_forwarded & ~(ext_msbd_mask_ins)      // keep top bits
                   | (B_forwarded & (( 1 << (ext_lsb)) -1));  // keep bottom bits
     endcase // case (alu_op)
   end
+
+
+  always_comb
+    begin
+      case (ext_msbd)
+        5'd0:    ext_msbd_mask  = 32'h00000001;
+        5'd1:    ext_msbd_mask  = 32'h00000003;
+        5'd2:    ext_msbd_mask  = 32'h00000007;
+        5'd3:    ext_msbd_mask  = 32'h0000000f;
+        5'd4:    ext_msbd_mask  = 32'h0000001f;
+        5'd5:    ext_msbd_mask  = 32'h0000003f;
+        5'd6:    ext_msbd_mask  = 32'h0000007f;
+        5'd7:    ext_msbd_mask  = 32'h000000ff;
+        5'd8:    ext_msbd_mask  = 32'h000001ff;
+        5'd9:    ext_msbd_mask  = 32'h000003ff;
+        5'd10:   ext_msbd_mask  = 32'h000007ff;
+        5'd11:   ext_msbd_mask  = 32'h00000fff;
+        5'd12:   ext_msbd_mask  = 32'h00001fff;
+        5'd13:   ext_msbd_mask  = 32'h00003fff;
+        5'd14:   ext_msbd_mask  = 32'h00007fff;
+        5'd15:   ext_msbd_mask  = 32'h0000ffff;
+        5'd16:   ext_msbd_mask  = 32'h0001ffff;
+        5'd17:   ext_msbd_mask  = 32'h0003ffff;
+        5'd18:   ext_msbd_mask  = 32'h0007ffff;
+        5'd19:   ext_msbd_mask  = 32'h000fffff;
+        5'd20:   ext_msbd_mask  = 32'h001fffff;
+        5'd21:   ext_msbd_mask  = 32'h003fffff;
+        5'd22:   ext_msbd_mask  = 32'h007fffff;
+        5'd23:   ext_msbd_mask  = 32'h00ffffff;
+        5'd24:   ext_msbd_mask  = 32'h01ffffff;
+        5'd25:   ext_msbd_mask  = 32'h03ffffff;
+        5'd26:   ext_msbd_mask  = 32'h07ffffff;
+        5'd27:   ext_msbd_mask  = 32'h0fffffff;
+        5'd28:   ext_msbd_mask  = 32'h1fffffff;
+        5'd29:   ext_msbd_mask  = 32'h3fffffff;
+        5'd30:   ext_msbd_mask  = 32'h7fffffff;
+        5'd31:   ext_msbd_mask  = 32'hffffffff;
+        default: ext_msbd_mask  = 32'h00000001;
+      endcase
+    end
+
+  assign ext_msbd_mask_ins  = {1'b0, ext_msbd_mask[31:1]};
 
 
   always_comb begin
