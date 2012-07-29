@@ -17,6 +17,10 @@ ID_EX:
  - imm/32
  - imm_valid/1
  - shamt/5
+ - shamt_valid/1
+ - shleft/1
+ - sharith/1
+ - shopsela/1
  - alu_inst/1
  - alu_op/alu_op_t/OP_PASS_A
  - alu_res_sel/alu_res_t/RES_ALU

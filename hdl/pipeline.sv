@@ -76,7 +76,12 @@ module pipeline#(
   wire [31:0] id_imm;//
   wire        id_imm_valid;//
   wire [ 4:0] id_shamt;//
+  wire        id_shamt_valid;
+  wire        id_shleft;
+  wire        id_sharith;
+  wire        id_shopsela;
   wire        id_alu_inst;//
+  wire        id_muldiv_inst;
   muldiv_op_t id_muldiv_op;
   wire        id_muldiv_op_u;
   wire        id_load_inst;//
@@ -126,7 +131,12 @@ module pipeline#(
   wire [31:0] id_imm_r;//
   wire        id_imm_valid_r;//
   wire [ 4:0] id_shamt_r;//
+  wire        id_shamt_valid_r;
+  wire        id_shleft_r;
+  wire        id_sharith_r;
+  wire        id_shopsela_r;
   wire        id_alu_inst_r;//
+  wire        id_muldiv_inst_r;
   muldiv_op_t id_muldiv_op_r;
   wire        id_muldiv_op_u_r;
   wire        id_load_inst_r;//
@@ -237,9 +247,14 @@ module pipeline#(
           .imm                          (id_imm),
           .imm_valid                    (id_imm_valid),
           .shamt                        (id_shamt),
+          .shamt_valid                  (id_shamt_valid),
+          .shleft                       (id_shleft),
+          .sharith                      (id_sharith),
+          .shopsela                     (id_shopsela),
           .alu_set_u                    (id_alu_set_u),
           .ls_sext                      (id_ls_sext),
           .alu_inst                     (id_alu_inst),
+          .muldiv_inst                  (id_muldiv_inst),
           .muldiv_op_u                  (id_muldiv_op_u),
           .load_inst                    (id_load_inst),
           .store_inst                   (id_store_inst),
@@ -257,19 +272,16 @@ module pipeline#(
           .pc_plus_4                    (if_pc),
           .inst_word                    (if_inst_word_r),
           .branch_stall                 (if_branch_stall),
-	  .front_stall                  (stall_id),
+          .front_stall                  (stall_id),
           .rfile_rd_data1               (rfile_rd_data1),
           .rfile_rd_data2               (rfile_rd_data2),
           .id_ex_dest_reg               (id_dest_reg_r),
           .ex_mem_dest_reg              (ex_dest_reg_r),
-          .mem_wb_dest_reg              (mem_dest_reg_r),
           .id_ex_dest_reg_valid         (id_dest_reg_valid_r),
           .ex_mem_dest_reg_valid        (ex_dest_reg_valid_r),
-          .mem_wb_dest_reg_valid        (mem_dest_reg_valid_r),
           .id_ex_load_inst              (id_load_inst_r),
-	  .ex_mem_load_inst             (ex_load_inst_r),
-	  .result_from_ex_mem           (ex_result_r),
-	  .result_from_mem_wb           (mem_result_r));
+	        .ex_mem_load_inst             (ex_load_inst_r),
+	        .result_from_ex_mem           (ex_result_r));
 
   ex EX(
         // Interfaces
@@ -305,8 +317,13 @@ module pipeline#(
         .imm                            (id_imm_r),
         .imm_valid                      (id_imm_valid_r),
         .shamt                          (id_shamt_r),
+        .shamt_valid                    (id_shamt_valid_r),
+        .shleft                         (id_shleft_r),
+        .sharith                        (id_sharith_r),
+        .shopsela                       (id_shopsela_r),
         .alu_set_u                      (id_alu_set_u_r),
         .alu_inst                       (id_alu_inst_r),
+        .muldiv_inst                    (id_muldiv_inst_r),
         .muldiv_op_u                    (id_muldiv_op_u_r),
         .load_inst                      (id_load_inst_r),
         .store_inst                     (id_store_inst_r),
@@ -394,8 +411,13 @@ module pipeline#(
                        .ex_imm          (id_imm_r),
                        .ex_imm_valid    (id_imm_valid_r),
                        .ex_shamt        (id_shamt_r),
+                       .ex_shamt_valid  (id_shamt_valid_r),
+                       .ex_shleft       (id_shleft_r),
+                       .ex_sharith      (id_sharith_r),
+                       .ex_shopsela     (id_shopsela_r),
                        .ex_alu_inst     (id_alu_inst_r),
                        .ex_alu_set_u    (id_alu_set_u_r),
+                       .ex_muldiv_inst  (id_muldiv_inst_r),
                        .ex_muldiv_op_u  (id_muldiv_op_u_r),
                        .ex_ls_sext      (id_ls_sext_r),
                        .ex_load_inst    (id_load_inst_r),
@@ -419,8 +441,13 @@ module pipeline#(
                        .id_imm          (id_imm),
                        .id_imm_valid    (id_imm_valid),
                        .id_shamt        (id_shamt),
+                       .id_shamt_valid  (id_shamt_valid),
+                       .id_shleft       (id_shleft),
+                       .id_sharith      (id_sharith),
+                       .id_shopsela     (id_shopsela),
                        .id_alu_inst     (id_ex_alu_inst_i),
                        .id_alu_set_u    (id_alu_set_u),
+                       .id_muldiv_inst  (id_muldiv_inst),
                        .id_muldiv_op_u  (id_muldiv_op_u),
                        .id_ls_sext      (id_ls_sext),
                        .id_load_inst    (id_ex_load_inst_i),

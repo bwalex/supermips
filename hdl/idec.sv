@@ -23,15 +23,12 @@ module idec #(
 
   input [ 4:0]                  id_ex_dest_reg,
   input [ 4:0]                  ex_mem_dest_reg,
-  input [ 4:0]                  mem_wb_dest_reg,
   input                         id_ex_dest_reg_valid,
   input                         ex_mem_dest_reg_valid,
-  input                         mem_wb_dest_reg_valid,
   input                         id_ex_load_inst,
   input                         ex_mem_load_inst,
 
   input [31:0]                  result_from_ex_mem,
-  input [31:0]                  result_from_mem_wb,
 
   output                        stall,
   output [11:0]                 opc,
@@ -46,6 +43,10 @@ module idec #(
   output [31:0]                 imm,
   output                        imm_valid,
   output reg [ 4:0]             shamt,
+  output reg                    shamt_valid,
+  output reg                    shleft,
+  output reg                    sharith,
+  output reg                    shopsela,
   output alu_op_t               alu_op,
   output alu_res_t              alu_res_sel,
   output reg                    alu_set_u,
@@ -235,7 +236,11 @@ module idec #(
     B_reg_valid     = 1'b0;
     B_need_late     = 1'b0;
     dest_reg        = inst_rt;
-    shamt           = 0;
+    shamt           = inst_shamt;
+    shamt_valid     = 1'b0;
+    shleft          = 1'b0;
+    sharith         = 1'b0;
+    shopsela        = 1'b0;
     alu_inst        = 1'b0;
     muldiv_inst     = 1'b0;
     load_inst       = 1'b0;
@@ -263,39 +268,44 @@ module idec #(
         inst_iformat    = 1'b0;
         dest_reg        = inst_rd;
 
-        shamt           = inst_shamt;
-
         case (inst_funct)
           6'd00: begin // sll
+            shamt_valid  = 1'b1;
+            shleft       = 1'b1;
             alu_inst     = 1'b1;
-            alu_op       = OP_SLL;
+            alu_res_sel  = RES_SHIFT;
             B_reg_valid  = 1'b1;
           end
           6'd02: begin // srl
+            shamt_valid  = 1'b1;
             alu_inst     = 1'b1;
-            alu_op       = OP_SRL;
+            alu_res_sel  = RES_SHIFT;
             B_reg_valid  = 1'b1;
           end
           6'd03: begin // sra
+            shamt_valid  = 1'b1;
+            sharith      = 1'b1;
             alu_inst     = 1'b1;
-            alu_op       = OP_SRA;
+            alu_res_sel  = RES_SHIFT;
             B_reg_valid  = 1'b1;
           end
           6'd04: begin // sllv
+            shleft       = 1'b1;
             alu_inst     = 1'b1;
-            alu_op       = OP_SLL;
+            alu_res_sel  = RES_SHIFT;
             A_reg_valid  = 1'b1;
             B_reg_valid  = 1'b1;
           end
           6'd06: begin // srlv
             alu_inst     = 1'b1;
-            alu_op       = OP_SRL;
+            alu_res_sel  = RES_SHIFT;
             A_reg_valid  = 1'b1;
             B_reg_valid  = 1'b1;
           end
           6'd07: begin // srav
+            sharith      = 1'b1;
             alu_inst     = 1'b1;
-            alu_op       = OP_SRA;
+            alu_res_sel  = RES_SHIFT;
             A_reg_valid  = 1'b1;
             B_reg_valid  = 1'b1;
           end
@@ -644,12 +654,20 @@ module idec #(
         case (inst_funct)
           6'd00: begin // ext
             alu_inst     = 1'b1;
+            shleft       = 1'b0;
+            shopsela     = 1'b1;
+            sharith      = 1'b0;
+            shamt_valid  = 1'b1;
             alu_op       = OP_EXT;
             A_reg_valid  = 1'b1;
           end
 
           6'd04: begin // ins
             alu_inst     = 1'b1;
+            shleft       = 1'b1;
+            shopsela     = 1'b1;
+            sharith      = 1'b0;
+            shamt_valid  = 1'b1;
             alu_op       = OP_INS;
             A_reg_valid  = 1'b1;
             B_reg_valid  = 1'b1;

@@ -12,6 +12,7 @@ vmap work ./libraries/work/
 # Compile the additional test files
 vlog $VLOG_FLAGS -sv $HDL_BASE/types.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/ex.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/generic_shifter.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/idec.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/ifetch.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/mem.sv

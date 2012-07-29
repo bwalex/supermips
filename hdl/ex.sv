@@ -47,6 +47,10 @@ module ex #(
   input [31:0]             imm,
   input                    imm_valid,
   input [ 4:0]             shamt,
+  input                    shamt_valid,
+  input                    shleft,
+  input                    sharith,
+  input                    shopsela,
   input alu_op_t           alu_op,
   input alu_res_t          alu_res_sel,
   input                    alu_set_u,
@@ -85,6 +89,8 @@ module ex #(
   wire [6:0]                inst_funct;
 
   wire [4:0]                shift_val;
+  wire [31:0]               shift_operand;
+  wire [31:0]               shift_res;
 
   reg                       flag_carry;
   wire                      flag_zero;
@@ -321,16 +327,17 @@ module ex #(
   assign inst_funct = alu_op[5:0];
 
 
-  // Detect sllv, srlv, srav
-  assign shift_val  = A_reg_valid ? A[4:0] : shamt;
+  assign shift_val      = shamt_valid ? shamt : A[4:0];
+  assign shift_operand  = shopsela    ? A     : B;
 
 
   assign flag_zero  = (alu_res == 0);
 
-  assign result  = (muldiv_op == OP_MFHI)   ? hi_r
-                 : (muldiv_op == OP_MFLO)   ? lo_r
-                 : (alu_res_sel == RES_ALU) ? alu_res
-                 :                            set_res;
+  assign result =  (muldiv_op == OP_MFHI)     ? hi_r
+                 : (muldiv_op == OP_MFLO)     ? lo_r
+                 : (alu_res_sel == RES_SHIFT) ? shift_res
+                 : (alu_res_sel == RES_ALU)   ? alu_res
+                 :                              set_res;
 
 
   assign inval_dest_reg =  (alu_op == OP_MOVZ) ? ~B_eqz
@@ -360,14 +367,6 @@ module ex #(
         alu_res  = A;
       OP_PASS_B:
         alu_res  = B;
-      OP_SLL:
-        alu_res  = B << shift_val;
-      OP_SRL:
-        alu_res  = B >> shift_val;
-      OP_SLA:
-        alu_res  = B <<< shift_val;
-      OP_SRA:
-        alu_res  = B >>> shift_val;
       OP_LUI:
         alu_res  = { B[15:0], 16'b0 };
       OP_MUL_LO:
@@ -381,12 +380,11 @@ module ex #(
       OP_SEH:
         alu_res  = { {16{B[15]}}, B[15:0] };
       OP_EXT:
-        alu_res  = (A >> ext_lsb) & ext_msbd_mask;
+        alu_res  = shift_res & ext_msbd_mask;
       OP_INS:
         // B_forwarded, since imm_valid overrides B
-        alu_res  =  (A << ext_lsb) & (ext_msbd_mask_ins)     // bit field in position
-                  | (B_forwarded & ~(ext_msbd_mask_ins)      // keep top bits
-                  | (B_forwarded & (( 1 << (ext_lsb)) -1));  // keep bottom bits
+        alu_res  =  (shift_res   & ext_msbd_mask_ins)
+                  | (B_forwarded & ~(shift_res & ext_msbd_mask_ins));
     endcase // case (alu_op)
   end
 
@@ -443,4 +441,19 @@ module ex #(
       set_res  = { 31'b0, (A[31] & ~B[31]) | (alu_res[31] & (~A[31] ^ B[31])) };
     end
   end
+
+
+  shifter#
+    (
+     .DATA_WIDTH(32),
+     .SHAMT_WIDTH(5)
+     ) shifter
+    (
+     .in       (shift_operand),
+     .shamt    (shift_val),
+     .shleft   (shleft),
+     .sharith  (sharith),
+     .out      (shift_res)
+     );
+
 endmodule

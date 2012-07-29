@@ -42,7 +42,8 @@ package pipTypes;
 
   typedef enum {
                 RES_ALU,
-                RES_SET
+                RES_SET,
+                RES_SHIFT
                 } alu_res_t;
 
 

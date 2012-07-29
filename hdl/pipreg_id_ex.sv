@@ -17,6 +17,10 @@ module pipreg_id_ex(
   input [31:0] id_imm,
   input [0:0] id_imm_valid,
   input [4:0] id_shamt,
+  input [0:0] id_shamt_valid,
+  input [0:0] id_shleft,
+  input [0:0] id_sharith,
+  input [0:0] id_shopsela,
   input [0:0] id_alu_inst,
   input alu_op_t id_alu_op,
   input alu_res_t id_alu_res_sel,
@@ -47,6 +51,10 @@ module pipreg_id_ex(
   output reg [31:0] ex_imm,
   output reg [0:0] ex_imm_valid,
   output reg [4:0] ex_shamt,
+  output reg [0:0] ex_shamt_valid,
+  output reg [0:0] ex_shleft,
+  output reg [0:0] ex_sharith,
+  output reg [0:0] ex_shopsela,
   output reg [0:0] ex_alu_inst,
   output alu_op_t ex_alu_op,
   output alu_res_t ex_alu_res_sel,
@@ -84,6 +92,10 @@ module pipreg_id_ex(
       ex_imm<= 'b0;
       ex_imm_valid<= 'b0;
       ex_shamt<= 'b0;
+      ex_shamt_valid<= 'b0;
+      ex_shleft<= 'b0;
+      ex_sharith<= 'b0;
+      ex_shopsela<= 'b0;
       ex_alu_inst<= 'b0;
       ex_alu_op<= OP_PASS_A;
       ex_alu_res_sel<= RES_ALU;
@@ -115,6 +127,10 @@ module pipreg_id_ex(
       ex_imm <= id_imm;
       ex_imm_valid <= id_imm_valid;
       ex_shamt <= id_shamt;
+      ex_shamt_valid <= id_shamt_valid;
+      ex_shleft <= id_shleft;
+      ex_sharith <= id_sharith;
+      ex_shopsela <= id_shopsela;
       ex_alu_inst <= id_alu_inst;
       ex_alu_op <= id_alu_op;
       ex_alu_res_sel <= id_alu_res_sel;

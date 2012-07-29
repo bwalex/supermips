@@ -29,6 +29,7 @@ vcs:
 		-pvalue+top/CPU/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/types.sv \
+		$(HDL_BASE)/generic_shifter.sv \
 		$(HDL_BASE)/ex.sv \
 		$(HDL_BASE)/idec.sv \
 		$(HDL_BASE)/ifetch.sv \
@@ -60,6 +61,7 @@ ncv:
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/text_idec.sv \
+		$(HDL_BASE)/generic_shifter.sv \
 		$(HDL_BASE)/ex.sv \
 		$(HDL_BASE)/idec.sv \
 		$(HDL_BASE)/ifetch.sv \
@@ -82,6 +84,7 @@ ncv_batch:
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/text_idec.sv \
+		$(HDL_BASE)/generic_shifter.sv \
 		$(HDL_BASE)/ex.sv \
 		$(HDL_BASE)/idec.sv \
 		$(HDL_BASE)/ifetch.sv \
