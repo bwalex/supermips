@@ -25,6 +25,7 @@ ID_EX:
  - alu_op/alu_op_t/OP_PASS_A
  - alu_res_sel/alu_res_t/RES_ALU
  - alu_set_u/1
+ - muldiv_inst/1
  - muldiv_op/muldiv_op_t/OP_NONE
  - muldiv_op_u/1
  - ls_op/ls_op_t/OP_LS_WORD
