@@ -60,11 +60,15 @@ package pipTypes;
                } cond_t;
 
 
-  // Total size, approx: 171 bits (139 without inst_word)
+  // Total size, approx: 203 bits (171 without inst_word)
   typedef struct {
     // (64 bits)
     bit [31:0]   pc;
     bit [31:0]   inst_word;
+
+    // branch unit signals (~39 bits [assuming one-hot])
+    cond_t       branch_cond;
+    bit [31:0]   branch_target;
 
     // source registers (12 bits)
     bit [ 4:0]   A_reg;
@@ -99,9 +103,6 @@ package pipTypes;
     // load/store unit signals (4 bits [assuming one-hot])
     ls_op_t      ls_op;
     bit          ls_sext;
-
-    // branch unit signals (~7 bits [assuming one-hot])
-    cond_t       branch_cond;
 
     // generic signals identifying instruction type (7 bits)
     bit          alu_inst;

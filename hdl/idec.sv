@@ -1,76 +1,14 @@
 import pipTypes::*;
 
-module idec #(
-  parameter ALU_OP_WIDTH = 12,
-            LS_OP_WIDTH = 4
-)(
-  input                         clock,
-  input                         reset_n,
+module idec
+(
+  input                      clock,
+  input                      reset_n,
 
-  input [31:0]                  pc,
-  input [31:0]                  inst_word,
+  input [31:0]               pc,
+  input [31:0]               inst_word,
 
-  input [31:0]                  pc_plus_4,
-
-  input                         branch_stall,
-  input                         front_stall,
-
-  output [ 4:0]                 rfile_rd_addr1,
-  output [ 4:0]                 rfile_rd_addr2,
-
-  input [31:0]                  rfile_rd_data1,
-  input [31:0]                  rfile_rd_data2,
-
-  input [ 4:0]                  id_ex_dest_reg,
-  input [ 4:0]                  ex_mem_dest_reg,
-  input                         id_ex_dest_reg_valid,
-  input                         ex_mem_dest_reg_valid,
-  input                         id_ex_load_inst,
-  input                         ex_mem_load_inst,
-
-  input [31:0]                  result_from_ex_mem,
-
-  output                        stall,
-  output [11:0]                 opc,
-
-  output [31:0]                 A,
-  output [31:0]                 B,
-  output reg [ 4:0]             A_reg,
-  output reg                    A_reg_valid,
-  output reg [ 4:0]             B_reg,
-  output reg                    B_reg_valid,
-  output reg                    B_need_late,
-  output [31:0]                 imm,
-  output                        imm_valid,
-  output reg [ 4:0]             shamt,
-  output reg                    shamt_valid,
-  output reg                    shleft,
-  output reg                    sharith,
-  output reg                    shopsela,
-  output alu_op_t               alu_op,
-  output alu_res_t              alu_res_sel,
-  output reg                    alu_set_u,
-  output muldiv_op_t            muldiv_op,
-  output reg                    muldiv_op_u,
-
-  output ls_op_t                ls_op,
-  output reg                    ls_sext,
-
-  output cond_t                 branch_cond,
-
-  output reg                    alu_inst,
-  output reg                    muldiv_inst,
-  output reg                    load_inst,
-  output reg                    store_inst,
-  output reg                    jmp_inst,
-  output reg                    branch_inst,
-
-  output                        nop,
-
-  output reg [ 4:0]             dest_reg,
-  output reg                    dest_reg_valid,
-  output [31:0]                 new_pc,
-  output                        new_pc_valid
+  output dec_inst_t          di
 );
 
 
@@ -88,131 +26,52 @@ module idec #(
   reg                        inst_iformat;
 
   reg                        imm_sext;
-  reg  [31:0]                imm_extended;
 
-  reg  [31:0]                A_forwarded;
-  reg  [31:0]                B_forwarded;
-
-  wire                       A_fwd_ex_mem;
-  wire                       B_fwd_ex_mem;
-
-  reg                        A_fwd_ex_mem_d1;
-  reg                        B_fwd_ex_mem_d1;
-
+  wire [31:0]                pc_plus_4;
   wire [31:0]                pc_plus_8;
-  wire [31:0]                new_imm_pc;
-
-  wire                       AB_equal;
-  wire                       A_gtz;
-  wire                       A_gez;
-  wire                       A_eqz;
-  wire                       B_eqz;
-
-  reg  [31:0]                result_from_ex_mem_retained;
-  reg                        stall_d1;
-
-  wire                       stall_i;
-
-  wire                       branch_cond_ok;
-
-
-  always_ff @(posedge clock, negedge reset_n)
-    if (~reset_n) begin
-      A_fwd_ex_mem_d1 <= 1'b0;
-      B_fwd_ex_mem_d1 <= 1'b0;
-    end
-    else if (~stall_d1) begin
-      A_fwd_ex_mem_d1 <= A_fwd_ex_mem;
-      B_fwd_ex_mem_d1 <= B_fwd_ex_mem;
-    end
-
-
-  always_ff @(posedge clock, negedge reset_n)
-    if (~reset_n)
-      stall_d1 <= 1'b0;
-    else
-      stall_d1 <= (branch_stall & new_pc_valid & ~front_stall);
-
-
-  always @(posedge clock, negedge reset_n)
-    if (~reset_n)
-      result_from_ex_mem_retained <= 32'b0;
-    else if (stall & ~stall_d1)
-      result_from_ex_mem_retained <= result_from_ex_mem;
 
 
 
-  // Forwarding and stalling logic
-  assign A_reg_match_id_ex  = id_ex_dest_reg_valid  && A_reg_valid && (A_reg == id_ex_dest_reg);
-  assign B_reg_match_id_ex  = id_ex_dest_reg_valid  && B_reg_valid && (B_reg == id_ex_dest_reg);
+  wire [31:0]                branch_target;
 
-  assign A_reg_match_ex_mem = ex_mem_dest_reg_valid && A_reg_valid && (A_reg == ex_mem_dest_reg);
-  assign B_reg_match_ex_mem = ex_mem_dest_reg_valid && B_reg_valid && (B_reg == ex_mem_dest_reg);
+  reg [ 4:0]                 A_reg;
+  reg                        A_reg_valid;
+  reg [ 4:0]                 B_reg;
+  reg                        B_reg_valid;
 
+  reg [ 4:0]                 dest_reg;
+  reg                        dest_reg_valid;
 
-  assign A_fwd_ex_mem  = A_reg_match_ex_mem;
-  assign B_fwd_ex_mem  = B_reg_match_ex_mem;
+  wire [31:0]                imm;
+  wire                       imm_valid;
 
+  reg [ 4:0]                 shamt;
+  reg                        shamt_valid;
+  reg                        shleft;
+  reg                        sharith;
+  reg                        shopsela;
 
-  always_comb
-    begin
-      A_forwarded  = A;
-      if (stall_d1) begin
-        if (A_fwd_ex_mem_d1)
-          A_forwarded  = result_from_ex_mem_retained;
-      end
-      else begin
-        if (A_fwd_ex_mem)
-          A_forwarded  = result_from_ex_mem;
-      end
-    end
+  alu_op_t                   alu_op;
+  alu_res_t                  alu_res_sel;
+  reg                        alu_set_u;
 
+  muldiv_op_t                muldiv_op;
+  reg                        muldiv_op_u;
 
-  always_comb
-    begin
-      B_forwarded  = B;
-      if (stall_d1) begin
-        if (B_fwd_ex_mem_d1)
-          B_forwarded  = result_from_ex_mem_retained;
-      end
-      else begin
-        if (B_fwd_ex_mem)
-          B_forwarded  = result_from_ex_mem;
-      end
-    end
+  ls_op_t                    ls_op;
+  reg                        ls_sext;
 
+  cond_t                     branch_cond;
 
+  reg                        alu_inst;
+  reg                        muldiv_inst;
+  reg                        load_inst;
+  reg                        store_inst;
+  reg                        jmp_inst;
+  reg                        branch_inst;
+  wire                       nop;
 
 
-
-
-
-  // Stall when depending on a load instruction currently in the EX stage
-  // or on a conditional branch when the result-generating instruction is now entering EX
-  // or on a conditional branch when the result-generating instruction is a load now entering MEM
-  // or on a jump-register when the result-generating instruction is now entering EX
-  // or on a jump-register when the result-generating instruction is a load now entering MEM
-  // or when pipeline stages further down stall
-  // or when ifetch stalls while we are trying to load a new pc
-  assign stall_i  =  (id_ex_load_inst && (A_reg_match_id_ex || (~B_need_late && B_reg_match_id_ex)))
-                   | (A_reg_match_id_ex && (branch_inst && branch_cond != COND_UNCONDITIONAL))
-                   | (A_reg_match_ex_mem && ex_mem_load_inst && (branch_inst && branch_cond != COND_UNCONDITIONAL))
-                   | (B_reg_match_id_ex && (branch_inst && (branch_cond == COND_EQ || branch_cond == COND_NE)))
-                   | (B_reg_match_ex_mem && ex_mem_load_inst && (branch_inst && (branch_cond == COND_NE || branch_cond == COND_EQ)))
-                   | (A_reg_match_id_ex && (jmp_inst & ~imm_valid))
-                   | (A_reg_match_ex_mem && ex_mem_load_inst && (jmp_inst & ~imm_valid))
-                   | front_stall;
-
-  assign stall    =  stall_i
-                   | (branch_stall & new_pc_valid);
-
-
-
-  // XXX: could use A_reg, B_reg (more "correct") but
-  //      using inst_{rs,rt} is good enough and is
-  //      faster.
-  assign rfile_rd_addr1  = inst_rs;
-  assign rfile_rd_addr2  = inst_rt;
 
   assign inst_opc   = inst_word[31:26];
   assign inst_rs    = inst_word[25:21];
@@ -223,10 +82,8 @@ module idec #(
   assign inst_shamt = inst_word[10: 6];
   assign inst_funct = inst_word[ 5: 0];
 
-  assign opc  = { inst_opc, inst_funct };
 
-
-  assign nop  = (inst_word == 32'b0);
+  assign nop        = (inst_word == 32'b0);
 
 
   always_comb begin
@@ -815,44 +672,65 @@ module idec #(
               : (imm_sext)                      ? { {16{inst_imm[15]}}, inst_imm }
               :                                   { 16'd0, inst_imm };
 
-  assign A   = rfile_rd_data1;
-  assign B   = rfile_rd_data2;
-
   assign imm_valid  = inst_iformat | inst_jformat | (new_pc_valid & dest_reg_valid);
 
 
 
 
-
-
-
-
-
-
   // Branching logic
-  assign pc_plus_8  = pc_plus_4 + 4;
+  assign pc_plus_4  = pc + 4;
+  assign pc_plus_8  = pc + 8;
 
-  assign AB_equal  = (A_forwarded == B_forwarded);
-  assign A_gtz     = A_gez & ~A_eqz;
-  assign A_gez     = (A_forwarded[31] == 1'b0);
-
-  assign A_eqz     = (A_forwarded == 0);
-  assign B_eqz     = (B_forwarded == 0);
-
-  assign new_imm_pc  = (jmp_inst)        ? { pc_plus_4[31:28], inst_addr, 2'b00 }
-                     : /* branch_inst */   pc_plus_4 + { {14{inst_imm[15]}}, inst_imm, 2'b00 };
+  assign branch_target = (jmp_inst)        ? { pc_plus_4[31:28], inst_addr, 2'b00 }
+                       : /* branch_inst */   pc_plus_4 + { {14{inst_imm[15]}}, inst_imm, 2'b00 };
 
 
 
-  assign new_pc    = (inst_iformat | inst_jformat) ? new_imm_pc : A_forwarded;
 
-  assign new_pc_valid    = (jmp_inst | (branch_inst & branch_cond_ok)) & ~stall_i;
-  assign branch_cond_ok  = (branch_cond == COND_UNCONDITIONAL)
-                         | (branch_cond == COND_EQ && AB_equal)
-                         | (branch_cond == COND_NE && ~AB_equal)
-                         | (branch_cond == COND_GT && A_gtz)
-                         | (branch_cond == COND_GE && A_gez)
-                         | (branch_cond == COND_LT && ~A_gez)
-                         | (branch_cond == COND_LE && ~A_gtz);
+
+
+  // Connect it all into dec_inst_t di
+  always_comb
+    begin
+      di.pc              = pc;
+      di.inst_word       = inst_word;
+
+      di.branch_cond     = branch_cond;
+      di.branch_target   = branch_target;
+
+      di.A_reg           = A_reg;
+      di.A_reg_valid     = A_reg_valid;
+      di.B_reg           = B_reg;
+      di.B_reg_valid     = B_reg_valid;
+
+      di.dest_reg        = dest_reg;
+      di.dest_reg_valid  = dest_reg_valid;
+
+      di.imm             = imm;
+      di.imm_valid       = imm_valid;
+      di.shamt           = shamt;
+      di.shamt_valid     = shamt_valid;
+      di.shleft          = shleft;
+      di.sharith         = sharith;
+      di.shopsela        = shopsela;
+
+      di.alu_op          = alu_op;
+      di.alu_res_sel     = alu_res_sel;
+      di.alu_set_u       = alu_set_u;
+
+      di.muldiv_op       = muldiv_op;
+      di.muldiv_op_u     = muldiv_op_u;
+
+      di.ls_op           = ls_op;
+      di.ls_sext         = ls_sext;
+
+      di.alu_inst        = alu_inst;
+      di.muldiv_inst     = muldiv_inst;
+      di.load_inst       = load_inst;
+      di.store_inst      = store_inst;
+      di.jmp_inst        = jmp_inst;
+      di.branch_inst     = branch_inst;
+      di.nop             = nop;
+    end
 
 endmodule
