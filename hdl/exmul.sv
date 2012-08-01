@@ -18,7 +18,7 @@ import pipTypes::*;
 (n) <= (1<<30) ? 30 : (n) <= (1<<31) ? 31 : 32)
 
 
-module ex #(
+module exmul #(
   parameter ALU_OP_WIDTH = 12,
             MUL_CYCLES   = 5,
             DIV_CYCLES   = 35,

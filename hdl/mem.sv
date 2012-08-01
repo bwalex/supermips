@@ -25,14 +25,8 @@ module mem #(
   input [ 4:0]              dest_reg,
   input                     dest_reg_valid,
 
-  input [31:0]              alu_result, // soon to be agu_result
-  input [31:0]              result_2,
-  input [ 4:0]              result_2_reg,
-  input                     result_2_reg_valid,
-  input [31:0]              result_from_mem_wb,
-
-  input [ 4:0]              mem_wb_dest_reg,
-  input                     mem_wb_dest_reg_valid,
+  input [31:0]              agu_address,
+  input [31:0]              B_val,
 
   output [31:0]             result,
   output                    stall
@@ -40,16 +34,13 @@ module mem #(
 
   wire                      trickbox_taken;
   wire [31:0]               trickbox_out;
-  wire                      fwd;
 
 
   wire [31:0]               word_st;
   wire [ 1:0]               word_idx;
   reg [31:0]                word_from_cache;
   reg [31:0]                word_to_cache;
-  reg [31:0]                result_from_mem_wb_retained;
   reg                       stall_d1;
-  reg                       fwd_d1;
 
 
   trickbox#(
@@ -57,7 +48,7 @@ module mem #(
   ) trickbox (
               .clock(clock),
               .reset_n(reset_n),
-              .addr(alu_result),
+              .addr(agu_address),
               .read(load_inst),
               .write(store_inst),
               .data_in(word_st),
@@ -74,31 +65,15 @@ module mem #(
       stall_d1 <= stall;
 
 
-  always_ff @(posedge clock, negedge reset_n)
-    if (~reset_n)
-      fwd_d1 <= 1'b0;
-    else if (~stall_d1)
-      fwd_d1 <= fwd;
+  assign word_st  = B_val;
 
 
-  always @(posedge clock, negedge reset_n)
-    if (~reset_n)
-      result_from_mem_wb_retained <= 32'b0;
-    else if (stall & ~stall_d1)
-      result_from_mem_wb_retained <= result_from_mem_wb;
-
-
-  assign fwd = mem_wb_dest_reg_valid && result_2_reg_valid && (result_2_reg == mem_wb_dest_reg);
-
-  assign word_st  = (stall_d1) ? ((fwd_d1) ? result_from_mem_wb_retained : result_2) : (fwd) ? result_from_mem_wb : result_2;
-
-
-  assign word_idx = alu_result[1:0];
+  assign word_idx = agu_address[1:0];
 
   assign stall  = cache_waitrequest;
 
-  assign result        = (load_inst) ? (trickbox_taken) ? trickbox_out : word_from_cache : alu_result;
-  assign cache_addr    = alu_result;
+  assign result        = (load_inst) ? (trickbox_taken) ? trickbox_out : word_from_cache : agu_address;
+  assign cache_addr    = agu_address;
   assign cache_wr      = ~trickbox_taken & store_inst;
   assign cache_rd      = ~trickbox_taken & load_inst;
   assign cache_wr_data = word_to_cache;

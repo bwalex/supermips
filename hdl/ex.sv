@@ -1,7 +1,7 @@
 import pipTypes::*;
 
 
-module
+module ex
 (
   input                    clock,
   input                    reset_n,
