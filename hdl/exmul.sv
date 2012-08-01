@@ -1,8 +1,29 @@
 import pipTypes::*;
 
+`define clogb2(n) ((n) <= (1<<0) ? 0 : (n) <= (1<<1) ? 1 :\
+(n) <= (1<<2) ? 2 : (n) <= (1<<3) ? 3 :\
+(n) <= (1<<4) ? 4 : (n) <= (1<<5) ? 5 :\
+(n) <= (1<<6) ? 6 : (n) <= (1<<7) ? 7 :\
+(n) <= (1<<8) ? 8 : (n) <= (1<<9) ? 9 :\
+(n) <= (1<<10) ? 10 : (n) <= (1<<11) ? 11 :\
+(n) <= (1<<12) ? 12 : (n) <= (1<<13) ? 13 :\
+(n) <= (1<<14) ? 14 : (n) <= (1<<15) ? 15 :\
+(n) <= (1<<16) ? 16 : (n) <= (1<<17) ? 17 :\
+(n) <= (1<<18) ? 18 : (n) <= (1<<19) ? 19 :\
+(n) <= (1<<20) ? 20 : (n) <= (1<<21) ? 21 :\
+(n) <= (1<<22) ? 22 : (n) <= (1<<23) ? 23 :\
+(n) <= (1<<24) ? 24 : (n) <= (1<<25) ? 25 :\
+(n) <= (1<<26) ? 26 : (n) <= (1<<27) ? 27 :\
+(n) <= (1<<28) ? 28 : (n) <= (1<<29) ? 29 :\
+(n) <= (1<<30) ? 30 : (n) <= (1<<31) ? 31 : 32)
 
-module
-(
+
+module ex #(
+  parameter ALU_OP_WIDTH = 12,
+            MUL_CYCLES   = 5,
+            DIV_CYCLES   = 35,
+            DIVCOUNT_WIDTH = `clogb2(DIV_CYCLES)+1 // assume div always takes longer than mul/madd
+)(
   input                    clock,
   input                    reset_n,
 
@@ -27,6 +48,9 @@ module
   input alu_res_t          alu_res_sel,
   input                    alu_set_u,
   input                    alu_inst,
+  input                    muldiv_inst,
+  input muldiv_op_t        muldiv_op,
+  input                    muldiv_op_u,
 
   input [ 4:0]             dest_reg,
   input                    dest_reg_valid,
@@ -60,6 +84,111 @@ module
   reg [31:0]                ext_msbd_mask;
   wire [31:0]               ext_msbd_mask_ins;
 
+  reg [31:0]                hi_r;
+  reg [31:0]                lo_r;
+  reg [31:0]                next_hi;
+  reg [31:0]                next_lo;
+
+  wire                      load_hi;
+  wire                      load_lo;
+
+  wire                      load_muldiv_count;
+
+  reg                       stall_d1;
+
+  reg [DIVCOUNT_WIDTH-1:0]  muldiv_count;
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      stall_d1 <= 1'b0;
+    else
+      stall_d1 <= stall;
+
+
+
+  // MUL, DIV "unit"
+  //
+  // XXX: not really synthesizable and/or practical. need proper
+  // multiplication and division algorithms.
+
+
+  assign stall =  (muldiv_op == OP_MUL )                    ? (muldiv_count != MUL_CYCLES)
+                : (muldiv_op == OP_MADD)                    ? (muldiv_count != MUL_CYCLES)
+                : (muldiv_op == OP_DIV )                    ? (muldiv_count != DIV_CYCLES)
+                :                                             front_stall;
+
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      muldiv_count <= 0;
+    else if (load_muldiv_count)
+      muldiv_count <= 1;
+    else
+      muldiv_count <= muldiv_count + 1;
+
+
+  assign load_muldiv_count =  (~stall_d1 && (
+                              (muldiv_op == OP_MUL)
+                           || (muldiv_op == OP_DIV)
+                           || (muldiv_op == OP_MADD)));
+
+
+  always @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      hi_r <= 32'b0;
+    else if (load_hi & ~stall)
+      hi_r <= next_hi;
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      lo_r <= 32'b0;
+    else if (load_lo & ~stall)
+      lo_r <= next_lo;
+
+
+  // XXX: would be cleaner to integrate ~stall with load_hi,lo
+  assign load_hi =  (muldiv_op == OP_MTHI)
+                 || (muldiv_op == OP_MUL)
+                 || (muldiv_op == OP_DIV)
+                 || (muldiv_op == OP_MADD);
+
+  assign load_lo =  (muldiv_op == OP_MTLO)
+                 || (muldiv_op == OP_MUL)
+                 || (muldiv_op == OP_DIV)
+                 || (muldiv_op == OP_MADD);
+
+  always_comb begin
+    next_hi        = A;
+    next_lo        = A;
+    if (muldiv_op == OP_MUL) begin
+      if (muldiv_op_u)
+        {next_hi, next_lo}  = A*B;
+      else
+        {next_hi, next_lo}  = $signed(A)*$signed(B);
+    end
+    else if (muldiv_op == OP_MADD) begin
+      if (muldiv_op_u)
+        {next_hi, next_lo}  = {hi_r, lo_r} + A*B;
+      else
+        {next_hi, next_lo}  = {hi_r, lo_r} + $signed(A)*$signed(B);
+    end
+    else if (muldiv_op == OP_DIV) begin
+      if (muldiv_op_u) begin
+        next_hi  = A%B;
+        next_lo  = A/B;
+      end
+      else begin
+        next_hi  = $signed(A)%$signed(B);
+        next_lo  = $signed(A)/$signed(B);
+      end
+    end
+  end
+
+  // END MUL, DIV "unit"
+
 
   assign A  = A_val;
 
@@ -80,7 +209,9 @@ module
 
   assign flag_zero  = (alu_res == 0);
 
-  assign result =  (alu_res_sel == RES_SHIFT) ? shift_res
+  assign result =  (muldiv_op == OP_MFHI)     ? hi_r
+                 : (muldiv_op == OP_MFLO)     ? lo_r
+                 : (alu_res_sel == RES_SHIFT) ? shift_res
                  : (alu_res_sel == RES_ALU)   ? alu_res
                  :                              set_res;
 
@@ -113,6 +244,8 @@ module
         alu_res  = B;
       OP_LUI:
         alu_res  = { B[15:0], 16'b0 };
+      OP_MUL_LO:
+        alu_res  = next_lo;
       OP_MOVZ:
         alu_res  = A;
       OP_MOVN:
