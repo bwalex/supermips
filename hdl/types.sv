@@ -76,6 +76,10 @@ package pipTypes;
     bit [ 4:0]   B_reg;
     bit          B_reg_valid;
 
+    // extra source reg (6 bits)
+    bit [ 4:0]   C_reg;
+    bit          C_reg_valid;
+
     // destination register (6 bits)
     bit [ 4:0]   dest_reg;
     bit          dest_reg_valid;
@@ -116,10 +120,12 @@ package pipTypes;
 
 
   typedef struct {
-    fwd_t        A_fwd_from_rfile;
+    bit          A_fwd_from_rfile;
     bit [ 3:0]   A_fwd_rob_idx;
-    fwd_t        B_fwd_from_rfile;
+    bit          B_fwd_from_rfile;
     bit [ 3:0]   B_fwd_rob_idx;
+    bit          C_fwd_from_rfile;
+    bit [ 3:0]   C_fwd_rob_idx;
   } fwd_info_t;
 
 

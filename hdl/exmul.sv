@@ -31,11 +31,15 @@ module exmul #(
 
   input [31:0]             A_val,
   input [31:0]             B_val,
+  input [31:0]             C_val,
   input [ 4:0]             A_reg,
   input                    A_reg_valid,
 
   input [ 4:0]             B_reg,
   input                    B_reg_valid,
+
+  input [ 4:0]             C_reg,
+  input                    C_reg_valid,
 
   input [31:0]             imm,
   input                    imm_valid,
@@ -216,9 +220,7 @@ module exmul #(
                  :                              set_res;
 
 
-  assign inval_dest_reg =  (alu_op == OP_MOVZ) ? ~B_eqz
-                         : (alu_op == OP_MOVN) ?  B_eqz
-                         :                        1'b0;
+  assign inval_dest_reg =  1'b0;
 
 
   always_comb begin
@@ -247,9 +249,9 @@ module exmul #(
       OP_MUL_LO:
         alu_res  = next_lo;
       OP_MOVZ:
-        alu_res  = A;
+        alu_res  = (B_eqz)  ? A : C_val;
       OP_MOVN:
-        alu_res  = A;
+        alu_res  = (~B_eqz) ? A : C_val;
       OP_SEB:
         alu_res  = { {24{B[ 7]}}, B[ 7:0] };
       OP_SEH:

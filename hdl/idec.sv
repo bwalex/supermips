@@ -38,6 +38,9 @@ module idec
   reg                        A_reg_valid;
   reg [ 4:0]                 B_reg;
   reg                        B_reg_valid;
+  reg [ 4:0]                 C_reg;
+  reg                        C_reg_valid;
+
 
   reg [ 4:0]                 dest_reg;
   reg                        dest_reg_valid;
@@ -92,6 +95,8 @@ module idec
     B_reg           = inst_rt;
     B_reg_valid     = 1'b0;
     B_need_late     = 1'b0;
+    C_reg           = inst_rd;
+    C_reg_valid     = 1'b0;
     dest_reg        = inst_rt;
     shamt           = inst_shamt;
     shamt_valid     = 1'b0;
@@ -177,16 +182,20 @@ module idec
             A_reg_valid  = 1'b1;
           end
           6'd10: begin // movz
-            alu_inst        = 1'b1;
-            alu_op          = OP_MOVZ;
-            A_reg_valid     = 1'b1;
-            B_reg_valid     = 1'b1;
+            // use three operands so it isn't speculative
+            alu_inst     = 1'b1;
+            alu_op       = OP_MOVZ;
+            A_reg_valid  = 1'b1;
+            B_reg_valid  = 1'b1;
+            C_reg_valid  = 1'b1;
           end
           6'd11: begin // movn
-            alu_inst        = 1'b1;
-            alu_op          = OP_MOVN;
-            A_reg_valid     = 1'b1;
-            B_reg_valid     = 1'b1;
+            // use three operands so it isn't speculative
+            alu_inst     = 1'b1;
+            alu_op       = OP_MOVN;
+            A_reg_valid  = 1'b1;
+            B_reg_valid  = 1'b1;
+            C_reg_valid  = 1'b1;
           end
           6'd13: begin // break
             // XXX: this is not really a break exception; it halts simulation.
@@ -702,6 +711,9 @@ module idec
       di.A_reg_valid     = A_reg_valid;
       di.B_reg           = B_reg;
       di.B_reg_valid     = B_reg_valid;
+
+      di.C_reg           = C_reg;
+      di.C_reg_valid     = C_reg_valid;
 
       di.dest_reg        = dest_reg;
       di.dest_reg_valid  = dest_reg_valid;

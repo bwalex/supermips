@@ -1,3 +1,5 @@
+import pipTypes::*;
+
 module rob #(
   parameter type T     = rob_entry_t,
   parameter      DEPTH     = 16,
@@ -23,12 +25,18 @@ module rob #(
 
   input [4:0]                A_reg[INS_COUNT],
   input [4:0]                B_reg[INS_COUNT],
+  input [4:0]                C_reg[INS_COUNT],
   output                     fwd_info_t fwd_info[INS_COUNT],
 
   input [DEPTHLOG2-1:0]      A_rob_idx[INS_COUNT],
   input [DEPTHLOG2-1:0]      B_rob_idx[INS_COUNT],
+  input [DEPTHLOG2-1:0]      C_rob_idx[INS_COUNT],
   output [31:0]              A_val[INS_COUNT],
   output [31:0]              B_val[INS_COUNT],
+  output [31:0]              C_val[INS_COUNT],
+  output                     A_val_valid,
+  output                     B_val_valid,
+  output                     C_val_valid,
 
   // Store interface
   input [DEPTHLOG2-1:0]      write_slot[INS_COUNT],
@@ -69,8 +77,12 @@ module rob #(
   genvar i;
   generate
     for (i = 0; i < INS_COUNT; i++) begin
-      assign A_val[i]  = buffer[A_rob_idx].result_lo;
-      assign B_val[i]  = buffer[B_rob_idx].result_lo;
+      assign A_val[i]        = buffer[A_rob_idx].result_lo;
+      assign B_val[i]        = buffer[B_rob_idx].result_lo;
+      assign C_val[i]        = buffer[C_rob_idx].result_lo;
+      assign A_val_valid[i]  = valid[A_rob_idx];
+      assign B_val_valid[i]  = valid[B_rob_idx];
+      assign C_val_valid[i]  = valid[C_rob_idx];
     end
   endgenerate
 
@@ -132,6 +144,8 @@ module rob #(
       fwd_info[i].A_fwd_rob_idx     = reg_info[A_reg[i]].rob_idx;
       fwd_info[i].B_fwd_from_rfile  = reg_info[B_reg[i]].rfile;
       fwd_info[i].B_fwd_rob_idx     = reg_info[B_reg[i]].rob_idx;
+      fwd_info[i].C_fwd_from_rfile  = reg_info[C_reg[i]].rfile;
+      fwd_info[i].C_fwd_rob_idx     = reg_info[C_reg[i]].rob_idx;
 
       for (integer k = 0; k < i; k++) begin
         if (dest_reg_valid[k] && (dest_reg[k] == A_reg[i])) begin
@@ -141,6 +155,10 @@ module rob #(
         if (dest_reg_valid[k] && (dest_reg[k] == B_reg[i])) begin
           fwd_info[i].B_fwd_from_rfile  = 1'b0;
           fwd_info[i].B_fwd_rob_idx     = reserved_slots[k];
+        end
+        if (dest_reg_valid[k] && (dest_reg[k] == C_reg[i])) begin
+          fwd_info[i].C_fwd_from_rfile  = 1'b0;
+          fwd_info[i].C_fwd_rob_idx     = reserved_slots[k];
         end
       end
     end
