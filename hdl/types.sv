@@ -113,4 +113,40 @@ package pipTypes;
     bit          branch_inst;
     bit          nop;
   } dec_inst_t;
+
+
+  typedef struct {
+    fwd_t        A_fwd_from_rfile;
+    bit [ 3:0]   A_fwd_rob_idx;
+    fwd_t        B_fwd_from_rfile;
+    bit [ 3:0]   B_fwd_rob_idx;
+  } fwd_info_t;
+
+
+  typedef struct {
+    bit          ready;
+    bit          almost_ready;
+  } fwd_status_t;
+
+
+  typedef struct {
+    bit [ 4:0]   rob_entry;
+    bit          rfile;
+  } rob_reg_info_t;
+
+
+  typedef struct {
+    bit [ 4:0]   dest_reg;
+    bit          dest_reg_valid;
+  } dest_reg_t;
+
+
+  typedef struct {
+    bit [31:0]   result_hi;
+    bit [31:0]   result_lo;
+    bit [ 4:0]   dest_reg;
+    bit          dest_reg_valid;
+    bit          pc_valid; // for flushing
+  } rob_entry_t;
+
 endpackage

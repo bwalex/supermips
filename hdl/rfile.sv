@@ -1,20 +1,19 @@
 module rfile #(
   parameter NREGS      = 32,
             ADDR_WIDTH = 5,
-            DATA_WIDTH = 32
+            DATA_WIDTH = 32,
+            READ_PORTS = 4,
+            WRITE_PORTS = 4
 )(
-  input                   clock,
-  input                   reset_n,
+  input                    clock,
+  input                    reset_n,
 
-  input [ADDR_WIDTH-1:0]  rd_addr1,
-  input [ADDR_WIDTH-1:0]  rd_addr2,
-  input [ADDR_WIDTH-1:0]  wr_addr1,
+  input  [ADDR_WIDTH-1:0]  rd_addr[READ_PORTS],
+  output [DATA_WIDTH_1:0]  rd_data[READ_PORTS],
 
-  input                   wr_enable1,
-  input [DATA_WIDTH-1:0]  wr_data1,
-
-  output [DATA_WIDTH-1:0] rd_data1,
-  output [DATA_WIDTH-1:0] rd_data2
+  input  [ADDR_WIDTH-1:0]  wr_addr[WRITE_PORTS],
+  input                    wr_enable[WRITE_PORTS],
+  input  [DATA_WIDTH-1:0]  wr_data[WRITE_PORTS]
 );
 
   reg [DATA_WIDTH-1:0]    regfile[NREGS];
@@ -25,13 +24,15 @@ module rfile #(
       for (int i = 0; i < NREGS; i++)
         regfile[i] <= 'b0;
     else begin
-      if (wr_enable1)
-        regfile[wr_addr1] <= wr_data1;
-      // Logic for more write ports goes here
-    end
+      for (int i = 0; i < WRITE_PORTS; i++)
+        if (wr_enable[i])
+          regfile[wr_addr[i]] <= wr_data[i];
+  end
 
-
-  assign rd_data1  = (rd_addr1 == wr_addr1 && wr_enable1) ? wr_data1 : regfile[rd_addr1];
-  assign rd_data2  = (rd_addr2 == wr_addr1 && wr_enable1) ? wr_data1 : regfile[rd_addr2];
+  genvar i;
+  generate
+    for (i = 0; i < READ_PORTS; i++)
+      assign rd_data[i]  = regfile[rd_addr[i]];
+  endgenerate
 
 endmodule
