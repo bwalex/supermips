@@ -2,9 +2,6 @@ import pipTypes::*;
 
 module idec
 (
-  input                      clock,
-  input                      reset_n,
-
   input [31:0]               pc,
   input [31:0]               inst_word,
 
