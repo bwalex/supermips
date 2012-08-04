@@ -155,4 +155,10 @@ package pipTypes;
     bit          pc_valid; // for flushing
   } rob_entry_t;
 
+
+  typedef struct {
+    dec_inst_t   dec_inst;
+    fwd_info_t   fwd_info;
+  } iq_entry_t;
+
 endpackage

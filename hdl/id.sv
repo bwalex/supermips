@@ -78,40 +78,45 @@ module ID
   always_comb
     begin
       if (inst_word_valid[0]) begin
-        new_elements[0]  = .... effectively 0;
+        new_elements[0]  = { dec_inst[0], fwd_info[0] };
       end
       else if (~inst_word_valid[0] & inst_word_valid[1]) begin
-        new_elements[0]  = .... effectively 1;
+        new_elements[0]  = { dec_inst[1], fwd_info[1] }; //.... effectively 1;
       end
       else if (~inst_word_valid[0] & ~inst_word_valid[1] & inst_word_valid[2]) begin
-        new_elements[0]  = .... effectively 2;
+        new_elements[0]  = { dec_inst[2], fwd_info[2] }; //.... effectively 2;
       end
       else begin
-        new_elements[0]  = .... effectively 3;
+        new_elements[0]  = { dec_inst[3], fwd_info[3] }; //.... effectively 3;
       end
     end
 
   always_comb
     begin
       if (inst_word_valid[0] & inst_word_valid[1]) begin
-        new_elements[1]  = .... effectively 1;
+        new_elements[1]  = { dec_inst[1], fwd_info[1] }; //.... effectively 1;
       end
       else if (~inst_word_valid[0] & inst_word_valid[1] & inst_word_valid[2]) begin
-        new_elements[1]  = .... effectively 2;
+        new_elements[1]  = { dec_inst[2], fwd_info[2] }; //.... effectively 2;
       end
       else begin
-        new_elements[1]  = .... effectively 3;
+        new_elements[1]  = { dec_inst[3], fwd_info[3] }; //.... effectively 3;
       end
     end
 
   always_comb
     begin
       if (inst_word_valid[0] & inst_word_valid[1] & inst_word_valid[2]) begin
-        new_elements[2]  = .... effectively 2;
+        new_elements[2]  = { dec_inst[2], fwd_info[2] }; //.... effectively 2;
       end
       else begin
-        new_elements[2]  = .... effectively 3;
+        new_elements[2]  = { dec_inst[3], fwd_info[3] }; //.... effectively 3;
       end
+    end
+
+  always_comb
+    begin
+      new_elements[3]    = { dec_inst[3], fwd_info[3] }; //.... effectively 3;
     end
 
 
