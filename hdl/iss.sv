@@ -162,7 +162,7 @@ module ISS
     end
 
     for (i = 0; i < 4; i++) begin : OPS_READY
-      // Signal whether all operands are ready. This is the case when each operand
+      // Signal whether all operands are ready. This is the case when every operand
       // is either not required (~reg_valid) or valid.
       assign di_ops_ready[i]  =  (di_A_valid[i] | ~di.A_reg_valid)
                                & (di_B_valid[i] | ~di.B_reg_valid)
@@ -173,21 +173,40 @@ module ISS
 
 
   always_comb begin
-    automatic bit b_used, ls_used, ex1_used, ex1mul_used;
+    automatic bit b_used, ls_used, ex1_used, exmul1_used;
     automatic integer consumed;
 
-    consumed        = 0;
+    consumed           = 0;
+    ext_consumed       = 2'd0;
+    ext_enable         = 1'b0;
 
-    b_used          = 1'b0;
-    ls_used         = 1'b0;
-    ex1_used        = 1'b0;
-    ex1mul_used     = 1'b0;
+    b_used             = 1'b0;
+    ls_used            = 1'b0;
+    ex1_used           = 1'b0;
+    exmul1_used        = 1'b0;
 
-    bi              = di[0];
-    lsi             = di[0];
-    ex1i            = di[0];
-    ex1muli         = di[0];
+    bi                 = di[0];
+    lsi                = di[0];
+    ex1i               = di[0];
+    exmul1i            = di[0];
+    branch_A           = di_A[0];
+    branch_B           = di_B[0];
+    ls_A               = di_A[0];
+    ls_B               = di_B[0];
+    exmul1_A           = di_A[0];
+    exmul1_B           = di_B[0];
+    exmul1_C           = di_C[0];
+    ex1_A              = di_A[0];
+    ex1_B              = di_B[0];
+    ex1_C              = di_C[0];
 
+    // XXX: still need to assign rob slots
+    // XXX: directly wire up to output foo_inst signals instead of using internal 'i' signals
+
+    branch_inst_valid  = 1'b0;
+    ls_inst_valid      = 1'b0;
+    exmul1_inst_valid  = 1'b0;
+    ex1_inst_valid     = 1'b0;
 
     for (integer i = 0; i < 4; i++) begin
       if (!ext_valid[i]) begin
@@ -196,25 +215,49 @@ module ISS
         break;
       end
 
+      if (!di_ops_ready[i]) begin
+        // If the instruction is still missing operands then we also stop
+        // here since issue happens strictly in order.
+        break;
+      end
+
       if ((di[i].branch_inst | di[i].jmp_inst) && !b_used && branch_ready) begin
-        b_used  = 1'b1;
-        bi      = di[i];
+        b_used    = 1'b1;
+        bi        = di[i];
+        branch_A  = di_A[i];
+        branch_B  = di_B[i];
+        consumed++;
       end
       else if ((di[i].load_inst | di[i].store_inst) && !ls_used && ls_ready) begin
         ls_used  = 1'b1;
         lsi      = di[i];
+        ls_A     = di_A[i];
+        ls_B     = di_B[i];
+        consumed++;
       end
       else if (di[i].muldiv_inst && !ex1mul_used && exmul1_ready) begin
-        ex1mul_used  = 1'b1;
-        ex1muli      = di[i];
+        exmul1_used  = 1'b1;
+        exmul1i      = di[i];
+        exmul1_A     = di_A[i];
+        exmul1_B     = di_B[i];
+        exmul1_C     = di_C[i];
+        consumed++;
       end
       else if (di[i].alu_inst && !ex1_used && ex1_ready) begin
         ex1_used  = 1'b1;
         ex1i      = di[i];
+        ex1_A     = di_A[i];
+        ex1_B     = di_B[i];
+        ex1_C     = di_C[i];
+        consumed++;
       end
-      else if (di[i].alu_inst && !ex1mul_used && exmul1_ready) begin
+      else if (di[i].alu_inst && !exmul1_used && exmul1_ready) begin
         ex1mul_used  = 1'b1;
         ex1muli      = di[i];
+        exmul1_A     = di_A[i];
+        exmul1_B     = di_B[i];
+        exmul1_C     = di_C[i];
+        consumed++;
       end
       else begin
         // If none of the execution units is available in this cycle
@@ -222,7 +265,15 @@ module ISS
         // strictly in order.
         break;
       end
-    end
+      end // for (integer i = 0; i < 4; i++)
+
+    ext_consumed       = consumed - 1;
+    ext_enable         = (consumed > 0) ? 1'b1 : 1'b0;
+
+    branch_inst_valid  = b_used;
+    ls_inst_valid      = ls_used;
+    exmul1_inst_valid  = exmul1_used;
+    ex1_inst_valid     = ex1_used;
   end
 
 
