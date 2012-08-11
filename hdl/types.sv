@@ -116,6 +116,8 @@ package pipTypes;
     bit          jmp_inst;
     bit          branch_inst;
     bit          nop;
+
+    bit          inst_rformat;
   } dec_inst_t;
 
 
@@ -157,6 +159,7 @@ package pipTypes;
 
 
   typedef struct {
+    bit [3:0]    rob_slot;
     dec_inst_t   dec_inst;
     fwd_info_t   fwd_info;
   } iq_entry_t;

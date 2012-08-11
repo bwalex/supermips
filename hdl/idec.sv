@@ -740,6 +740,8 @@ module idec
       di.jmp_inst        = jmp_inst;
       di.branch_inst     = branch_inst;
       di.nop             = nop;
+
+      di.inst_rformat    = inst_rformat;
     end
 
 endmodule

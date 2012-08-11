@@ -34,9 +34,24 @@ module rob #(
   output [31:0]              A_val[INS_COUNT],
   output [31:0]              B_val[INS_COUNT],
   output [31:0]              C_val[INS_COUNT],
-  output                     A_val_valid,
-  output                     B_val_valid,
-  output                     C_val_valid,
+  output                     A_val_valid[INS_COUNT],
+  output                     B_val_valid[INS_COUNT],
+  output                     C_val_valid[INS_COUNT],
+
+  // Associate lookup interface
+  input [DEPTHLOG2-1:0]      as_query_idx[INS_COUNT],
+  input [4:0]                as_areg[INS_COUNT],
+  input [4:0]                as_breg[INS_COUNT],
+  input [4:0]                as_creg[INS_COUNT],
+  output [31:0]              as_aval[INS_COUNT],
+  output [31:0]              as_bval[INS_COUNT],
+  output [31:0]              as_cval[INS_COUNT],
+  output                     as_aval_valid[INS_COUNT],
+  output                     as_bval_valid[INS_COUNT],
+  output                     as_cval_valid[INS_COUNT],
+  output                     as_aval_present[INS_COUNT],
+  output                     as_bval_present[INS_COUNT],
+  output                     as_cval_present[INS_COUNT],
 
   // Store interface
   input [DEPTHLOG2-1:0]      write_slot[INS_COUNT],
@@ -85,6 +100,68 @@ module rob #(
       assign C_val_valid[i]  = valid[C_rob_idx];
     end
   endgenerate
+
+
+
+
+
+
+  // High-level associative lookup interface
+  always_comb begin
+    for (integer i = 0; i < INS_COUNT; i++) begin
+      as_aval_valid[i]    = 1'b0;
+      as_aval_present[i]  = 1'b0;
+      as_aval[i]          = 32'b0;
+
+
+      for (bit [DEPTHLOG2-1:0] k = as_query_idx[i]-1; k >= ext_ptr; k--) begin
+        if (buffer[k].dest_reg == as_areg[i] && buffer[k].dest_reg_valid) begin
+          as_aval[i]          = buffer[k].result_lo;
+          as_aval_valid[i]    = valid[k];
+          as_aval_present[i]  = 1'b1;
+          break;
+        end
+      end
+    end
+  end // always_comb
+
+  always_comb begin
+    for (integer i = 0; i < INS_COUNT; i++) begin
+      as_bval_valid[i]    = 1'b0;
+      as_bval_present[i]  = 1'b0;
+      as_bval[i]          = 32'b0;
+
+
+      for (bit [DEPTHLOG2-1:0] k = as_query_idx[i]-1; k >= ext_ptr; k--) begin
+        if (buffer[k].dest_reg == as_breg[i] && buffer[k].dest_reg_valid) begin
+          as_bval[i]          = buffer[k].result_lo;
+          as_bval_valid[i]    = valid[k];
+          as_bval_present[i]  = 1'b1;
+          break;
+        end
+      end
+    end
+  end // always_comb
+
+  always_comb begin
+    for (integer i = 0; i < INS_COUNT; i++) begin
+      as_cval_valid[i]    = 1'b0;
+      as_cval_present[i]  = 1'b0;
+      as_cval[i]          = 32'b0;
+
+
+      for (bit [DEPTHLOG2-1:0] k = as_query_idx[i]-1; k >= ext_ptr; k--) begin
+        if (buffer[k].dest_reg == as_creg[i] && buffer[k].dest_reg_valid) begin
+          as_cval[i]          = buffer[k].result_lo;
+          as_cval_valid[i]    = valid[k];
+          as_cval_present[i]  = 1'b1;
+          break;
+        end
+      end
+    end
+  end // always_comb
+
+
 
 
 
