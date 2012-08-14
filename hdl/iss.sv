@@ -32,7 +32,7 @@ module ISS
   // ROB store interface for "branch unit"
   output [3:0]  wr_slot,
   output        wr_valid,
-  output [31:0] wr_data,
+  output rob_entry_t wr_data,
 
   // LS unit interface
   output [ 3:0] ls_rob_slot,
@@ -83,11 +83,24 @@ module ISS
 
   dec_inst_t    lsi;
   dec_inst_t    ex1i;
-  dec_Inst_t    exmul1i;
+  dec_inst_t    exmul1i;
   dec_inst_t    bi;
 
   wire [31:0]   branch_A;
   wire [31:0]   branch_B;
+  reg  [ 3:0]   branch_rob_slot;
+ 
+  dec_inst_t    bi_retained;
+  reg  [31:0]   branch_A_retained;
+  reg  [31:0]   branch_B_retained;
+  reg  [ 3:0]   branch_rob_slot_retained;
+  reg           branch_stall_d1;
+  wire          branch_ready;
+
+  dec_inst_t    bi_act;
+  wire [31:0]   branch_A_act;
+  wire [31:0]   branch_B_act;
+  wire [ 3:0]   branch_rob_slot_act;
 
   wire [31:0]   pc_plus_4;
   wire [31:0]   pc_plus_8;
@@ -203,7 +216,7 @@ module ISS
     // XXX: still need to assign rob slots
     // XXX: directly wire up to output foo_inst signals instead of using internal 'i' signals
 
-    branch_inst_valid  = 1'b0;
+    bi_inst_valid      = 1'b0;
     ls_inst_valid      = 1'b0;
     exmul1_inst_valid  = 1'b0;
     ex1_inst_valid     = 1'b0;
@@ -221,7 +234,9 @@ module ISS
         break;
       end
 
-      if ((di[i].branch_inst | di[i].jmp_inst) && !b_used && branch_ready) begin
+      if ((di[i].branch_inst | di[i].jmp_inst) && !b_used && branch_ready
+          // don't allow branch to proceed if we don't have the BDS insn available, too
+          && i != 3 && ext_valid[i+1]) begin
         b_used    = 1'b1;
         bi        = di[i];
         branch_A  = di_A[i];
@@ -270,7 +285,7 @@ module ISS
     ext_consumed       = consumed - 1;
     ext_enable         = (consumed > 0) ? 1'b1 : 1'b0;
 
-    branch_inst_valid  = b_used;
+    bi_inst_valid      = b_used;
     ls_inst_valid      = ls_used;
     exmul1_inst_valid  = exmul1_used;
     ex1_inst_valid     = ex1_used;
@@ -281,6 +296,10 @@ module ISS
   // XXX: need to:
   //      cause a stall when branch is last instruction (of either the 4,
   //      or whatever number is available).
+  //
+  //      Retain bi, branch_A and branch_B when an IF-induced stall occurs.
+  //
+  //      Pump out the link register to ROB
   //
   // ISS will only continue with the branching, to start with, if the
   // branch delay slot is available in the same cycle as the branch itself.
@@ -293,23 +312,58 @@ module ISS
   assign pc_plus_4  = bi.pc + 4;
   assign pc_plus_8  = bi.pc + 8;
 
-  assign AB_equal  = (A_forwarded == B_forwarded);
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n) begin
+      branch_stall_d1 <= 1'b0;
+    else
+      branch_stall_d1 <= branch_stall;
+
+  assign branch_ready = ~branch_stall_d1;
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n) begin
+      bi_retained       <= 'b0;
+      branch_A_retained <= 'b0;
+      branch_B_retained <= 'b0;
+      bi_inst_valid_retained   <= 1'b0;
+      branch_rob_slot_retained <=  'b0;
+    end
+    else if (branch_stall & ~branch_stall_d1) begin
+      bi_retained       <= bi;
+      branch_A_retained <= branch_A;
+      branch_B_retained <= branch_B;
+      bi_inst_valid_retained   <= bi_inst_valid;
+      branch_rob_slot_retained <= branch_rob_slot;
+    end
+
+  assign bi_act       = (branch_stall_d1) ? bi_retained       : bi;
+  assign branch_A_act = (branch_stall_d1) ? branch_A_retained : branch_A;
+  assign branch_B_act = (branch_stall_d1) ? branch_B_retained : branch_B;
+
+  assign bi_inst_valid_act   = (branch_stall_d1) ? bi_inst_valid_retained   : bi_inst_valid;
+  assign branch_rob_slot_act = (branch_stall_d1) ? branch_rob_slot_retained : branch_rob_slot;
+
+
+  assign AB_equal  = (branch_A_act == branch_B_act);
   assign A_gtz     = A_gez & ~A_eqz;
-  assign A_gez     = (A_forwarded[31] == 1'b0);
+  assign A_gez     = (branch_A_act[31] == 1'b0);
 
-  assign A_eqz     = (A_forwarded == 0);
-  assign B_eqz     = (B_forwarded == 0);
+  assign A_eqz     = (branch_A_act == 0);
+  assign B_eqz     = (branch_B_act == 0);
 
-  assign new_pc    = (inst_iformat | inst_jformat) ? bi.branch_target : A_forwarded;
+  assign new_pc    = (inst_iformat | inst_jformat) ? bi.branch_target : branch_A_act;
 
-  assign new_pc_valid    = (bi.jmp_inst | (bi.branch_inst & bi.branch_cond_ok)) & bi_ops_valid;
-  assign branch_cond_ok  = (bi.branch_cond == COND_UNCONDITIONAL)
-                         | (bi.branch_cond == COND_EQ && AB_equal)
-                         | (bi.branch_cond == COND_NE && ~AB_equal)
-                         | (bi.branch_cond == COND_GT && A_gtz)
-                         | (bi.branch_cond == COND_GE && A_gez)
-                         | (bi.branch_cond == COND_LT && ~A_gez)
-                         | (bi.branch_cond == COND_LE && ~A_gtz);
+  assign new_pc_valid    = (bi_act.jmp_inst | (bi_act.branch_inst & bi_act.branch_cond_ok)) & bi_inst_valid_act;
+  assign branch_cond_ok  = (bi_act.branch_cond == COND_UNCONDITIONAL)
+                         | (bi_act.branch_cond == COND_EQ && AB_equal)
+                         | (bi_act.branch_cond == COND_NE && ~AB_equal)
+                         | (bi_act.branch_cond == COND_GT && A_gtz)
+                         | (bi_act.branch_cond == COND_GE && A_gez)
+                         | (bi_act.branch_cond == COND_LT && ~A_gez)
+                         | (bi_act.branch_cond == COND_LE && ~A_gtz);
 
 
+  assign wr_slot   = branch_rob_slot_act;
+  assign wr_valid  = ~branch_stall;
+  assign wr_data   = ...;
 endmodule
