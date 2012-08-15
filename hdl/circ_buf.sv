@@ -19,9 +19,11 @@ module circbuf #(
   output reg               ext_valid[EXT_COUNT],
   output                   T out_elements[EXT_COUNT],
 
+  input                    flush,
+
   output                   full,
   output                   empty,
-  output [DEPTHLOG2-1:0]   used_count
+  output reg [DEPTHLOG2:0] used_count
 );
 
   wire                     ins_enable_i;
@@ -37,11 +39,13 @@ module circbuf #(
 
   assign ins_enable_i    = ins_enable & ~full;
   assign ext_enable_i    = ext_enable & ~empty;
-  assign ext_consumed_i  = (ext_consumed >= used_count) ? (used_count-1) : ext_consumed;
+  assign ext_consumed_i  = (ext_consumed >= used_count-1) ? (used_count-1) : ext_consumed;
 
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
+      ins_ptr <= 'b0;
+    else if (flush)
       ins_ptr <= 'b0;
     else if (ins_enable_i) begin
       automatic bit [DEPTHLOG2-1:0] idx  = ins_ptr;
@@ -96,12 +100,22 @@ module circbuf #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       ext_ptr <= 'b0;
+    else if (flush)
+      ext_ptr <= 'b0;
     else if (ext_enable_i) begin
       ext_ptr <= ext_ptr + ext_consumed_i + 1;
     end
 
 
-  assign used_count = (ins_ptr - ext_ptr);
-  assign empty      = (ext_ptr == ins_ptr);
-  assign full       = (used_count >= DEPTH-INS_COUNT);
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      used_count <= 0;
+    else
+      used_count <=  used_count
+                   + ((new_count      + 1) & {(INSCOUNTLOG2+1){ins_enable_i}})
+                   - ((ext_consumed_i + 1) & {(EXTCOUNTLOG2+1){ext_enable_i}});
+
+
+  assign empty      = (used_count == 0);
+  assign full       = (used_count > DEPTH-INS_COUNT);
 endmodule // circbuf

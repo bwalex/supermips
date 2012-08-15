@@ -65,6 +65,10 @@ module rob #(
   output reg                 slot_valid[EXT_COUNT],
   output                     empty,
 
+  // Flush interface
+  input                      flush,
+  input [DEPTHLOG2-1:0]      flush_idx,
+
   output reg [DEPTHLOG2:0]   used_count
 );
 
@@ -174,6 +178,8 @@ module rob #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       ins_ptr <= 'b0;
+    else if (flush)
+      ins_ptr <= flush_idx + 2; // leave the branch and BDS in place; idx is the branch
     else if (reserve_i)
       ins_ptr <= ins_ptr + reserve_count + 1;
 
@@ -273,6 +279,10 @@ module rob #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       used_count <= 0;
+    else if (flush)
+      used_count <=  used_count
+                   - (ins_ptr - flush_idx - 1)
+                   - ((consume_count_i + 1) & {(EXTCOUNTLOG2+1){consume_i}});
     else
       used_count <=  used_count
                    + ((reserve_count   + 1) & {(INSCOUNTLOG2+1){reserve_i}})
