@@ -1,4 +1,6 @@
-module ISS
+import pipTypes::*;
+
+module iss
 (
   input             clock,
   input             reset_n,

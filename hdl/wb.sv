@@ -1,3 +1,5 @@
+import pipTypes::*;
+
 module wb #(
 )(
   input         clock,
@@ -14,12 +16,18 @@ module wb #(
   output [31:0] rfile_wr_data[4]
 );
 
+  wire   [ 3:0] in_order;
+
+  assign in_order[0] = 1'b1;
+  assign in_order[1] = slot_valid[0];
+  assign in_order[2] = slot_valid[0] & slot_valid[1];
+  assign in_order[3] = slot_valod[0] & slot_valid[1] & slot_valid[2];
 
   genvar        i;
   generate
     for (i = 0; i < 4; i++) begin
       assign rfile_wr_addr[i]    = slot_data[i].dest_reg;
-      assign rfile_wr_enable[i]  = slot_data[i].dest_reg_valid & slot_valid[i];
+      assign rfile_wr_enable[i]  = slot_data[i].dest_reg_valid & slot_valid[i] & in_order[i];
       assign rfile_wr_data[i]    = slot_data[i].result_lo;
     end
   endgenerate

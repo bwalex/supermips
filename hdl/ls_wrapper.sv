@@ -1,3 +1,5 @@
+import pipTypes::*;
+
 module ls_wrapper #(
 )(
   input         clock,

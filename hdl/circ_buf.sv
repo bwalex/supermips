@@ -1,4 +1,6 @@
-module circbuf #(
+import pipTypes::*;
+
+module circ_buf #(
   parameter type T     = integer,
   parameter      DEPTH     = 16,
                  INS_COUNT = 2,

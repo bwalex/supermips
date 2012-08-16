@@ -1,6 +1,6 @@
 import pipTypes::*;
 
-module ex_wrapper #(
+module ex_mul_wrapper #(
 )(
   input         clock,
   input         reset_n,
@@ -21,6 +21,8 @@ module ex_wrapper #(
   wire          stall;
   wire          inval_dest_reg;
   wire [31:0]   result;
+
+  muldiv_op_t   muldiv_op_i;
 
   // "pipeline" registered signals
   dec_inst_t    inst_r;
@@ -54,6 +56,8 @@ module ex_wrapper #(
   assign rob_data.dest_reg       = inst_r.dest_reg;
   assign rob_data.dest_reg_valid = inst_r.dest_reg_valid & ~inval_dest_reg;
 
+  assign muldiv_op_i     = inst_valid_r ? OP_NONE : inst_r.muldiv_op;
+
   ex EX
   (
    .clock          (clock),
@@ -79,6 +83,10 @@ module ex_wrapper #(
    .alu_res_sel    (inst_r.alu_res_sel),
    .alu_set_u      (inst_r.alu_set_u),
    .alu_inst       (inst_r.alu_inst),
+
+   .muldiv_inst    (inst_r.muldiv_inst),
+   .muldiv_op      (muldiv_op_i),
+   .muldiv_op_u    (inst_r.muldiv_op_u),
 
    .dest_reg       (inst_r.dest_reg),
    .dest_reg_valid (inst_r.dest_reg_valid),

@@ -1,4 +1,6 @@
-module ID
+import pipTypes::*;
+
+module id
 (
  input [31:0]    inst_word[4],
  input [31:0]    inst_pc[4],
