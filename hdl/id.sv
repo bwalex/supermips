@@ -1,29 +1,28 @@
 import pipTypes::*;
 
-module id
-(
- input [31:0]    inst_word[4],
- input [31:0]    inst_pc[4],
- input           inst_word_valid[4],
- output          stall,
+module id#(
+           parameter ROB_DEPTHLOG2 = 4
+)(
+ input [31:0]              inst_word[4],
+ input [31:0]              inst_pc[4],
+ input                     inst_word_valid[4],
+ output                    stall,
 
  // ROB reservation interface + forwarding setup interface
- output [4:0]    dest_reg[4],
- output          dest_reg_valid[4],
- output [4:0]    A_reg[4],
- output [4:0]    B_reg[4],
- input           fwd_info_t fwd_info[4],
+ output [4:0]              dest_reg[4],
+ output                    dest_reg_valid[4],
+ input                     fwd_info_t fwd_info[4],
 
- output          reserve,
- output reg [1:0] reserve_count,
- input [3:0]     reserved_slots[4],
- input           rob_full,
+ output                    reserve,
+ output reg [1:0]          reserve_count,
+ input [ROB_DEPTHLOG2-1:0] reserved_slots[4],
+ input                     rob_full,
 
  // IQ store interface
- output          ins_enable,
- output [1:0]    new_count,
- output          iq_entry_t new_elements[4],
- input           iq_full
+ output                    ins_enable,
+ output [1:0]              new_count,
+ output                    iq_entry_t new_elements[4],
+ input                     iq_full
 );
 
   dec_inst_t dec_inst[4];
@@ -126,9 +125,6 @@ module id
     for (i = 0; i < 4; i++) begin
       assign dest_reg[i]        = dec_inst[i].dest_reg;
       assign dest_reg_valid[i]  = dec_inst[i].dest_reg_valid;
-
-      assign A_reg[i]  = dec_inst[i].A_reg;
-      assign B_reg[i]  = dec_inst[i].B_reg;
     end
   endgenerate
 endmodule

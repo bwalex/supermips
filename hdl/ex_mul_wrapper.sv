@@ -1,6 +1,7 @@
 import pipTypes::*;
 
 module ex_mul_wrapper #(
+                        parameter ROB_DEPTHLOG2 = 4
 )(
   input         clock,
   input         reset_n,
@@ -9,7 +10,7 @@ module ex_mul_wrapper #(
   input         inst_valid,
   input [31:0]  A,
   input [31:0]  B,
-  input [ 3:0]  rob_slot,
+  input [ROB_DEPTHLOG2-1:0]  rob_slot,
 
   output        ready,
 
@@ -29,7 +30,7 @@ module ex_mul_wrapper #(
   reg           inst_valid_r;
   reg  [31:0]   A_r;
   reg  [31:0]   B_r;
-  reg  [ 3:0]   rob_slot_r;
+  reg [ROB_DEPTHLOG2-1:0] rob_slot_r;
 
 
   always_ff @(posedge clock, negedge reset_n)
@@ -58,7 +59,7 @@ module ex_mul_wrapper #(
 
   assign muldiv_op_i     = inst_valid_r ? OP_NONE : inst_r.muldiv_op;
 
-  ex EX
+  exmul EXMUL
   (
    .clock          (clock),
    .reset_n        (reset_n),

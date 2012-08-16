@@ -1,74 +1,76 @@
 import pipTypes::*;
 
-module iss
+module iss#(
+            parameter ROB_DEPTHLOG = 4
+            )
 (
-  input             clock,
-  input             reset_n,
+  input                          clock,
+  input                          reset_n,
 
   // IQ interface
-  output            ext_enable,
-  output [1:0]      ext_consumed,
-  input             ext_valid[4],
-  input             iq_entry_t insns[4],
-  input             empty,
+  output                         ext_enable,
+  output [1:0]                   ext_consumed,
+  input                          ext_valid[4],
+  input                          iq_entry_t insns[4],
+  input                          empty,
 
 
   // ROB Associative Lookup interface
-  output [3:0]      as_query_idx[4],
-  output [4:0]      as_areg[4],
-  output [4:0]      as_breg[4],
+  output [ROB_DEPTHLOG2-1:0]     as_query_idx[4],
+  output [4:0]                   as_areg[4],
+  output [4:0]                   as_breg[4],
 
-  input [31:0]      as_aval[4],
-  input [31:0]      as_bval[4],
+  input [31:0]                   as_aval[4],
+  input [31:0]                   as_bval[4],
 
-  input             as_aval_valid[4],
-  input             as_bval_valid[4],
+  input                          as_aval_valid[4],
+  input                          as_bval_valid[4],
 
-  input             as_aval_present[4],
-  input             as_bval_present[4],
+  input                          as_aval_present[4],
+  input                          as_bval_present[4],
 
   // ROB store interface for "branch unit"
-  output [3:0]      wr_slot,
-  output            wr_valid,
-  output            rob_entry_t wr_data,
+  output [ROB_DEPTHLOG2-1:0]     wr_slot,
+  output                         wr_valid,
+  output                         rob_entry_t wr_data,
 
   // LS unit interface
-  output reg [ 3:0] ls_rob_slot,
-  output reg [31:0] ls_A,
-  output reg [31:0] ls_B,
-  output            dec_inst_t ls_inst,
-  output reg        ls_inst_valid,
-  input             ls_ready,
+  output reg [ROB_DEPTHLOG2-1:0] ls_rob_slot,
+  output reg [31:0]              ls_A,
+  output reg [31:0]              ls_B,
+  output                         dec_inst_t ls_inst,
+  output reg                     ls_inst_valid,
+  input                          ls_ready,
 
   // EX unit interface
-  output reg [ 3:0] ex1_rob_slot,
-  output reg [31:0] ex1_A,
-  output reg [31:0] ex1_B,
-  output            dec_inst_t ex1_inst,
-  output reg        ex1_inst_valid,
-  input             ex1_ready,
+  output reg [ROB_DEPTHLOG2-1:0] ex1_rob_slot,
+  output reg [31:0]              ex1_A,
+  output reg [31:0]              ex1_B,
+  output                         dec_inst_t ex1_inst,
+  output reg                     ex1_inst_valid,
+  input                          ex1_ready,
 
   // EXMUL unit interface
-  output reg [ 3:0] exmul1_rob_slot,
-  output reg [31:0] exmul1_A,
-  output reg [31:0] exmul1_B,
-  output            dec_inst_t exmul1_inst,
-  output reg        exmul1_inst_valid,
-  input             exmul1_ready,
+  output reg [ROB_DEPTHLOG2-1:0] exmul1_rob_slot,
+  output reg [31:0]              exmul1_A,
+  output reg [31:0]              exmul1_B,
+  output                         dec_inst_t exmul1_inst,
+  output reg                     exmul1_inst_valid,
+  input                          exmul1_ready,
 
 
   // IF interface
-  input             branch_stall,
-  output [31:0]     new_pc,
-  output            new_pc_valid,
+  input                          branch_stall,
+  output [31:0]                  new_pc,
+  output                         new_pc_valid,
 
   // Register file interface
-  output [31:0]     rd_addr[8],
-  input [31:0]      rd_data[8]
+  output [31:0]                  rd_addr[8],
+  input [31:0]                   rd_data[8]
 );
 
   dec_inst_t    di[4];
-  wire [ 3:0]   rob_slot[4];
+  wire [ROB_DEPTHLOG2-1:0]       rob_slot[4];
   wire [31:0]   di_A[4];
   wire [31:0]   di_B[4];
   wire          di_A_valid[4];
@@ -82,20 +84,20 @@ module iss
 
   wire [31:0]   branch_A;
   wire [31:0]   branch_B;
-  reg  [ 3:0]   branch_rob_slot;
+  reg [ROB_DEPTHLOG2-1:0] branch_rob_slot;
   reg           bi_inst_valid;
 
   dec_inst_t    bi_retained;
   reg  [31:0]   branch_A_retained;
   reg  [31:0]   branch_B_retained;
-  reg  [ 3:0]   branch_rob_slot_retained;
+  reg  [ROB_DEPTHLOG2-1:0]   branch_rob_slot_retained;
   reg           branch_stall_d1;
   wire          branch_ready;
 
   dec_inst_t    bi_act;
   wire [31:0]   branch_A_act;
   wire [31:0]   branch_B_act;
-  wire [ 3:0]   branch_rob_slot_act;
+  wire [ROB_DEPTHLOG2-1:0] branch_rob_slot_act;
 
   wire [31:0]   pc_plus_4;
   wire [31:0]   pc_plus_8;

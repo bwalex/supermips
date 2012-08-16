@@ -25,88 +25,151 @@ module pipeline#(
   input                   dcache_waitrequest//
 );
 
+  localparam IQ_DEPTH       = 16;
+  localparam ROB_DEPTH      = 16;
+
   localparam IQ_INS_COUNT   = 4;
   localparam IQ_EXT_COUNT   = 4;
+
   localparam ROB_INS_COUNT  = 4;
   localparam ROB_EXT_COUNT  = 4;
+  localparam ROB_AS_COUNT   = 4;
+  localparam ROB_WR_COUNT   = 4;
 
-  /*AUTOWIRE*/
-  // Beginning of automatic wires (for undeclared instantiated-module outputs)
-  wire [4:0]            A_reg [4];              // From ID of id.v
-  wire [31:0]           A_val [INS_COUNT];      // From ROB of rob.v
-  wire                  A_val_valid [INS_COUNT];// From ROB of rob.v
-  wire [4:0]            B_reg [4];              // From ID of id.v
-  wire [31:0]           B_val [INS_COUNT];      // From ROB of rob.v
-  wire                  B_val_valid [INS_COUNT];// From ROB of rob.v
-  wire [4:0]            as_areg [4];            // From ISS of iss.v
-  wire [31:0]           as_aval [INS_COUNT];    // From ROB of rob.v
-  wire                  as_aval_present [INS_COUNT];// From ROB of rob.v
-  wire                  as_aval_valid [INS_COUNT];// From ROB of rob.v
-  wire [4:0]            as_breg [4];            // From ISS of iss.v
-  wire [31:0]           as_bval [INS_COUNT];    // From ROB of rob.v
-  wire                  as_bval_present [INS_COUNT];// From ROB of rob.v
-  wire                  as_bval_valid [INS_COUNT];// From ROB of rob.v
-  wire [3:0]            as_query_idx [4];       // From ISS of iss.v
-  wire                  branch_stall;           // From IF of ifetch.v
-  wire [ADDR_WIDTH-1:0] cache_addr;             // From IF of ifetch.v, ..., Couldn't Merge
-  wire                  cache_rd;               // From IF of ifetch.v, ...
-  wire                  cache_wr;               // From LS of ls_wrapper.v
-  wire [3:0]            cache_wr_be;            // From LS of ls_wrapper.v
-  wire [31:0]           cache_wr_data;          // From LS of ls_wrapper.v
-  wire                  consume;                // From WB of wb.v
-  wire [1:0]            consume_count;          // From WB of wb.v
-  wire [4:0]            dest_reg [4];           // From ID of id.v
-  wire                  dest_reg_valid [4];     // From ID of id.v
-  wire                  empty;                  // From IQ of circ_buf.v, ...
-  wire [31:0]           ex1_A;                  // From ISS of iss.v
-  wire [31:0]           ex1_B;                  // From ISS of iss.v
-  wire                  ex1_inst_valid;         // From ISS of iss.v
-  wire [3:0]            ex1_rob_slot;           // From ISS of iss.v
-  wire [31:0]           exmul1_A;               // From ISS of iss.v
-  wire [31:0]           exmul1_B;               // From ISS of iss.v
-  wire                  exmul1_inst_valid;      // From ISS of iss.v
-  wire [3:0]            exmul1_rob_slot;        // From ISS of iss.v
-  wire [1:0]            ext_consumed;           // From ISS of iss.v
-  wire                  ext_enable;             // From ISS of iss.v
-  wire                  ext_valid [EXT_COUNT];  // From IQ of circ_buf.v
-  wire                  full;                   // From IQ of circ_buf.v, ...
-  wire                  ins_enable;             // From ID of id.v
-  wire [31:0]           inst_word0_r;           // From IF of ifetch.v
-  wire                  inst_word0_valid_r;     // From IF of ifetch.v
-  wire [31:0]           inst_word1_r;           // From IF of ifetch.v
-  wire                  inst_word1_valid_r;     // From IF of ifetch.v
-  wire [31:0]           inst_word2_r;           // From IF of ifetch.v
-  wire                  inst_word2_valid_r;     // From IF of ifetch.v
-  wire [31:0]           inst_word3_r;           // From IF of ifetch.v
-  wire                  inst_word3_valid_r;     // From IF of ifetch.v
-  wire [31:0]           ls_A;                   // From ISS of iss.v
-  wire [31:0]           ls_B;                   // From ISS of iss.v
-  wire                  ls_inst_valid;          // From ISS of iss.v
-  wire [3:0]            ls_rob_slot;            // From ISS of iss.v
-  wire [1:0]            new_count;              // From ID of id.v
-  wire [31:0]           new_pc;                 // From ISS of iss.v
-  wire                  new_pc_valid;           // From ISS of iss.v
-  wire [31:0]           pc_out0_r;              // From IF of ifetch.v
-  wire [31:0]           pc_out1_r;              // From IF of ifetch.v
-  wire [31:0]           pc_out2_r;              // From IF of ifetch.v
-  wire [31:0]           pc_out3_r;              // From IF of ifetch.v
-  wire [31:0]           rd_addr [8];            // From ISS of iss.v
-  wire [DATA_WIDTH_1:0] rd_data [READ_PORTS];   // From REGFILE of rfile.v
-  wire                  ready;                  // From LS of ls_wrapper.v, ...
-  wire                  reserve;                // From ID of id.v
-  wire [1:0]            reserve_count;          // From ID of id.v
-  wire [DEPTHLOG2-1:0]  reserved_slots [INS_COUNT];// From ROB of rob.v
-  wire [4:0]            rfile_wr_addr [4];      // From WB of wb.v
-  wire [31:0]           rfile_wr_data [4];      // From WB of wb.v
-  wire                  rfile_wr_enable [4];    // From WB of wb.v
-  wire [3:0]            rob_data_idx;           // From LS of ls_wrapper.v, ...
-  wire                  rob_data_valid;         // From LS of ls_wrapper.v, ...
-  wire                  slot_valid [EXT_COUNT]; // From ROB of rob.v
-  wire                  stall;                  // From ID of id.v
-  wire [DEPTHLOG2:0]    used_count;             // From IQ of circ_buf.v, ...
-  wire [3:0]            wr_slot;                // From ISS of iss.v
-  wire                  wr_valid;               // From ISS of iss.v
-  // End of automatics
+  localparam RFILE_RD_PORTS = 8;
+  localparam RFILE_WR_PORTS = ROB_EXT_COUNT;
+
+  localparam ROB_DEPTHLOG2      = $clog2(ROB_DEPTH);
+  localparam IQ_DEPTHLOG2       = $clog2(IQ_DEPTH);
+  localparam IQ_EXT_DEPTHLOG2   = $clog2(IQ_EXT_COUNT);
+  localparam ROB_EXT_DEPTHLOG2  = $clog2(ROB_EXT_COUNT);
+
+
+  // RFILE signals
+  wire [ 4:0]                  rfile_rd_addr[RFILE_RD_PORTS];
+  wire [31:0]                  rfile_rd_data[RFILE_RD_PORTS];
+  wire [ 4:0]                  rfile_wr_addr[RFILE_WR_PORTS];
+  wire [31:0]                  rfile_wr_data[RFILE_WR_PORTS];
+  wire                         rfile_wr_enable[RFILE_WR_PORTS];
+
+
+  // Outputs from IF
+  wire [31:0]                  if_inst_word0_r;
+  wire [31:0]                  if_inst_word1_r;
+  wire [31:0]                  if_inst_word2_r;
+  wire [31:0]                  if_inst_word3_r;
+  wire                         if_inst_word0_valid_r;
+  wire                         if_inst_word1_valid_r;
+  wire                         if_inst_word2_valid_r;
+  wire                         if_inst_word3_valid_r;
+  wire [31:0]                  if_pc_out0_r;
+  wire [31:0]                  if_pc_out1_r;
+  wire [31:0]                  if_pc_out2_r;
+  wire [31:0]                  if_pc_out3_r;
+  wire                         if_branch_stall;
+
+  wire [31:0]                  if_inst_word_r[4];
+  wire                         if_inst_word_valid_r[4];
+  wire [31:0]                  if_pc_out_r[4];
+
+  // Outputs from ID
+  wire                         id_stall;
+  iq_entry_t                   idiq_new_elements[4];
+  wire [ 4:0]                  idrob_dest_reg[ROB_INS_COUNT];
+  wire                         idrob_dest_reg_valid[ROB_INS_COUNT];
+  wire                         idrob_reserve;
+  wire [ 1:0]                  idrob_reserve_count;
+  wire                         idiq_ins_enable;
+  wire [ 1:0]                  idiq_new_count;
+
+  // Outputs from IQ
+  iq_entry_t                   iq_out_elements[IQ_EXT_COUNT];
+  wire                         iq_full;
+  wire                         iq_ext_valid[IQ_EXT_COUNT];
+  wire                         iq_empty;
+  wire [IQ_DEPTHLOG2:0]        iq_used_count;
+
+  // Outputs from ISS
+  wire                         issiq_ext_enable;
+  wire [IQ_EXT_DEPTHLOG2-1:0]  issiq_ext_consumed;
+  dec_inst_t                   iss_ls_inst;
+  dec_inst_t                   iss_ex1_inst;
+  dec_inst_t                   iss_exmul1_inst;
+  wire [ROB_DEPTHLOG2-1:0]     issrob_as_query_idx[ROB_AS_COUNT];
+  wire [ 4:0]                  issrob_as_areg[ROB_AS_COUNT];
+  wire [ 4:0]                  issrob_as_breg[ROB_AS_COUNT];
+  wire [ROB_DEPTHLOG2-1:0]     iss_ls_rob_slot;
+  wire [31:0]                  iss_ls_A;
+  wire [31:0]                  iss_ls_B;
+  wire                         iss_ls_inst_valid;
+  wire [ROB_DEPTHLOG2-1:0]     iss_ex1_rob_slot;
+  wire [31:0]                  iss_ex1_A;
+  wire [31:0]                  iss_ex1_B;
+  wire                         iss_ex1_inst_valid;
+  wire [ROB_DEPTHLOG2-1:0]     iss_exmul1_rob_slot;
+  wire [31:0]                  iss_exmul1_A;
+  wire [31:0]                  iss_exmul1_B;
+  wire                         iss_exmul1_inst_valid;
+
+  // Outputs from branch unit
+  rob_entry_t                  branch_rob_data;
+  wire [ROB_DEPTHLOG2-1:0]     branch_rob_wr_slot;
+  wire                         branch_rob_wr_valid;
+  wire                         branch_load_pc;
+  wire                         branch_new_pc;
+
+  // Outputs from LS
+  wire                         ls_ready;
+  rob_entry_t                  ls_rob_wr_data;
+  wire                         ls_rob_wr_valid;
+  wire [ROB_DEPTHLOG2-1:0]     ls_rob_wr_slot;
+
+  // Outputs from EX1
+  wire                         ex1_ready;
+  rob_entry_t                  ex1_rob_wr_data;
+  wire                         ex1_rob_wr_valid;
+  wire [ROB_DEPTHLOG2-1:0]     ex1_rob_wr_slot;
+
+
+  // Outputs from EXMUL1
+  wire                         exmul1_ready;
+  rob_entry_t                  exmul1_rob_wr_data;
+  wire                         exmul1_rob_wr_valid;
+  wire [ROB_DEPTHLOG2-1:0]     exmul1_rob_wr_slot;
+
+  // Outputs from ROB
+  rob_entry_t                  rob_slot_data[ROB_EXT_COUNT];
+  wire [ROB_DEPTHLOG2-1:0]     rob_reserved_slots;
+  wire                         rob_full;
+  wire [31:0]                  rob_as_aval[ROB_AS_COUNT];
+  wire [31:0]                  rob_as_bval[ROB_AS_COUNT];
+  wire                         rob_as_aval_valid[ROB_AS_COUNT];
+  wire                         rob_as_bval_valid[ROB_AS_COUNT];
+  wire                         rob_as_aval_present[ROB_AS_COUNT];
+  wire                         rob_as_bval_present[ROB_AS_COUNT];
+  wire                         rob_slot_valid[ROB_EXT_COUNT];
+  wire [ROB_DEPTHLOG2:0]       rob_used_count;
+
+  // Outputs from WB
+  wire                         wrrob_consume;
+  wire [ROB_EXT_DEPTHLOG2-1:0] wrrob_consume_count;
+
+
+
+
+  // Aggregate IF outputs
+  assign if_inst_word_r[0]        = if_inst_word0_r;
+  assign if_inst_word_r[1]        = if_inst_word1_r;
+  assign if_inst_word_r[2]        = if_inst_word2_r;
+  assign if_inst_word_r[3]        = if_inst_word3_r;
+  assign if_inst_word_valid_r[0]  = if_inst_word0_valid_r;
+  assign if_inst_word_valid_r[1]  = if_inst_word1_valid_r;
+  assign if_inst_word_valid_r[2]  = if_inst_word2_valid_r;
+  assign if_inst_word_valid_r[3]  = if_inst_word3_valid_r;
+  assign if_pc_out_r[0]           = if_pc_out0_r;
+  assign if_pc_out_r[1]           = if_pc_out1_r;
+  assign if_pc_out_r[2]           = if_pc_out2_r;
+  assign if_pc_out_r[3]           = if_pc_out3_r;
 
 
   ifetch IF(
@@ -137,7 +200,9 @@ module pipeline#(
 
 
 
-  id ID(
+  id#(
+      .ROB_DEPTHLOG2(ROB_DEPTHLOG2))
+  ID(
         // Interfaces
         .new_elements                   (idiq_new_elements),
         // Outputs
@@ -158,7 +223,11 @@ module pipeline#(
 
 
 
-  circ_buf IQ(
+  circ_buf#(
+            .DEPTH(IQ_DEPTH),
+            .INS_COUNT(IQ_INS_COUNT),
+            .EXT_COUNT(IQ_EXT_COUNT))
+  IQ(
               // Interfaces
               .new_elements             (idiq_new_elements),
               .out_elements             (iq_out_elements),
@@ -178,13 +247,15 @@ module pipeline#(
 
 
 
-  iss ISS(
+  iss#(
+       .ROB_DEPTHLOG2(ROB_DEPTHLOG2))
+  ISS(
           // Interfaces
           .insns                        (iq_out_elements),
           .wr_data                      (branch_rob_data),
           .ls_inst                      (iss_ls_inst),
           .ex1_inst                     (iss_ex1_inst),
-          .exmul1_inst                  (is_exmul1_inst),
+          .exmul1_inst                  (iss_exmul1_inst),
           // Outputs
           .ext_enable                   (issiq_ext_enable),
           .ext_consumed                 (issiq_ext_consumed),
@@ -227,10 +298,12 @@ module pipeline#(
 
 
 
-  ls_wrapper LS(
+  ls_wrapper#(
+    .ROB_DEPTHLOG2(ROB_DEPTHLOG2))
+  LS(
                 // Interfaces
                 .inst                   (iss_ls_inst),
-                .rob_data               (ls_rob_data),
+                .rob_data               (ls_rob_wr_data),
                 // Outputs
                 .ready                  (ls_ready),
                 .rob_data_valid         (ls_rob_wr_valid),
@@ -252,10 +325,12 @@ module pipeline#(
 
 
 
-  ex_wrapper EX1(
+  ex_wrapper#(
+              .ROB_DEPTHLOG2(ROB_DEPTHLOG2))
+  EX1(
                  // Interfaces
                  .inst                  (iss_ex1_inst),
-                 .rob_data              (ex1_rob_data),
+                 .rob_data              (ex1_rob_wr_data),
                  // Outputs
                  .ready                 (ex1_ready),
                  .rob_data_valid        (ex1_rob_wr_valid),
@@ -270,10 +345,12 @@ module pipeline#(
 
 
 
-  ex_mul_wrapper EXMUL1(
+  ex_mul_wrapper#(
+                  .ROB_DEPTHLOG2(ROB_DEPTHLOG2))
+  EXMUL1(
                         // Interfaces
                         .inst           (iss_exmul1_inst),
-                        .rob_data       (exmul1_rob_data),
+                        .rob_data       (exmul1_wr_rob_data),
                         // Outputs
                         .ready          (exmul1_ready),
                         .rob_data_valid (exmul1_rob_wr_valid),
@@ -288,7 +365,13 @@ module pipeline#(
 
 
 
-  rob ROB (
+  rob#(
+       .DEPTH(ROB_DEPTH),
+       .INS_COUNT(ROB_INS_COUNT),
+       .EXT_COUNT(ROB_EXT_COUNT),
+       .AS_COUNT(ROB_AS_COUNT),
+       .WR_COUNT(ROB_WR_COUNT))
+  ROB (
            // Interfaces
            .write_data                  (ex_rob_wr_data),
            .slot_data                   (rob_slot_data),
@@ -323,7 +406,9 @@ module pipeline#(
            .flush_idx                   (branch_rob_wr_slot));
 
 
-  wb WB(
+  wb#(
+      .RETIRE_COUNT(ROB_EXT_COUNT))
+  WB(
         // Interfaces
         .slot_data                      (rob_slot_data),
         // Outputs
@@ -339,7 +424,9 @@ module pipeline#(
         .empty                          (rob_empty));
 
 
-  rfile#(.READ_PORTS(8), .WRITE_PORTS(4))
+  rfile#(
+         .READ_PORTS(RFILE_RD_PORTS),
+         .WRITE_PORTS(RFILE_WR_PORTS))
   REGFILE(
           // Outputs
           .rd_data                      (rfile_rd_data),

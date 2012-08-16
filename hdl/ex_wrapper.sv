@@ -1,21 +1,22 @@
 import pipTypes::*;
 
 module ex_wrapper #(
+                    parameter ROB_DEPTHLOG2 = 4
 )(
-  input         clock,
-  input         reset_n,
+  input                     clock,
+  input                     reset_n,
 
-  input         dec_inst_t inst,
-  input         inst_valid,
-  input [31:0]  A,
-  input [31:0]  B,
-  input [ 3:0]  rob_slot,
+  input                     dec_inst_t inst,
+  input                     inst_valid,
+  input [31:0]              A,
+  input [31:0]              B,
+  input [ROB_DEPTHLOG2-1:0] rob_slot,
 
-  output        ready,
+  output                    ready,
 
-  output        rob_data_valid,
-  output [ 3:0] rob_data_idx,
-  output        rob_entry_t rob_data
+  output                    rob_data_valid,
+  output [ 3:0]             rob_data_idx,
+  output                    rob_entry_t rob_data
 );
 
   wire          stall;
@@ -27,7 +28,7 @@ module ex_wrapper #(
   reg           inst_valid_r;
   reg  [31:0]   A_r;
   reg  [31:0]   B_r;
-  reg  [ 3:0]   rob_slot_r;
+  reg [ROB_DEPTHLOG2-1:0] rob_slot_r;
 
 
   always_ff @(posedge clock, negedge reset_n)

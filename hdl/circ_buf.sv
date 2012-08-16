@@ -3,8 +3,8 @@ import pipTypes::*;
 module circ_buf #(
   parameter type T     = integer,
   parameter      DEPTH     = 16,
-                 INS_COUNT = 2,
-                 EXT_COUNT = 2,
+                 INS_COUNT = 4,
+                 EXT_COUNT = 4,
                  DEPTHLOG2 = $clog2(DEPTH),
                  EXTCOUNTLOG2  = $clog2(EXT_COUNT),
                  INSCOUNTLOG2  = $clog2(INS_COUNT)
