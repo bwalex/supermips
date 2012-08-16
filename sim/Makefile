@@ -45,6 +45,13 @@ vcs:
 		$(HDL_BASE)/cache.sv \
 		$(HDL_BASE)/mem_arb.sv \
 		$(HDL_BASE)/trickbox.sv \
+		$(HDL_BASE)/ex_wrapper.sv \
+		$(HDL_BASE)/ex_mul_wrapper.sv \
+		$(HDL_BASE)/ls_wrapper.sv \
+		$(HDL_BASE)/circ_buf.sv \
+		$(HDL_BASE)/rob.sv \
+		$(HDL_BASE)/id.sv \
+		$(HDL_BASE)/iss.sv \
 		$(HDL_BASE)/wb.sv
 	./simv
 
