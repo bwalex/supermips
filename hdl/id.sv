@@ -10,7 +10,6 @@ module ID
  output          dest_reg_valid[4],
  output [4:0]    A_reg[4],
  output [4:0]    B_reg[4],
- output [4:0]    C_reg[4],
  input           fwd_info_t fwd_info[4],
 
  output          reserve,
@@ -128,7 +127,6 @@ module ID
 
       assign A_reg[i]  = dec_inst[i].A_reg;
       assign B_reg[i]  = dec_inst[i].B_reg;
-      assign C_reg[i]  = dec_inst[i].C_reg;
     end
   endgenerate
 endmodule

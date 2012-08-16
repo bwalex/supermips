@@ -7,7 +7,6 @@ module ex_wrapper #(
   input         inst_valid,
   input [31:0]  A,
   input [31:0]  B,
-  input [31:0]  C,
   input [ 3:0]  rob_slot,
 
   output        ready,
@@ -28,7 +27,6 @@ module ex_wrapper #(
   reg           inst_valid_r;
   reg  [31:0]   A_r;
   reg  [31:0]   B_r;
-  reg  [31:0]   C_r;
   reg  [ 3:0]   rob_slot_r;
 
 
@@ -38,7 +36,6 @@ module ex_wrapper #(
       inst_valid_r <= 1'b0;
       A_r          <= 'b0;
       B_r          <= 'b0;
-      C_r          <= 'b0;
       rob_slot_r   <= 'b0;
     end
     else if (ready) begin
@@ -46,7 +43,6 @@ module ex_wrapper #(
       inst_valid_r <= inst_valid;
       A_r          <= A;
       B_r          <= B;
-      C_r          <= C;
       rob_slot_r   <= rob_slot;
     end
 
@@ -69,14 +65,11 @@ module ex_wrapper #(
 
    .A_val          (A_r),
    .B_val          (B_r),
-   .C_val          (C_r),
 
    .A_reg          (inst_r.A_reg),
    .A_reg_valid    (inst_r.A_reg_valid),
    .B_reg          (inst_r.B_reg),
    .B_reg_valid    (inst_r.B_reg_valid),
-   .C_reg          (inst_r.C_reg),
-   .C_reg_valid    (inst_r.C_reg_valid),
    .imm            (inst_r.imm),
    .imm_valid      (inst_r.imm_valid),
    .shamt          (inst_r.shamt),

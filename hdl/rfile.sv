@@ -2,7 +2,7 @@ module rfile #(
   parameter NREGS      = 32,
             ADDR_WIDTH = 5,
             DATA_WIDTH = 32,
-            READ_PORTS = 4,
+            READ_PORTS = 8,
             WRITE_PORTS = 4
 )(
   input                       clock,

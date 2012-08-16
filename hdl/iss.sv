@@ -15,19 +15,15 @@ module ISS
   output [3:0]      as_query_idx[4],
   output [4:0]      as_areg[4],
   output [4:0]      as_breg[4],
-  output [4:0]      as_creg[4],
 
   input [31:0]      as_aval[4],
   input [31:0]      as_bval[4],
-  input [31:0]      as_cval[4],
 
   input             as_aval_valid[4],
   input             as_bval_valid[4],
-  input             as_cval_valid[4],
 
   input             as_aval_present[4],
   input             as_bval_present[4],
-  input             as_cval_present[4],
 
   // ROB store interface for "branch unit"
   output [3:0]      wr_slot,
@@ -46,7 +42,6 @@ module ISS
   output reg [ 3:0] ex1_rob_slot,
   output reg [31:0] ex1_A,
   output reg [31:0] ex1_B,
-  output reg [31:0] ex1_C,
   output            dec_inst_t ex1_inst,
   output reg        ex1_inst_valid,
   input             ex1_ready,
@@ -55,7 +50,6 @@ module ISS
   output reg [ 3:0] exmul1_rob_slot,
   output reg [31:0] exmul1_A,
   output reg [31:0] exmul1_B,
-  output reg [31:0] exmul1_C,
   output            dec_inst_t exmul1_inst,
   output reg        exmul1_inst_valid,
   input             exmul1_ready,
@@ -67,18 +61,16 @@ module ISS
   output            new_pc_valid,
 
   // Register file interface
-  output [31:0]     rd_addr[12],
-  input [31:0]      rd_data[12]
+  output [31:0]     rd_addr[8],
+  input [31:0]      rd_data[8]
 );
 
   dec_inst_t    di[4];
   wire [ 3:0]   rob_slot[4];
   wire [31:0]   di_A[4];
   wire [31:0]   di_B[4];
-  wire [31:0]   di_C[4];
   wire          di_A_valid[4];
   wire          di_B_valid[4];
-  wire          di_C_valid[4];
   wire          di_ops_ready[4];
 
   dec_inst_t    lsi;
@@ -139,23 +131,14 @@ module ISS
   assign as_breg[2]  = di[2].B_reg;
   assign as_breg[3]  = di[3].B_reg;
 
-  assign as_creg[0]  = di[0].C_reg;
-  assign as_creg[1]  = di[1].C_reg;
-  assign as_creg[2]  = di[2].C_reg;
-  assign as_creg[3]  = di[3].C_reg;
-
-  assign rd_addr[ 0]  = di[0].A_reg;
-  assign rd_addr[ 1]  = di[0].B_reg;
-  assign rd_addr[ 2]  = di[0].C_reg;
-  assign rd_addr[ 3]  = di[1].A_reg;
-  assign rd_addr[ 4]  = di[1].B_reg;
-  assign rd_addr[ 5]  = di[1].C_reg;
-  assign rd_addr[ 6]  = di[2].A_reg;
-  assign rd_addr[ 7]  = di[2].B_reg;
-  assign rd_addr[ 8]  = di[2].C_reg;
-  assign rd_addr[ 9]  = di[3].A_reg;
-  assign rd_addr[10]  = di[3].B_reg;
-  assign rd_addr[11]  = di[3].C_reg;
+  assign rd_addr[0]  = di[0].A_reg;
+  assign rd_addr[1]  = di[0].B_reg;
+  assign rd_addr[2]  = di[1].A_reg;
+  assign rd_addr[3]  = di[1].B_reg;
+  assign rd_addr[4]  = di[2].A_reg;
+  assign rd_addr[5]  = di[2].B_reg;
+  assign rd_addr[6]  = di[3].A_reg;
+  assign rd_addr[7]  = di[3].B_reg;
 
 
   genvar        i;
@@ -163,7 +146,6 @@ module ISS
     for (i = 0; i < 4; i++) begin : AS_FWD
       assign di_A[i]  = (as_aval_present[i]) ? as_aval[i] : rd_data[i*3 + 0];
       assign di_B[i]  = (as_bval_present[i]) ? as_bval[i] : rd_data[i*3 + 1];
-      assign di_C[i]  = (as_cval_present[i]) ? as_cval[i] : rd_data[i*3 + 2];
     end
 
     for (i = 0; i < 4; i++) begin : AS_FWD_VALID
@@ -172,7 +154,6 @@ module ISS
       // in the ROB.
       assign di_A_valid[i]  = ~as_aval_present[i] | (as_aval_present[i] & as_aval_valid[i]);
       assign di_B_valid[i]  = ~as_bval_present[i] | (as_bval_present[i] & as_bval_valid[i]);
-      assign di_C_valid[i]  = ~as_cval_present[i] | (as_cval_present[i] & as_cval_valid[i]);
     end
 
     for (i = 0; i < 4; i++) begin : OPS_READY
@@ -180,7 +161,6 @@ module ISS
       // is either not required (~reg_valid) or valid.
       assign di_ops_ready[i]  =  (di_A_valid[i] | ~di.A_reg_valid)
                                & (di_B_valid[i] | ~di.B_reg_valid)
-                               & (di_C_valid[i] | ~di.C_reg_valid)
                                ;
     end
   endgenerate
@@ -211,11 +191,9 @@ module ISS
     ls_rob_slot        = rob_slot[0];
     exmul1_A           = di_A[0];
     exmul1_B           = di_B[0];
-    exmul1_C           = di_C[0];
     exmul1_rob_slot    = rob_slot[0];
     ex1_A              = di_A[0];
     ex1_B              = di_B[0];
-    ex1_C              = di_C[0];
     ex1_rob_slot       = rob_slot[0];
 
 
@@ -262,7 +240,6 @@ module ISS
         exmul1i          = di[i];
         exmul1_A         = di_A[i];
         exmul1_B         = di_B[i];
-        exmul1_C         = di_C[i];
         exmul1_rob_slot  = rob_slot[i];
         consumed++;
       end
@@ -271,7 +248,6 @@ module ISS
         ex1i          = di[i];
         ex1_A         = di_A[i];
         ex1_B         = di_B[i];
-        ex1_C         = di_C[i];
         ex1_rob_slot  = rob_slot[i];
         consumed++;
       end
@@ -280,7 +256,6 @@ module ISS
         ex1muli          = di[i];
         exmul1_A         = di_A[i];
         exmul1_B         = di_B[i];
-        exmul1_C         = di_C[i];
         exmul1_rob_slot  = rob_slot[i];
         consumed++;
       end
