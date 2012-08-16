@@ -25,15 +25,6 @@ module top#(
   wire [31:0]           icache_data;
   wire                  icache_waitrequest;
 
-  wire [4:0]            rfile_rd_addr1;         // From CPU of pipeline.v
-  wire [4:0]            rfile_rd_addr2;         // From CPU of pipeline.v
-  wire [4:0]            rfile_wr_addr1;         // From CPU of pipeline.v
-  wire [31:0]           rfile_wr_data1;         // From CPU of pipeline.v
-  wire                  rfile_wr_enable1;       // From CPU of pipeline.v
-  // End of automatics
-  wire [31:0]           rfile_rd_data1;
-  wire [31:0]           rfile_rd_data2;
-
 `ifdef REAL_CACHE
   wire [31:0]           cm_addr;
   wire [BURSTLEN_WIDTH-1:0] cm_burst_len;
@@ -68,38 +59,18 @@ module top#(
                // Outputs
                .icache_addr             (icache_addr),
                .icache_rd               (icache_rd),
-               .rfile_rd_addr1          (rfile_rd_addr1),
-               .rfile_rd_addr2          (rfile_rd_addr2),
                .dcache_addr             (dcache_addr),
                .dcache_rd               (dcache_rd),
                .dcache_wr               (dcache_wr),
                .dcache_wr_be            (dcache_wr_be),
                .dcache_wr_data          (dcache_wr_data),
-               .rfile_wr_addr1          (rfile_wr_addr1),
-               .rfile_wr_enable1        (rfile_wr_enable1),
-               .rfile_wr_data1          (rfile_wr_data1),
                // Inputs
                .clock                   (clock),
                .reset_n                 (reset_n),
                .icache_data             (icache_data),
                .icache_waitrequest      (icache_waitrequest),
-               .rfile_rd_data1          (rfile_rd_data1),
-               .rfile_rd_data2          (rfile_rd_data2),
                .dcache_data             (dcache_data),
                .dcache_waitrequest      (dcache_waitrequest));
-
-  rfile REGFILE(
-                // Outputs
-                .rd_data1               (rfile_rd_data1),
-                .rd_data2               (rfile_rd_data2),
-                // Inputs
-                .clock                  (clock),
-                .reset_n                (reset_n),
-                .rd_addr1               (rfile_rd_addr1),
-                .rd_addr2               (rfile_rd_addr2),
-                .wr_addr1               (rfile_wr_addr1),
-                .wr_enable1             (rfile_wr_enable1),
-                .wr_data1               (rfile_wr_data1));
 
 
 `ifdef REAL_CACHE
@@ -169,11 +140,11 @@ module top#(
 
   generic_cache #
     (
-     .CLINE_WIDTH(128),
+     .CLINE_WIDTH(256),
      .ADDR_WIDTH(32),
-     .DATA_WIDTH(32),
+     .DATA_WIDTH(128),
      .MEM_DATA_WIDTH(MEM_WIDTH),
-     .NLINES(128),
+     .NLINES(64),
      .ASSOC(4)
      )
   icache
