@@ -124,10 +124,10 @@ module ifetch #(
     endcase
 
 
-  assign inst_word0_valid  = (!new_pc) && (!stall_i) && (line_idx == 2'b00);
-  assign inst_word1_valid  = (!new_pc) && (!stall_i) && (line_idx == 2'b01 || inst_word0_valid);
-  assign inst_word2_valid  = (!new_pc) && (!stall_i) && (line_idx == 2'b10 || inst_word1_valid);
-  assign inst_word3_valid  = (!new_pc) && (!stall_i) && (line_idx == 2'b11 || inst_word2_valid);
+  assign inst_word0_valid  = (!load_pc) && (!stall_i) && (line_idx == 2'b00);
+  assign inst_word1_valid  = (!load_pc) && (!stall_i) && (line_idx == 2'b01 || inst_word0_valid);
+  assign inst_word2_valid  = (!load_pc) && (!stall_i) && (line_idx == 2'b10 || inst_word1_valid);
+  assign inst_word3_valid  = (!load_pc) && (!stall_i) && (line_idx == 2'b11 || inst_word2_valid);
 
 
   assign branch_stall  = cache_waitrequest;

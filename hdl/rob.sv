@@ -222,7 +222,7 @@ module rob #(
 
 
   always_ff @(posedge clock) begin
-    if (reserve) begin
+    if (reserve_i) begin
       for (integer i = 0; i <= reserve_count; i++)
         $fwrite(trace_file, "ROB: Reserve slot %d for pc=%x (dest_reg=%d [valid=%b])\n",
                  reserved_slots[i], instructions[i].pc, dest_reg[i],

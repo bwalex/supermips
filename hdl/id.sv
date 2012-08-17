@@ -70,7 +70,7 @@ module id#(
 
   assign stall       = rob_full | iq_full;
   assign reserve     = ~stall   & insns_valid;
-  assign ins_enable  = ~stall;
+  assign ins_enable  = ~stall   & insns_valid;
 
   assign new_count   = reserve_count;
 
