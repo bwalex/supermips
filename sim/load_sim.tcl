@@ -2,7 +2,7 @@
 set TOP_LEVEL_NAME "top"
 set HDL_BASE "../hdl"
 set SIM_BASE "../sim"
-set VLOG_FLAGS "+define+TRACE_ENABLE"
+set VLOG_FLAGS "+define+REAL_CACHE +define+ROB_TRACE_ENABLE +define+IQ_TRACE_ENABLE"
 
 proc ensure_lib { lib } { if ![file isdirectory $lib] { vlib $lib } }
 ensure_lib ./libraries/
@@ -12,15 +12,20 @@ vmap work ./libraries/work/
 # Compile the additional test files
 vlog $VLOG_FLAGS -sv $HDL_BASE/types.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/ex.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/exmul.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/generic_shifter.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/idec.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/id.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/ifetch.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/agu.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/mem.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/pipeline.sv
-vlog $VLOG_FLAGS -sv $HDL_BASE/pipreg_ex_mem.sv
-vlog $VLOG_FLAGS -sv $HDL_BASE/pipreg_id_ex.sv
-vlog $VLOG_FLAGS -sv $HDL_BASE/pipreg_if_id.sv
-vlog $VLOG_FLAGS -sv $HDL_BASE/pipreg_mem_wb.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/iss.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/ls_wrapper.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/ex_wrapper.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/ex_mul_wrapper.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/circ_buf.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/rob.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/rfile.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/tcm.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/wb.sv
