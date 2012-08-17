@@ -155,7 +155,7 @@ module top#(
      .cpu_addr(icache_addr),
      .cpu_rd(icache_rd),
      .cpu_wr(1'b0),
-     .cpu_wr_be('b0),
+     .cpu_wr_be(32'b0),
      .cpu_wr_data('b0),
      .cpu_rd_data(icache_data),
      .cpu_waitrequest(icache_waitrequest),
@@ -287,7 +287,7 @@ module top#(
 
   initial begin
         reset_n = 1;
-    #5  reset_n = 0;
+    #2  reset_n = 0;
     #16 reset_n = 1;
   end
 

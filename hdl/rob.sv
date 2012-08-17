@@ -79,36 +79,47 @@ module rob #(
 
   // High-level associative lookup interface
   always_comb begin
+    automatic bit [DEPTHLOG2-1:0] k;
     for (integer i = 0; i < AS_COUNT; i++) begin
       as_aval_valid[i]    = 1'b0;
       as_aval_present[i]  = 1'b0;
       as_aval[i]          = 32'b0;
 
-
-      for (bit [DEPTHLOG2-1:0] k = as_query_idx[i]-1; k >= ext_ptr; k--) begin
-        if (buffer[k].dest_reg == as_areg[i] && buffer[k].dest_reg_valid) begin
-          as_aval[i]          = buffer[k].result_lo;
-          as_aval_valid[i]    = valid[k];
-          as_aval_present[i]  = 1'b1;
-          break;
+      $display("AS query_idx: %d", as_query_idx[i]);
+      if (as_query_idx[i] != ext_ptr) begin
+        for (k = as_query_idx[i]-1; k >= ext_ptr; k--) begin
+	  $display("k: %d", k);
+          if (buffer[k].dest_reg == as_areg[i] && buffer[k].dest_reg_valid) begin
+            as_aval[i]          = buffer[k].result_lo;
+            as_aval_valid[i]    = valid[k];
+            as_aval_present[i]  = 1'b1;
+            break;
+          end
+          if (k == 0 && ext_ptr == 0)
+            break;
         end
       end
     end
   end // always_comb
 
   always_comb begin
+    automatic bit [DEPTHLOG2-1:0] k;
     for (integer i = 0; i < AS_COUNT; i++) begin
       as_bval_valid[i]    = 1'b0;
       as_bval_present[i]  = 1'b0;
       as_bval[i]          = 32'b0;
 
-
-      for (bit [DEPTHLOG2-1:0] k = as_query_idx[i]-1; k >= ext_ptr; k--) begin
-        if (buffer[k].dest_reg == as_breg[i] && buffer[k].dest_reg_valid) begin
-          as_bval[i]          = buffer[k].result_lo;
-          as_bval_valid[i]    = valid[k];
-          as_bval_present[i]  = 1'b1;
-          break;
+      if (as_query_idx[i] != ext_ptr) begin
+        for (k = as_query_idx[i]-1; k >= ext_ptr; k--) begin
+	  $display("k: %d", k);
+          if (buffer[k].dest_reg == as_breg[i] && buffer[k].dest_reg_valid) begin
+            as_bval[i]          = buffer[k].result_lo;
+            as_bval_valid[i]    = valid[k];
+            as_bval_present[i]  = 1'b1;
+            break;
+          end
+          if (k == 0 && ext_ptr == 0)
+            break;
         end
       end
     end
@@ -213,24 +224,24 @@ module rob #(
   always_ff @(posedge clock) begin
     if (reserve) begin
       for (integer i = 0; i <= reserve_count; i++)
-        $fwrite(trace_file, "ROB: Reserve slot %d for pc=%x (dest_reg=%d [valid=%b])",
+        $fwrite(trace_file, "ROB: Reserve slot %d for pc=%x (dest_reg=%d [valid=%b])\n",
                  reserved_slots[i], instructions[i].pc, dest_reg[i],
                  dest_reg_valid[i]);
     end
     for (integer i = 0; i < WR_COUNT; i++) begin
       if (write_valid[i])
-        $fwrite(trace_file, "ROB: Write slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b",
+        $fwrite(trace_file, "ROB: Write slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
                  write_slot[i], insns[write_slot[i]].pc, write_data[i].result_lo,
                  write_data[i].dest_reg, write_data[i].dest_reg_valid);
     end
     if (consume) begin
       for (integer i = 0; i <= consume_count; i++)
-        $fwrite(trace_file, "ROB: Consume slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b",
+        $fwrite(trace_file, "ROB: Consume slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
                  ext_ptr + i, insns[ext_ptr+i].pc, buffer[ext_ptr+i].result_lo,
                  buffer[ext_ptr+i].dest_reg, buffer[ext_ptr+i].dest_reg_valid);
     end
 
-    $fwrite(trace_file, "ROB: ins_ptr: %d, ext_ptr: %d, used_count: %d, empty: %b, full: %b",
+    $fwrite(trace_file, "ROB: ins_ptr: %d, ext_ptr: %d, used_count: %d, empty: %b, full: %b\n",
             ins_ptr, ext_ptr, used_count, empty, full);
 
   end

@@ -19,7 +19,7 @@ vlog $VLOG_FLAGS -sv $HDL_BASE/id.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/ifetch.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/agu.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/mem.sv
-vlog $VLOG_FLAGS -sv $HDL_BASE/generic_cache.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/cache.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/mem_arb.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/memory.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/pipeline.sv
