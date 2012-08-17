@@ -55,7 +55,6 @@ module ls_wrapper #(
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n) begin
-      inst_r       <= 'b0;
       inst_valid_r <= 1'b0;
       A_r          <= 'b0;
       B_r          <= 'b0;
@@ -85,7 +84,6 @@ module ls_wrapper #(
       load_inst_r    <= 1'b0;
       store_inst_r   <= 1'b0;
       B_r_r          <= 32'b0;
-      inst_r_r       <= 'b0;
       rob_slot_r_r   <= 'b0;
       inst_valid_r_r <= 1'b0;
     end

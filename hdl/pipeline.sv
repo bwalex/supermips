@@ -154,7 +154,24 @@ module pipeline#(
   wire                         wrrob_consume;
   wire [ROB_EXT_DEPTHLOG2-1:0] wrrob_consume_count;
 
+  // Aggregated EX/LS/etc outputs to ROB
+  rob_entry_t                  ex_rob_wr_data[ROB_WR_COUNT];
+  wire [ROB_DEPTHLOG2-1:0]     ex_rob_wr_slot[ROB_WR_COUNT];
+  wire                         ex_rob_wr_valid[ROB_WR_COUNT];
 
+
+  assign ex_rob_wr_data[0]   = ls_rob_wr_data;
+  assign ex_rob_wr_data[1]   = ex1_rob_wr_data;
+  assign ex_rob_wr_data[2]   = exmul1_rob_wr_data;
+  assign ex_rob_wr_data[3]   = branch_rob_data;
+  assign ex_rob_wr_slot[0]   = ls_rob_wr_slot;
+  assign ex_rob_wr_slot[1]   = ex1_rob_wr_slot;
+  assign ex_rob_wr_slot[2]   = exmul1_rob_wr_slot;
+  assign ex_rob_wr_slot[3]   = branch_rob_wr_slot;
+  assign ex_rob_wr_valid[0]  = ls_rob_wr_valid;
+  assign ex_rob_wr_valid[1]  = ex1_rob_wr_valid;
+  assign ex_rob_wr_valid[2]  = exmul1_rob_wr_valid;
+  assign ex_rob_wr_valid[3]  = branch_rob_wr_valid;
 
 
   // Aggregate IF outputs

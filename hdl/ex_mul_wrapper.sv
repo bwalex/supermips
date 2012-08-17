@@ -35,7 +35,6 @@ module ex_mul_wrapper #(
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n) begin
-      inst_r       <= 'b0;
       inst_valid_r <= 1'b0;
       A_r          <= 'b0;
       B_r          <= 'b0;

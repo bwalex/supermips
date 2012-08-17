@@ -313,7 +313,6 @@ module iss#(
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n) begin
-      bi_retained       <= 'b0;
       branch_A_retained <= 'b0;
       branch_B_retained <= 'b0;
       bi_inst_valid_retained   <= 1'b0;
