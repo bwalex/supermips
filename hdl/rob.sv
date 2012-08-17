@@ -21,6 +21,7 @@ module rob #(
   output                     full,
   input [4:0]                dest_reg[INS_COUNT],
   input                      dest_reg_valid[INS_COUNT],
+  input dec_inst_t           instructions[INS_COUNT],
 
   // Associate lookup interface
   input [DEPTHLOG2-1:0]      as_query_idx[AS_COUNT],
@@ -62,6 +63,9 @@ module rob #(
   T buffer[DEPTH];
   bit valid[DEPTH];
   bit in_transit[DEPTH];
+
+  // XXX: temporary
+  dec_inst_t insns[DEPTH];
 
 
 
@@ -147,10 +151,15 @@ module rob #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       ;
-    else
+    else begin
+      for (integer i = 0; i <= reserve_count; i++) begin
+        buffer[reserved_slots[i]].dest_reg        <= dest_reg[i];
+        buffer[reserved_slots[i]].dest_reg_valid  <= dest_reg_valid[i];
+      end
       for (integer i = 0; i < WR_COUNT; i++)
         if (write_valid[i])
           buffer[write_slot[i]] <= write_data[i];
+    end
 
 
   // Consume interface
@@ -184,4 +193,48 @@ module rob #(
 
   assign empty      = (used_count == 0);
   assign full       = (used_count > DEPTH-INS_COUNT);
+
+
+
+`ifdef ROB_TRACE_ENABLE
+  integer trace_file;
+
+  initial begin
+    trace_file  = $fopen("rob.trace", "w");
+  end
+
+  always_ff @(posedge clock) begin
+    for (integer i = 0; i <= reserve_count; i++) begin
+      insns[reserved_slots[i]] <= instructions[i];
+    end
+  end
+
+
+  always_ff @(posedge clock) begin
+    if (reserve) begin
+      for (integer i = 0; i <= reserve_count; i++)
+        $fwrite(trace_file, "ROB: Reserve slot %d for pc=%x (dest_reg=%d [valid=%b])",
+                 reserved_slots[i], instructions[i].pc, dest_reg[i],
+                 dest_reg_valid[i]);
+    end
+    for (integer i = 0; i < WR_COUNT; i++) begin
+      if (write_valid[i])
+        $fwrite(trace_file, "ROB: Write slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b",
+                 write_slot[i], insns[write_slot[i]].pc, write_data[i].result_lo,
+                 write_data[i].dest_reg, write_data[i].dest_reg_valid);
+    end
+    if (consume) begin
+      for (integer i = 0; i <= consume_count; i++)
+        $fwrite(trace_file, "ROB: Consume slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b",
+                 ext_ptr + i, insns[ext_ptr+i].pc, buffer[ext_ptr+i].result_lo,
+                 buffer[ext_ptr+i].dest_reg, buffer[ext_ptr+i].dest_reg_valid);
+    end
+
+    $fwrite(trace_file, "ROB: ins_ptr: %d, ext_ptr: %d, used_count: %d, empty: %b, full: %b",
+            ins_ptr, ext_ptr, used_count, empty, full);
+
+  end
+`endif
+
+
 endmodule

@@ -74,6 +74,7 @@ module pipeline#(
 
   // Outputs from ID
   wire                         id_stall;
+  dec_inst_t                   idrob_instructions[4];
   iq_entry_t                   idiq_new_elements[4];
   wire [ 4:0]                  idrob_dest_reg[ROB_INS_COUNT];
   wire                         idrob_dest_reg_valid[ROB_INS_COUNT];
@@ -222,6 +223,7 @@ module pipeline#(
   ID(
         // Interfaces
         .new_elements                   (idiq_new_elements),
+        .instructions                   (idrob_instructions),
         // Outputs
         .stall                          (id_stall),
         .dest_reg                       (idrob_dest_reg),
@@ -392,6 +394,7 @@ module pipeline#(
            // Interfaces
            .write_data                  (ex_rob_wr_data),
            .slot_data                   (rob_slot_data),
+           .instructions                (idrob_instructions),
            // Outputs
            .reserved_slots              (rob_reserved_slots),
            .full                        (rob_full),

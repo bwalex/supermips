@@ -11,6 +11,7 @@ module id#(
  // ROB reservation interface + forwarding setup interface
  output [4:0]              dest_reg[4],
  output                    dest_reg_valid[4],
+ output dec_inst_t         instructions[4],
 
  output                    reserve,
  output reg [1:0]          reserve_count,
@@ -134,6 +135,7 @@ module id#(
     for (i = 0; i < 4; i++) begin : ID_DEST_REG_SIGNALS
       assign dest_reg[i]        = new_elements[i].dec_inst.dest_reg;
       assign dest_reg_valid[i]  = new_elements[i].dec_inst.dest_reg_valid;
+      assign instructions[i]    = new_elements[i].dec_inst;
     end
   endgenerate
 endmodule
