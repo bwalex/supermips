@@ -91,7 +91,6 @@ module idec
     A_reg_valid     = 1'b0;
     B_reg           = inst_rt;
     B_reg_valid     = 1'b0;
-    B_need_late     = 1'b0;
     C_reg           = inst_rd;
     C_reg_valid     = 1'b0;
     dest_reg        = inst_rt;
@@ -619,7 +618,6 @@ module idec
         store_inst      = 1'b1;
         A_reg_valid     = 1'b1;
         B_reg_valid     = 1'b1;
-        B_need_late     = 1'b1; // Only need B in MEM stage, not EX/ALU
         dest_reg_valid  = 1'b0;
         ls_op           = OP_LS_BYTE;
       end
@@ -630,7 +628,6 @@ module idec
         store_inst      = 1'b1;
         A_reg_valid     = 1'b1;
         B_reg_valid     = 1'b1;
-        B_need_late     = 1'b1; // Only need B in MEM stage, not EX/ALU
         dest_reg_valid  = 1'b0;
         ls_op           = OP_LS_HALFWORD;
       end
@@ -641,7 +638,6 @@ module idec
         store_inst      = 1'b1;
         A_reg_valid     = 1'b1;
         B_reg_valid     = 1'b1;
-        B_need_late     = 1'b1; // Only need B in MEM stage, not EX/ALU
         dest_reg_valid  = 1'b0;
       end
 
@@ -674,11 +670,10 @@ module idec
   end
 
 
-  assign imm  = (new_pc_valid & dest_reg_valid) ? pc_plus_8
-              : (imm_sext)                      ? { {16{inst_imm[15]}}, inst_imm }
+  assign imm  = (imm_sext)                      ? { {16{inst_imm[15]}}, inst_imm }
               :                                   { 16'd0, inst_imm };
 
-  assign imm_valid  = inst_iformat | inst_jformat | (new_pc_valid & dest_reg_valid);
+  assign imm_valid  = inst_iformat;
 
 
 
