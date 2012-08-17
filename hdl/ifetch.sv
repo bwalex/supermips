@@ -32,7 +32,7 @@ module ifetch #(
   output                  branch_stall
 );
 
-  wire [3:0]              align_off;
+  reg [3:0]               align_off;
   wire                    stall_i;
   wire [1:0]              line_idx;
   wire                    aligned;

@@ -22,7 +22,7 @@ module top#(
   wire                  dcache_waitrequest;
   wire [31:0]           icache_addr;            // From CPU of pipeline.v
   wire                  icache_rd;              // From CPU of pipeline.v
-  wire [31:0]           icache_data;
+  wire [127:0]          icache_data;
   wire                  icache_waitrequest;
 
 `ifdef REAL_CACHE
@@ -36,7 +36,7 @@ module top#(
   wire                  cm_rd;
 
   wire [31:0]           icm_addr;
-  wire [BURSTLEN_WIDTH-1:0] icm_burst_len;
+  wire [ 2:0]           icm_burst_len;
   wire [MEM_WIDTH-1:0]  icm_rd_data;
   wire                  icm_rd_valid;
   wire                  icm_waitrequest;
@@ -119,7 +119,7 @@ module top#(
      .c1_rd_valid(icm_rd_valid),
 
      .c2_addr(dcm_addr),
-     .c2_burst_len(dcm_burst_len),
+     .c2_burst_len({1'b0, dcm_burst_len}),
      .c2_data_out(dcm_rd_data),
      .c2_data_in(dcm_wr_data),
      .c2_wr(dcm_wr),

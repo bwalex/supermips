@@ -12,7 +12,7 @@ module pipeline#(
   // from/to IF
   output [ADDR_WIDTH-1:0] icache_addr,//
   output                  icache_rd,//
-  input [DATA_WIDTH-1:0]  icache_data,//
+  input [127:0]           icache_data,//
   input                   icache_waitrequest,//
 
   // from/to MEM
@@ -20,7 +20,7 @@ module pipeline#(
   output                  dcache_rd,//
   output                  dcache_wr,//
   output [DATA_WIDTH-1:0] dcache_wr_data,//
-  output [  BE_WIDTH-1:0] dcache_wr_be,//
+  output [ BE_WIDTH-1:0]  dcache_wr_be,//
   input [DATA_WIDTH-1:0]  dcache_data,//
   input                   dcache_waitrequest//
 );
@@ -116,7 +116,7 @@ module pipeline#(
   wire [ROB_DEPTHLOG2-1:0]     branch_rob_wr_slot;
   wire                         branch_rob_wr_valid;
   wire                         branch_load_pc;
-  wire                         branch_new_pc;
+  wire [31:0]                  branch_new_pc;
 
   // Outputs from LS
   wire                         ls_ready;
@@ -139,7 +139,7 @@ module pipeline#(
 
   // Outputs from ROB
   rob_entry_t                  rob_slot_data[ROB_EXT_COUNT];
-  wire [ROB_DEPTHLOG2-1:0]     rob_reserved_slots;
+  wire [ROB_DEPTHLOG2-1:0]     rob_reserved_slots[ROB_INS_COUNT];
   wire                         rob_full;
   wire [31:0]                  rob_as_aval[ROB_AS_COUNT];
   wire [31:0]                  rob_as_bval[ROB_AS_COUNT];
