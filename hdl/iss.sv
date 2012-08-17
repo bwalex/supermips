@@ -184,9 +184,9 @@ module iss#(
     exmul1_used        = 1'b0;
 
     bi                 = di[0];
-    lsi                = di[0];
-    ex1i               = di[0];
-    exmul1i            = di[0];
+    ls_inst            = di[0];
+    ex1_inst           = di[0];
+    exmul1_inst        = di[0];
     branch_A           = di_A[0];
     branch_B           = di_B[0];
     branch_rob_slot    = rob_slot[0];
@@ -233,7 +233,7 @@ module iss#(
       end
       else if ((di[i].load_inst | di[i].store_inst) && !ls_used && ls_ready) begin
         ls_used      = 1'b1;
-        lsi          = di[i];
+        ls_inst      = di[i];
         ls_A         = di_A[i];
         ls_B         = di_B[i];
         ls_rob_slot  = rob_slot[i];
@@ -241,7 +241,7 @@ module iss#(
       end
       else if (di[i].muldiv_inst && !exmul1_used && exmul1_ready) begin
         exmul1_used      = 1'b1;
-        exmul1i          = di[i];
+        exmul1_inst      = di[i];
         exmul1_A         = di_A[i];
         exmul1_B         = di_B[i];
         exmul1_rob_slot  = rob_slot[i];
@@ -249,7 +249,7 @@ module iss#(
       end
       else if (di[i].alu_inst && !ex1_used && ex1_ready) begin
         ex1_used      = 1'b1;
-        ex1i          = di[i];
+        ex1_inst      = di[i];
         ex1_A         = di_A[i];
         ex1_B         = di_B[i];
         ex1_rob_slot  = rob_slot[i];
@@ -257,7 +257,7 @@ module iss#(
       end
       else if (di[i].alu_inst && !exmul1_used && exmul1_ready) begin
         exmul1_used      = 1'b1;
-        exmul1i          = di[i];
+        exmul1_inst      = di[i];
         exmul1_A         = di_A[i];
         exmul1_B         = di_B[i];
         exmul1_rob_slot  = rob_slot[i];
