@@ -107,7 +107,7 @@ module ifetch #(
     else if (load_pc & ~stall_i)
       pc <= new_pc;
     else if (~stall_i) begin
-      pc <= pc + align_off;
+      pc <= pc + align_off + 1;
     end
 
 
@@ -117,10 +117,10 @@ module ifetch #(
 
   always_comb
     case (line_idx)
-      2'd01:   align_off  = 4'd12;
-      2'd02:   align_off  = 4'd08;
-      2'd03:   align_off  = 4'd04;
-      default: align_off  = 4'd16;
+      2'd01:   align_off  = 4'd11;
+      2'd02:   align_off  = 4'd07;
+      2'd03:   align_off  = 4'd03;
+      default: align_off  = 4'd15;
     endcase
 
 

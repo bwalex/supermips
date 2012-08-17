@@ -112,6 +112,8 @@ module circ_buf #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       used_count <= 0;
+    else if (flush)
+      used_count <= 'b0;
     else
       used_count <=  used_count
                    + ((new_count      + 1) & {(INSCOUNTLOG2+1){ins_enable_i}})
@@ -134,17 +136,20 @@ module circ_buf #(
   always_ff @(posedge clock) begin
     if (ins_enable_i)
       for (integer i = 0; i <= new_count; i++)
-        $fwrite(trace_file, "IQ: insert at slot %d, pc=%x, rob_slot=%d\n",
-                ins_ptr+i, buffer[ins_ptr+i].dec_inst.pc,
-                buffer[ins_ptr+i].rob_slot);
+        $fwrite(trace_file, "%d IQ: insert at slot %d, pc=%x, rob_slot=%d\n",
+	        $time,
+                ins_ptr+i, new_elements[i].dec_inst.pc,
+                new_elements[i].rob_slot);
 
     if (ext_enable_i)
       for (integer i = 0; i <= ext_consumed_i; i++)
-        $fwrite(trace_file, "IQ: extract from slot %d, pc=%x, rob_slot=%d\n",
+        $fwrite(trace_file, "%d IQ: extract from slot %d, pc=%x, rob_slot=%d\n",
+	        $time,
                 ext_ptr+i, out_elements[i].dec_inst.pc,
                 out_elements[i].rob_slot);
 
-    $fwrite(trace_file, "IQ: ins_ptr: %d, ext_ptr: %d, used_count: %d, empty: %b, full: %b\n",
+    $fwrite(trace_file, "%d IQ: ins_ptr: %d, ext_ptr: %d, used_count: %d, empty: %b, full: %b\n",
+            $time,
             ins_ptr, ext_ptr, used_count, empty, full);
   end
 

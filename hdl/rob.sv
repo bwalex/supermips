@@ -224,25 +224,25 @@ module rob #(
   always_ff @(posedge clock) begin
     if (reserve_i) begin
       for (integer i = 0; i <= reserve_count; i++)
-        $fwrite(trace_file, "ROB: Reserve slot %d for pc=%x (dest_reg=%d [valid=%b])\n",
-                 reserved_slots[i], instructions[i].pc, dest_reg[i],
+        $fwrite(trace_file, "%d ROB: Reserve slot %d for pc=%x (dest_reg=%d [valid=%b])\n",
+                 $time, reserved_slots[i], instructions[i].pc, dest_reg[i],
                  dest_reg_valid[i]);
     end
     for (integer i = 0; i < WR_COUNT; i++) begin
       if (write_valid[i])
-        $fwrite(trace_file, "ROB: Write slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
-                 write_slot[i], insns[write_slot[i]].pc, write_data[i].result_lo,
+        $fwrite(trace_file, "%d ROB: Write slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
+                 $time, write_slot[i], insns[write_slot[i]].pc, write_data[i].result_lo,
                  write_data[i].dest_reg, write_data[i].dest_reg_valid);
     end
     if (consume) begin
       for (integer i = 0; i <= consume_count; i++)
-        $fwrite(trace_file, "ROB: Consume slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
-                 ext_ptr + i, insns[ext_ptr+i].pc, buffer[ext_ptr+i].result_lo,
+        $fwrite(trace_file, "%d ROB: Consume slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
+                 $time, ext_ptr + i, insns[ext_ptr+i].pc, buffer[ext_ptr+i].result_lo,
                  buffer[ext_ptr+i].dest_reg, buffer[ext_ptr+i].dest_reg_valid);
     end
 
-    $fwrite(trace_file, "ROB: ins_ptr: %d, ext_ptr: %d, used_count: %d, empty: %b, full: %b\n",
-            ins_ptr, ext_ptr, used_count, empty, full);
+    $fwrite(trace_file, "%d ROB: ins_ptr: %d, ext_ptr: %d, used_count: %d, empty: %b, full: %b\n",
+            $time, ins_ptr, ext_ptr, used_count, empty, full);
 
   end
 `endif

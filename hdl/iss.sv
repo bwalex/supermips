@@ -177,8 +177,6 @@ module iss#(
     automatic integer consumed;
 
     consumed           = 0;
-    ext_consumed       = 2'd0;
-    ext_enable         = 1'b0;
 
     b_used             = 1'b0;
     ls_used            = 1'b0;
@@ -361,7 +359,7 @@ module iss#(
 
 
   assign wr_slot                 = branch_rob_slot_act;
-  assign wr_valid                = ~branch_stall;
+  assign wr_valid                = ~branch_stall & bi_inst_valid_act;
   assign wr_data.result_lo       = pc_plus_8;
   assign wr_data.dest_reg        = bi_act.dest_reg;
   assign wr_data.dest_reg_valid  = bi_act.dest_reg_valid;

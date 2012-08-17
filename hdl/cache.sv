@@ -6,6 +6,7 @@ module generic_cache #(
                        NLINES = 256,
                        NWORDS = CLINE_WIDTH/DATA_WIDTH,
                        MEM_NWORDS = CLINE_WIDTH/MEM_DATA_WIDTH,
+		       MEM_D_NWORDS = (MEM_DATA_WIDTH >= DATA_WIDTH) ? 1 : DATA_WIDTH/MEM_DATA_WIDTH,
                        NWORDSLOG2 = $clog2(NWORDS),
                        MEM_NWORDSLOG2        = $clog2(MEM_NWORDS),
                        MEM_ADDR_BITWIDTH     = $clog2(MEM_DATA_WIDTH/8),
@@ -359,7 +360,7 @@ module generic_cache #(
   assign load_linefill    = lfill_all_valid;
 
 
-  assign lfill_hit =    linefillbuf.valid[mem_block_idx]
+  assign lfill_hit =   (&linefillbuf.valid[mem_block_idx +: MEM_D_NWORDS])
                     && (linefillbuf.tag   == cpu_addr_tag)
                     && (linefillbuf.index == cpu_line_addr);
 

@@ -77,6 +77,7 @@ module ex
   assign shift_val      = shamt_valid ? shamt : A[4:0];
   assign shift_operand  = shopsela    ? A     : B;
 
+  assign stall          = 1'b0;
 
   assign flag_zero  = (alu_res == 0);
 
