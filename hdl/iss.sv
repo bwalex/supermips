@@ -347,7 +347,7 @@ module iss#(
   // new_pc_valid is effectively branch_taken and mispredicted
   // this will also cause a complete flush of the IQ, and a partial flush
   // (except for the branch and the BDS) of the ROB.
-  assign new_pc_valid   =  (bi_act.jmp_inst | (bi_act.branch_inst & bi_act.branch_cond_ok))
+  assign new_pc_valid   =  (bi_act.jmp_inst | (bi_act.branch_inst & branch_cond_ok))
                          &  bi_inst_valid_act
                          ;
 

@@ -26,7 +26,7 @@ vcs:
 		+define+REAL_CACHE \
 		+define+TRACE_$(TRACE) \
 		-parameters ./.vcs.params \
-		-pvalue+top/CPU/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
+		-pvalue+top/CPU/LS/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/generic_shifter.sv \
@@ -35,10 +35,6 @@ vcs:
 		$(HDL_BASE)/ifetch.sv \
 		$(HDL_BASE)/mem.sv \
 		$(HDL_BASE)/pipeline.sv \
-		$(HDL_BASE)/pipreg_ex_mem.sv \
-		$(HDL_BASE)/pipreg_id_ex.sv \
-		$(HDL_BASE)/pipreg_if_id.sv \
-		$(HDL_BASE)/pipreg_mem_wb.sv \
 		$(HDL_BASE)/rfile.sv \
 		$(HDL_BASE)/tcm.sv \
 		$(HDL_BASE)/memory.sv \
