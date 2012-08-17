@@ -65,7 +65,7 @@ module iss#(
   output                         new_pc_valid,
 
   // Register file interface
-  output [31:0]                  rd_addr[8],
+  output [ 4:0]                  rd_addr[8],
   input [31:0]                   rd_data[8]
 );
 
@@ -150,8 +150,8 @@ module iss#(
   genvar        i;
   generate
     for (i = 0; i < 4; i++) begin : AS_FWD
-      assign di_A[i]  = (as_aval_present[i]) ? as_aval[i] : rd_data[i*3 + 0];
-      assign di_B[i]  = (as_bval_present[i]) ? as_bval[i] : rd_data[i*3 + 1];
+      assign di_A[i]  = (as_aval_present[i]) ? as_aval[i] : rd_data[i*2 + 0];
+      assign di_B[i]  = (as_bval_present[i]) ? as_bval[i] : rd_data[i*2 + 1];
     end
 
     for (i = 0; i < 4; i++) begin : AS_FWD_VALID

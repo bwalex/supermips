@@ -27,7 +27,7 @@ module top#(
 
 `ifdef REAL_CACHE
   wire [31:0]           cm_addr;
-  wire [BURSTLEN_WIDTH-1:0] cm_burst_len;
+  wire [ 2:0]           cm_burst_len;
   wire [MEM_WIDTH-1:0]  cm_rd_data;
   wire                  cm_rd_valid;
   wire                  cm_waitrequest;
@@ -45,7 +45,7 @@ module top#(
   wire                  icm_rd;
 
   wire [31:0]           dcm_addr;
-  wire [BURSTLEN_WIDTH-1:0] dcm_burst_len;
+  wire [ 1:0]           dcm_burst_len;
   wire [MEM_WIDTH-1:0]  dcm_rd_data;
   wire                  dcm_rd_valid;
   wire                  dcm_waitrequest;
@@ -80,7 +80,7 @@ module top#(
      .MEM_FILE(MEM_FILE),
      .ADDR_WIDTH(32),
      .DATA_WIDTH(MEM_WIDTH),
-     .BURSTLEN_WIDTH(BURSTLEN_WIDTH),
+     .BURSTLEN_WIDTH(3),
      .DEPTH(64*1024*1024) // 64M Words
      )
   memory
@@ -102,7 +102,7 @@ module top#(
   mem_arb #
     (
      .DATA_WIDTH(MEM_WIDTH),
-     .BURSTLEN_WIDTH(BURSTLEN_WIDTH)
+     .BURSTLEN_WIDTH(3)
      )
   mem_arb
     (
