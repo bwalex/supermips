@@ -8,8 +8,8 @@ module iss#(
   input                          reset_n,
 
   // IQ interface
-  output                         ext_enable,
-  output [1:0]                   ext_consumed,
+  output reg                     ext_enable,
+  output reg [1:0]               ext_consumed,
   input                          ext_valid[4],
   input                          iq_entry_t insns[4],
   input                          empty,
@@ -82,8 +82,8 @@ module iss#(
   dec_inst_t    exmul1i;
   dec_inst_t    bi;
 
-  wire [31:0]   branch_A;
-  wire [31:0]   branch_B;
+  reg [31:0]    branch_A;
+  reg [31:0]    branch_B;
   reg [ROB_DEPTHLOG2-1:0] branch_rob_slot;
   reg           bi_inst_valid;
 

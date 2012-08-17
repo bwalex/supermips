@@ -1,7 +1,7 @@
 import pipTypes::*;
 
 module circ_buf #(
-  parameter type T     = integer,
+  parameter type T     = iq_entry_t,
   parameter      DEPTH     = 16,
                  INS_COUNT = 4,
                  EXT_COUNT = 4,

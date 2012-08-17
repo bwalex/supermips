@@ -1,7 +1,7 @@
 module mem_arb #(
                  parameter ADDR_WIDTH = 32,
                  DATA_WIDTH = 32,
-                 BURSTLEN_WIDTH = 2,
+                 BURSTLEN_WIDTH = 3,
 		 LFSR_SEED = 11'd110
 
 )(

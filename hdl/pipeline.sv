@@ -367,7 +367,7 @@ module pipeline#(
   EXMUL1(
                         // Interfaces
                         .inst           (iss_exmul1_inst),
-                        .rob_data       (exmul1_wr_rob_data),
+                        .rob_data       (exmul1_rob_wr_data),
                         // Outputs
                         .ready          (exmul1_ready),
                         .rob_data_valid (exmul1_rob_wr_valid),

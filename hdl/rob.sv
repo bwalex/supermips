@@ -26,12 +26,12 @@ module rob #(
   input [DEPTHLOG2-1:0]      as_query_idx[AS_COUNT],
   input [4:0]                as_areg[AS_COUNT],
   input [4:0]                as_breg[AS_COUNT],
-  output [31:0]              as_aval[AS_COUNT],
-  output [31:0]              as_bval[AS_COUNT],
-  output                     as_aval_valid[AS_COUNT],
-  output                     as_bval_valid[AS_COUNT],
-  output                     as_aval_present[AS_COUNT],
-  output                     as_bval_present[AS_COUNT],
+  output reg [31:0]          as_aval[AS_COUNT],
+  output reg [31:0]          as_bval[AS_COUNT],
+  output reg                 as_aval_valid[AS_COUNT],
+  output reg                 as_bval_valid[AS_COUNT],
+  output reg                 as_aval_present[AS_COUNT],
+  output reg                 as_bval_present[AS_COUNT],
 
   // Store interface
   input [DEPTHLOG2-1:0]      write_slot[WR_COUNT],
