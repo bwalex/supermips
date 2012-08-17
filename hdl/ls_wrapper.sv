@@ -38,11 +38,12 @@ module ls_wrapper #(
 
   reg           stall_d1;
 
-  muldiv_op_t   muldiv_op_i;
+  wire          load_inst_i;
+  wire          store_inst_i;
 
   // "pipeline" registered signals
   dec_inst_t    inst_r;
-  dec_inst_r    inst_r_r;
+  dec_inst_t    inst_r_r;
   reg           inst_valid_r;
   reg    [31:0] A_r;
   reg    [31:0] B_r;

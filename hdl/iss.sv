@@ -1,7 +1,7 @@
 import pipTypes::*;
 
 module iss#(
-            parameter ROB_DEPTHLOG = 4
+            parameter ROB_DEPTHLOG2 = 4
             )
 (
   input                          clock,
@@ -88,6 +88,7 @@ module iss#(
   reg           bi_inst_valid;
 
   dec_inst_t    bi_retained;
+  reg           bi_inst_valid_retained;
   reg  [31:0]   branch_A_retained;
   reg  [31:0]   branch_B_retained;
   reg  [ROB_DEPTHLOG2-1:0]   branch_rob_slot_retained;
@@ -95,6 +96,7 @@ module iss#(
   wire          branch_ready;
 
   dec_inst_t    bi_act;
+  wire          bi_inst_valid_act;
   wire [31:0]   branch_A_act;
   wire [31:0]   branch_B_act;
   wire [ROB_DEPTHLOG2-1:0] branch_rob_slot_act;
@@ -239,7 +241,7 @@ module iss#(
         ls_rob_slot  = rob_slot[i];
         consumed++;
       end
-      else if (di[i].muldiv_inst && !ex1mul_used && exmul1_ready) begin
+      else if (di[i].muldiv_inst && !exmul1_used && exmul1_ready) begin
         exmul1_used      = 1'b1;
         exmul1i          = di[i];
         exmul1_A         = di_A[i];
@@ -256,8 +258,8 @@ module iss#(
         consumed++;
       end
       else if (di[i].alu_inst && !exmul1_used && exmul1_ready) begin
-        ex1mul_used      = 1'b1;
-        ex1muli          = di[i];
+        exmul1_used      = 1'b1;
+        exmul1i          = di[i];
         exmul1_A         = di_A[i];
         exmul1_B         = di_B[i];
         exmul1_rob_slot  = rob_slot[i];

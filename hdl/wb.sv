@@ -41,7 +41,7 @@ module wb #(
   assign consume  = slot_valid[0];
   always_comb begin
     automatic bit [COUNT_WIDTH-1:0] c = 'b0;
-    for (i = 1; i < RETIRE_COUNT; i++)
+    for (integer i = 1; i < RETIRE_COUNT; i++)
       if (slot_valid[i])
         c += 1;
       else

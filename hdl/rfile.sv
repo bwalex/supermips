@@ -9,8 +9,8 @@ module rfile #(
   input                       reset_n,
 
   input      [ADDR_WIDTH-1:0] rd_addr[READ_PORTS],
-//  output reg [DATA_WIDTH_1:0] rd_data[READ_PORTS],
-  output     [DATA_WIDTH_1:0] rd_data[READ_PORTS],
+//  output reg [DATA_WIDTH-1:0] rd_data[READ_PORTS],
+  output     [DATA_WIDTH-1:0] rd_data[READ_PORTS],
 
   input      [ADDR_WIDTH-1:0] wr_addr[WRITE_PORTS],
   input                       wr_enable[WRITE_PORTS],
