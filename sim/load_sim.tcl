@@ -2,7 +2,7 @@
 set TOP_LEVEL_NAME "top"
 set HDL_BASE "../hdl"
 set SIM_BASE "../sim"
-set VLOG_FLAGS "+define+REAL_CACHE +define+ROB_TRACE_ENABLE +define+IQ_TRACE_ENABLE"
+set VLOG_FLAGS "+define+REAL_CACHE+ROB_TRACE_ENABLE+IQ_TRACE_ENABLE"
 
 proc ensure_lib { lib } { if ![file isdirectory $lib] { vlib $lib } }
 ensure_lib ./libraries/
@@ -19,6 +19,9 @@ vlog $VLOG_FLAGS -sv $HDL_BASE/id.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/ifetch.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/agu.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/mem.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/generic_cache.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/mem_arb.sv
+vlog $VLOG_FLAGS -sv $HDL_BASE/memory.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/pipeline.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/iss.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/ls_wrapper.sv
