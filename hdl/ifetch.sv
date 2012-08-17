@@ -117,9 +117,9 @@ module ifetch #(
 
   always_comb
     case (line_idx)
-      2'b01:   align_off  = 4'd12;
-      2'b02:   align_off  = 4'd08;
-      2'b03:   align_off  = 4'd04;
+      2'd01:   align_off  = 4'd12;
+      2'd02:   align_off  = 4'd08;
+      2'd03:   align_off  = 4'd04;
       default: align_off  = 4'd16;
     endcase
 

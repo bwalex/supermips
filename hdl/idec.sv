@@ -653,20 +653,6 @@ module idec
     if (dest_reg == 5'd0)
       dest_reg_valid  = 1'b0;
 
-    if (stall) begin
-`ifdef TRACE_ENABLE
-      $display("Introducing a bubble and stalling (pc: %x)", pc);
-`endif
-      dest_reg_valid  = 1'b0;
-      load_inst       = 1'b0;
-      store_inst      = 1'b0;
-`ifdef NOT_DEFINED
-      jmp_inst        = 1'b0;
-      branch_inst     = 1'b0;
-`endif
-      muldiv_inst     = 1'b0;
-      muldiv_op       = OP_NONE;
-    end
   end
 
 
