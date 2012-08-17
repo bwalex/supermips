@@ -165,8 +165,8 @@ module iss#(
     for (i = 0; i < 4; i++) begin : OPS_READY
       // Signal whether all operands are ready. This is the case when every operand
       // is either not required (~reg_valid) or valid.
-      assign di_ops_ready[i]  =  (di_A_valid[i] | ~di.A_reg_valid)
-                               & (di_B_valid[i] | ~di.B_reg_valid)
+      assign di_ops_ready[i]  =  (di_A_valid[i] | ~di[i].A_reg_valid)
+                               & (di_B_valid[i] | ~di[i].B_reg_valid)
                                ;
     end
   endgenerate

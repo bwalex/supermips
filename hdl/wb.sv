@@ -20,18 +20,18 @@ module wb #(
 
   wire   [RETIRE_COUNT-1:0] in_order;
 
-  genvar        i, j;
+
+  assign in_order[0]  = 1'b1;
+
+  genvar i;
   generate
-    for (i = 1; i < RETIRE_COUNT; i++)
+    for (i = 1; i < RETIRE_COUNT; i++) begin : WB_IN_ORDER_SIGNALS
       assign in_order[i]  = slot_valid[i-1] & in_order[i-1];
+    end
   endgenerate
 
-  assign in_order[0] = 1'b1;
-
-
-  genvar        i;
   generate
-    for (i = 0; i < RETIRE_COUNT; i++) begin
+    for (i = 0; i < RETIRE_COUNT; i++) begin : RFILE_WR_SIGNALS
       assign rfile_wr_addr[i]    = slot_data[i].dest_reg;
       assign rfile_wr_enable[i]  = slot_data[i].dest_reg_valid & slot_valid[i] & in_order[i];
       assign rfile_wr_data[i]    = slot_data[i].result_lo;

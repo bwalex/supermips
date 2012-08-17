@@ -122,7 +122,7 @@ module id#(
 
   genvar i;
   generate
-    for (i = 0; i < 4; i++) begin
+    for (i = 0; i < 4; i++) begin : ID_DEST_REG_SIGNALS
       assign dest_reg[i]        = dec_inst[i].dest_reg;
       assign dest_reg_valid[i]  = dec_inst[i].dest_reg_valid;
     end
