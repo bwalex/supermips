@@ -31,8 +31,10 @@ vcs:
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/generic_shifter.sv \
 		$(HDL_BASE)/ex.sv \
+		$(HDL_BASE)/exmul.sv \
 		$(HDL_BASE)/idec.sv \
 		$(HDL_BASE)/ifetch.sv \
+		$(HDL_BASE)/agu.sv \
 		$(HDL_BASE)/mem.sv \
 		$(HDL_BASE)/pipeline.sv \
 		$(HDL_BASE)/rfile.sv \
