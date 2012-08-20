@@ -518,7 +518,7 @@ module generic_cache #(
     if (~reset_n)
       mem_addr_r <= 'b0;
     else if (load_cpu_addr)
-      mem_addr_r <= { cpu_addr[31:MEM_D_NWORDSRAW-1], {MEM_D_NWORDSRAW-1{1'b0}} };
+      mem_addr_r <= { cpu_addr[31:MEM_D_NWORDS], {MEM_D_NWORDS{1'b0}} };
     else if (load_wrap_addr) // XXX: not used anymore
       mem_addr_r <= { cpu_addr_tag, cpu_line_addr, {LINE_WIDTH{1'b0}} };
     else if (load_wb_wrap_addr)
