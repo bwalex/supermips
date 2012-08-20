@@ -118,6 +118,7 @@ module pipeline#(
   wire                         branch_rob_wr_valid;
   wire                         branch_load_pc;
   wire [31:0]                  branch_new_pc;
+  wire                         branch_flush;
 
   // Outputs from LS
   wire                         ls_ready;
@@ -233,6 +234,8 @@ module pipeline#(
         .ins_enable                     (idiq_ins_enable),
         .new_count                      (idiq_new_count),
         // Inputs
+        .clock                          (clock),
+        .reset_n                        (reset_n),
         .inst_word                      (if_inst_word_r),
         .inst_pc                        (if_pc_out_r),
         .inst_word_valid                (if_inst_word_valid_r),
@@ -262,7 +265,7 @@ module pipeline#(
               .new_count                (idiq_new_count),
               .ext_enable               (issiq_ext_enable),
               .ext_consumed             (issiq_ext_consumed),
-              .flush                    (branch_load_pc));
+              .flush                    (branch_flush));
 
 
 
@@ -297,6 +300,7 @@ module pipeline#(
           .exmul1_inst_valid            (iss_exmul1_inst_valid),
           .new_pc                       (branch_new_pc),
           .new_pc_valid                 (branch_load_pc),
+          .branch_flush                 (branch_flush),
           .rd_addr                      (rfile_rd_addr),
           // Inputs
           .clock                        (clock),
@@ -422,7 +426,7 @@ module pipeline#(
            .write_valid                 (ex_rob_wr_valid),
            .consume                     (wrrob_consume),
            .consume_count               (wrrob_consume_count),
-           .flush                       (branch_load_pc),
+           .flush                       (branch_flush),
            .flush_idx                   (branch_rob_wr_slot));
 
 

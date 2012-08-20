@@ -3,6 +3,9 @@ import pipTypes::*;
 module id#(
            parameter ROB_DEPTHLOG2 = 4
 )(
+ input                     clock,
+ input                     reset_n,
+
  input [31:0]              inst_word[4],
  input [31:0]              inst_pc[4],
  input                     inst_word_valid[4],
@@ -55,6 +58,22 @@ module id#(
    .inst_word  (inst_word[3]),
    .di         (dec_inst[3])
   );
+
+
+`ifdef ID_TRACE_ENABLE
+  integer trace_file;
+
+  initial begin
+    trace_file = $fopen("id.trace", "w");
+  end
+
+  always_ff @(posedge clock) begin
+    for (integer i = 0; i < 4; i++) begin
+      $fwrite(trace_file, "%d: ID slot %d, pc=%x, iw=%x, di.pc=%x, valid=%b\n",
+        $time, i, inst_pc[i], inst_word[i], dec_inst[i].pc, inst_word_valid[i]);
+    end
+  end
+`endif
 
 
   always_comb

@@ -26,6 +26,8 @@ vcs:
 		+define+REAL_CACHE \
 		+define+ROB_TRACE_$(TRACE) \
 		+define+IQ_TRACE_$(TRACE) \
+		+define+ISS_TRACE_$(TRACE) \
+		+define+ID_TRACE_$(TRACE) \
 		-parameters ./.vcs.params \
 		-pvalue+top/CPU/LS/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
 		$(HDL_BASE)/top.sv \

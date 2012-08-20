@@ -63,6 +63,7 @@ module iss#(
   input                          branch_stall,
   output [31:0]                  new_pc,
   output                         new_pc_valid,
+  output                         branch_flush,
 
   // Register file interface
   output [ 4:0]                  rd_addr[8],
@@ -331,6 +332,7 @@ module iss#(
   assign bi_inst_valid_act   = (branch_stall_d1) ? bi_inst_valid_retained   : bi_inst_valid;
   assign branch_rob_slot_act = (branch_stall_d1) ? branch_rob_slot_retained : branch_rob_slot;
 
+  assign branch_flush = new_pc_valid & ~branch_stall_d1;
 
   assign AB_equal  = (branch_A_act == branch_B_act);
   assign A_gtz     = A_gez & ~A_eqz;
@@ -364,4 +366,36 @@ module iss#(
   assign wr_data.dest_reg        = bi_act.dest_reg;
   assign wr_data.dest_reg_valid  = bi_act.dest_reg_valid;
   assign wr_data.pc_valid        = new_pc_valid;
+
+
+
+
+`ifdef ISS_TRACE_ENABLE
+  integer trace_file;
+
+  initial begin
+    trace_file = $fopen("iss.trace", "w");
+  end
+
+  always_ff @(posedge clock) begin
+    $fwrite(trace_file, "%d: ISS: ls_ready=%b, ex1_ready=%b, exmul1_ready=%b, branch_ready=%b\n",
+      $time, ls_ready, ex1_ready, exmul1_ready, branch_ready);
+
+    if (ls_inst_valid)
+      $fwrite(trace_file, "%d: ISS: issuing to LS:     pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
+        $time, ls_inst.pc, ls_A, ls_B, ls_rob_slot, ls_inst.inst_word);
+
+    if (ex1_inst_valid)
+      $fwrite(trace_file, "%d: ISS: issuing to EX1:    pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
+        $time, ex1_inst.pc, ex1_A, ex1_B, ex1_rob_slot, ex1_inst.inst_word);
+    
+    if (exmul1_inst_valid)
+      $fwrite(trace_file, "%d: ISS: issuing to EXMUL1: pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
+        $time, exmul1_inst.pc, exmul1_A, exmul1_B, exmul1_rob_slot, exmul1_inst.inst_word);
+    
+    if (bi_inst_valid)
+      $fwrite(trace_file, "%d: ISS: issuing to BRANCH: pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
+        $time, bi.pc, branch_A, branch_B, branch_rob_slot, bi.inst_word);
+  end
+`endif
 endmodule
