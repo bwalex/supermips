@@ -59,6 +59,7 @@ module rob #(
 
   reg [DEPTHLOG2-1:0]      ext_ptr;
   reg [DEPTHLOG2-1:0]      ins_ptr;
+  wire [DEPTHLOG2-1:0]     flush_amt;
 
   T buffer[DEPTH];
   bit valid[DEPTH];
@@ -163,10 +164,11 @@ module rob #(
     if (~reset_n)
       ;
     else begin
-      for (integer i = 0; i <= reserve_count; i++) begin
-        buffer[reserved_slots[i]].dest_reg        <= dest_reg[i];
-        buffer[reserved_slots[i]].dest_reg_valid  <= dest_reg_valid[i];
-      end
+      if (reserve_i)
+        for (integer i = 0; i <= reserve_count; i++) begin
+          buffer[reserved_slots[i]].dest_reg        <= dest_reg[i];
+          buffer[reserved_slots[i]].dest_reg_valid  <= dest_reg_valid[i];
+        end
       for (integer i = 0; i < WR_COUNT; i++)
         if (write_valid[i])
           buffer[write_slot[i]] <= write_data[i];
@@ -184,17 +186,18 @@ module rob #(
     begin
       for (integer i = 0; i < INS_COUNT; i++) begin
         slot_data[i]   = buffer[ext_ptr + i];
-        slot_valid[i]  = valid[ext_ptr + i];
+        slot_valid[i]  = valid[ext_ptr + i] && (i < used_count);
       end
     end
 
+  assign flush_amt = ins_ptr - flush_idx - 2;
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       used_count <= 0;
     else if (flush)
       used_count <=  used_count
-                   - (ins_ptr - flush_idx - 1)
+                   - flush_amt
                    - ((consume_count_i + 1) & {(EXTCOUNTLOG2+1){consume_i}});
     else
       used_count <=  used_count
@@ -217,8 +220,9 @@ module rob #(
   end
 
   always_ff @(posedge clock) begin
-    for (integer i = 0; i <= reserve_count; i++) begin
-      insns[reserved_slots[i]] <= instructions[i];
+    if (reserve_i)
+      for (integer i = 0; i <= reserve_count; i++) begin
+        insns[reserved_slots[i]] <= instructions[i];
     end
   end
 
@@ -239,7 +243,7 @@ module rob #(
                  $time, write_slot[i], insns[write_slot[i]].pc, write_data[i].result_lo,
                  write_data[i].dest_reg, write_data[i].dest_reg_valid);
     end
-    if (consume) begin
+    if (consume_i) begin
       for (integer i = 0; i <= consume_count; i++) begin
         $fwrite(trace_file, "%d ROB: Consume slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
                  $time, ext_ptr + i, insns[ext_ptr+i].pc, buffer[ext_ptr+i].result_lo,
@@ -250,7 +254,7 @@ module rob #(
       end
     end
     if (flush) begin
-      $fwrite(trace_file, "%d ROB: Flush, flush_idx=%d\n", $time, flush_idx);
+      $fwrite(trace_file, "%d ROB: Flush, flush_idx=%d, flush_amt=%d\n", $time, flush_idx, flush_amt);
     end
 
 
