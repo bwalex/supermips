@@ -223,8 +223,8 @@ module iss#(
       end
 
       if ((di[i].branch_inst | di[i].jmp_inst) && !b_used && branch_ready
-          // don't allow branch to proceed if we don't have the BDS insn available, too
-          && i != 3 && ext_valid[i+1]) begin
+          // don't allow branch to proceed if we don't have the BDS insn available and ready, too
+          && i != 3 && ext_valid[i+1] && di_ops_ready[i+1]) begin
         b_used           = 1'b1;
         bi               = di[i];
         branch_A         = di_A[i];
@@ -299,8 +299,8 @@ module iss#(
   // pushed out this cycle. (i.e. not at the top during this cycle).
   //
   // Branching logic
-  assign pc_plus_4  = bi.pc + 4;
-  assign pc_plus_8  = bi.pc + 8;
+  assign pc_plus_4  = bi_act.pc + 4;
+  assign pc_plus_8  = bi_act.pc + 8;
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
@@ -341,7 +341,7 @@ module iss#(
   assign A_eqz     = (branch_A_act == 0);
   assign B_eqz     = (branch_B_act == 0);
 
-  assign new_pc  = (bi_act.inst_rformat) ? branch_A_act : bi.branch_target;
+  assign new_pc  = (bi_act.inst_rformat) ? branch_A_act : bi_act.branch_target;
 
   // new_pc_valid is effectively branch_taken and mispredicted
   // this will also cause a complete flush of the IQ, and a partial flush

@@ -80,47 +80,42 @@ module rob #(
 
   // High-level associative lookup interface
   always_comb begin
-    automatic bit [DEPTHLOG2-1:0] k;
+    automatic bit [DEPTHLOG2-1:0] k, comp;
     for (integer i = 0; i < AS_COUNT; i++) begin
       as_aval_valid[i]    = 1'b0;
       as_aval_present[i]  = 1'b0;
       as_aval[i]          = 32'b0;
 
-      $display("AS query_idx: %d", as_query_idx[i]);
       if (as_query_idx[i] != ext_ptr) begin
-        for (k = as_query_idx[i]-1; k >= ext_ptr; k--) begin
-	  $display("k: %d", k);
+        comp = ext_ptr-1;
+        for (k = as_query_idx[i]-1; k != comp; k--) begin
           if (buffer[k].dest_reg == as_areg[i] && buffer[k].dest_reg_valid) begin
             as_aval[i]          = buffer[k].result_lo;
             as_aval_valid[i]    = valid[k];
             as_aval_present[i]  = 1'b1;
             break;
           end
-          if (k == 0 && ext_ptr == 0)
-            break;
         end
       end
     end
   end // always_comb
 
   always_comb begin
-    automatic bit [DEPTHLOG2-1:0] k;
+    automatic bit [DEPTHLOG2-1:0] k, comp;
     for (integer i = 0; i < AS_COUNT; i++) begin
       as_bval_valid[i]    = 1'b0;
       as_bval_present[i]  = 1'b0;
       as_bval[i]          = 32'b0;
 
       if (as_query_idx[i] != ext_ptr) begin
-        for (k = as_query_idx[i]-1; k >= ext_ptr; k--) begin
-	  $display("k: %d", k);
+        comp = ext_ptr-1;
+        for (k = as_query_idx[i]-1; k != comp; k--) begin
           if (buffer[k].dest_reg == as_breg[i] && buffer[k].dest_reg_valid) begin
             as_bval[i]          = buffer[k].result_lo;
             as_bval_valid[i]    = valid[k];
             as_bval_present[i]  = 1'b1;
             break;
           end
-          if (k == 0 && ext_ptr == 0)
-            break;
         end
       end
     end

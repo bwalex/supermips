@@ -8,6 +8,8 @@ module mem #(
   input                     clock,
   input                     reset_n,
 
+  input [31:0]              pc,
+
   output                    cache_rd,
   output                    cache_wr,
   output [ADDR_WIDTH-1:0]   cache_addr,
@@ -106,4 +108,21 @@ module mem #(
       cache_wr_be[3-word_idx -: 2]            = 2'b11;
     end
   end
+
+`ifdef LS_TRACE_ENABLE
+  integer trace_file;
+
+  initial begin
+    trace_file = $fopen("ls.trace", "w");
+  end
+
+  always_ff @(posedge clock) begin
+    if (~stall) begin
+      if (load_inst)
+        $fwrite(trace_file, "%d LS: load  pc=%x, addr=%x, data=%x\n", $time, pc, agu_address, result);
+      if (store_inst)
+        $fwrite(trace_file, "%d LS: store pc=%x, addr=%x, data=%x\n", $time, pc, agu_address, word_to_cache);
+    end
+  end
+`endif
 endmodule // mem

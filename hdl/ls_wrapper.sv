@@ -98,7 +98,7 @@ module ls_wrapper #(
     end
 
 
-  assign ready           = ~stall_d1;
+  assign ready           = ~stall; // was stall_d1
   assign rob_data_valid  = inst_valid_r_r & ready;
   assign rob_data_idx    = rob_slot_r_r;
 
@@ -126,6 +126,8 @@ module ls_wrapper #(
   (
    .clock             (clock),
    .reset_n           (reset_n),
+ 
+   .pc                (inst_r_r.pc),
 
    .cache_rd          (cache_rd),
    .cache_wr          (cache_wr),

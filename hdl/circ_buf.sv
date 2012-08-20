@@ -83,6 +83,10 @@ module circ_buf #(
           idx        += 1;
         end
       end
+
+      if (flush)
+        for (integer i = 0; i < DEPTH; i++)
+	  valid[i] <= 1'b0;
     end
 
 
@@ -137,6 +141,9 @@ module circ_buf #(
     $fwrite(trace_file, "%d IQ: ins_ptr: %d, ext_ptr: %d, used_count: %d, empty: %b, full: %b\n",
             $time,
             ins_ptr, ext_ptr, used_count, empty, full);
+
+    if (flush)
+      $fwrite(trace_file, "%d IQ: flush\n", $time);
 
     if (ins_enable_i)
       for (integer i = 0; i <= new_count; i++)

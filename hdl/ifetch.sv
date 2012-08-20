@@ -104,7 +104,7 @@ module ifetch #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       pc <= 'b0;
-    else if (load_pc & ~stall_i)
+    else if (load_pc & ~branch_stall)
       pc <= new_pc;
     else if (~stall_i) begin
       pc <= pc + align_off + 1;
