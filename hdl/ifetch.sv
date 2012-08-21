@@ -74,7 +74,7 @@ module ifetch #(
       pc_out2_r          <= 32'b0;
       pc_out3_r          <= 32'b0;
     end
-    else begin
+    else if (~stall) begin
       inst_word0_r       <= inst_word0;
       inst_word1_r       <= inst_word1;
       inst_word2_r       <= inst_word2;
@@ -89,6 +89,12 @@ module ifetch #(
       pc_out1_r          <= pc_out1;
       pc_out2_r          <= pc_out2;
       pc_out3_r          <= pc_out3;
+    end
+    else if (load_pc) begin
+      inst_word0_valid_r <= 1'b0;
+      inst_word1_valid_r <= 1'b0;
+      inst_word2_valid_r <= 1'b0;
+      inst_word3_valid_r <= 1'b0;
     end
 
 

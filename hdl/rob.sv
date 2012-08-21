@@ -251,12 +251,13 @@ module rob #(
     end
     if (consume_i) begin
       for (integer i = 0; i <= consume_count; i++) begin
+        k = ext_ptr + i;
         $fwrite(trace_file, "%d ROB: Consume slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
-                 $time, ext_ptr + i, insns[ext_ptr+i].pc, buffer[ext_ptr+i].result_lo,
-                 buffer[ext_ptr+i].dest_reg, buffer[ext_ptr+i].dest_reg_valid);
+                 $time, k, insns[k].pc, buffer[k].result_lo,
+                 buffer[k].dest_reg, buffer[k].dest_reg_valid);
         $fwrite(ret_trace_file, "%d Retire ROB slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
-                 $time, ext_ptr + i, insns[ext_ptr+i].pc, buffer[ext_ptr+i].result_lo,
-                 buffer[ext_ptr+i].dest_reg, buffer[ext_ptr+i].dest_reg_valid);
+                 $time, k, insns[k].pc, buffer[k].result_lo,
+                 buffer[k].dest_reg, buffer[k].dest_reg_valid);
       end
     end
     if (flush) begin

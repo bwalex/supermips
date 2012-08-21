@@ -83,6 +83,10 @@ module iss#(
   dec_inst_t    exmul1i;
   dec_inst_t    bi;
 
+  reg           ls_speculative;
+  reg           ex1_speculative;
+  reg           exmul1_speculative;
+
   reg [31:0]    branch_A;
   reg [31:0]    branch_B;
   reg [ROB_DEPTHLOG2-1:0] branch_rob_slot;
@@ -174,8 +178,8 @@ module iss#(
 
 
   always_comb begin
-    automatic bit b_used, ls_used, ex1_used, exmul1_used;
-    automatic integer consumed;
+    automatic bit b_used, ls_used, ex1_used, exmul1_used, spec;
+    automatic integer consumed, b_idx;
 
     consumed           = 0;
 
@@ -183,6 +187,11 @@ module iss#(
     ls_used            = 1'b0;
     ex1_used           = 1'b0;
     exmul1_used        = 1'b0;
+    spec               = 1'b0;
+
+    ls_speculative     = 1'b0;
+    ex1_speculative    = 1'b0;
+    exmul1_speculative = 1'b0;
 
     bi                 = di[0];
     ls_inst            = di[0];
@@ -222,10 +231,21 @@ module iss#(
         break;
       end
 
+      if (b_used && i > (b_idx + 1)) begin
+	// Anything after the BDS is speculative
+	spec = 1'b1;
+      end
+
       if ((di[i].branch_inst | di[i].jmp_inst) && !b_used && branch_ready
           // don't allow branch to proceed if we don't have the BDS insn available and ready, too
-          && i != 3 && ext_valid[i+1] && di_ops_ready[i+1]) begin
+          && i != 3 && ext_valid[i+1] && di_ops_ready[i+1]
+	  // don't allow branch to proceed if we can't schedule the BDS, either
+	  && ( ((di[i+1].load_inst | di[i+1].store_inst) && !ls_used && ls_ready)
+	    || (di[i+1].muldiv_inst && !exmul1_used && exmul1_ready)
+	    || (di[i+1].alu_inst && ((!ex1_used && ex1_ready) || (!exmul1_used && exmul1_ready))) )
+	  ) begin
         b_used           = 1'b1;
+	b_idx            = i;
         bi               = di[i];
         branch_A         = di_A[i];
         branch_B         = di_B[i];
@@ -238,6 +258,7 @@ module iss#(
         ls_A         = di_A[i];
         ls_B         = di_B[i];
         ls_rob_slot  = rob_slot[i];
+	ls_speculative = spec;
         consumed++;
       end
       else if (di[i].muldiv_inst && !exmul1_used && exmul1_ready) begin
@@ -246,6 +267,7 @@ module iss#(
         exmul1_A         = di_A[i];
         exmul1_B         = di_B[i];
         exmul1_rob_slot  = rob_slot[i];
+	exmul1_speculative = spec;
         consumed++;
       end
       else if (di[i].alu_inst && !ex1_used && ex1_ready) begin
@@ -254,6 +276,7 @@ module iss#(
         ex1_A         = di_A[i];
         ex1_B         = di_B[i];
         ex1_rob_slot  = rob_slot[i];
+	ex1_speculative = spec;
         consumed++;
       end
       else if (di[i].alu_inst && !exmul1_used && exmul1_ready) begin
@@ -262,6 +285,7 @@ module iss#(
         exmul1_A         = di_A[i];
         exmul1_B         = di_B[i];
         exmul1_rob_slot  = rob_slot[i];
+	exmul1_speculative = spec;
         consumed++;
       end
       else begin
@@ -276,9 +300,9 @@ module iss#(
     ext_enable         = (consumed > 0) ? 1'b1 : 1'b0;
 
     bi_inst_valid      = b_used;
-    ls_inst_valid      = ls_used;
-    exmul1_inst_valid  = exmul1_used;
-    ex1_inst_valid     = ex1_used;
+    ls_inst_valid      = ls_used & (~ls_speculative | ~branch_flush);
+    exmul1_inst_valid  = exmul1_used & (~exmul1_speculative | ~branch_flush);
+    ex1_inst_valid     = ex1_used & (~ex1_speculative | ~branch_flush);
   end
 
 

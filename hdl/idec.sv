@@ -314,6 +314,13 @@ module idec
 
           6'd52: begin // teq
             // XXX: teq is not implemented, but we don't care - it's used to check for div-by-zero
+	    //      well; we do care a bit since we can't throw away the instruction - simply
+	    //      decode it as some kind of nop.
+	    alu_inst       = 1'b1;
+	    alu_op         = OP_PASS_A;
+	    dest_reg_valid = 1'b0;
+	    A_reg_valid    = 1'b1;
+	    B_reg_valid    = 1'b1;
           end
 
           default: begin

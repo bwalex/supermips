@@ -56,7 +56,7 @@ module ex_mul_wrapper #(
   assign rob_data.dest_reg       = inst_r.dest_reg;
   assign rob_data.dest_reg_valid = inst_r.dest_reg_valid & ~inval_dest_reg;
 
-  assign muldiv_op_i     = inst_valid_r ? OP_NONE : inst_r.muldiv_op;
+  assign muldiv_op_i     = inst_valid_r ? inst_r.muldiv_op : OP_NONE;
 
   exmul EXMUL
   (
