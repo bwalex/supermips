@@ -146,7 +146,6 @@ module rob #(
       if (reserve_i) begin
         for (integer i = 0; i <= reserve_count; i++) begin
 	  k = ins_ptr + i;
-	  $fwrite(trace_file, "Invalidating slot %d\n", k);
           valid[k]      <= 1'b0;
           in_transit[k] <= 1'b0;
         end
