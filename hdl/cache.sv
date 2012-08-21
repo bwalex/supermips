@@ -40,10 +40,12 @@ module generic_cache #(
 );
 
   localparam LINE_ADDR_WIDTH  = $clog2(NLINES);
-  localparam LINE_WIDTH  = $clog2(CLINE_WIDTH) - $clog2(DATA_WIDTH) + 2;
+  localparam CPU_BLOCK_IDX_WIDTH = $clog2(CLINE_WIDTH) - $clog2(DATA_WIDTH);
+  localparam CPU_PRIV_WIDTH = $clog2(DATA_WIDTH_BYTES);
+  localparam LINE_WIDTH  = $clog2(CLINE_WIDTH_BYTES);
   // [ TAG ( )  |   INDEX ( )      |    block_idx ( ) |
 
-  localparam TAG_WIDTH  = ADDR_WIDTH - LINE_ADDR_WIDTH - LINE_WIDTH;
+  localparam TAG_WIDTH  = ADDR_WIDTH - LINE_ADDR_WIDTH - CPU_BLOCK_IDX_WIDTH - CPU_PRIV_WIDTH;
 
   typedef enum {
     IDLE,
@@ -123,7 +125,6 @@ module generic_cache #(
   reg [MEM_DATA_WIDTH-1:0]    mem_wr_data;
   reg                         inc_addr;
   reg                         load_cpu_addr;
-  reg                         load_wrap_addr;
   reg                         load_wb_wrap_addr;
 
   lfbuf_t                     linefillbuf;
@@ -189,7 +190,7 @@ module generic_cache #(
   assign cpu_addr_tag  = cpu_addr[ADDR_WIDTH-1 -: TAG_WIDTH];
   assign cpu_block_idx  = cpu_addr[ADDR_WIDTH-TAG_WIDTH-LINE_ADDR_WIDTH-1 -: NWORDSLOG2];
 
-  assign mem_block_idx  = cpu_addr[ADDR_WIDTH-TAG_WIDTH-LINE_ADDR_WIDTH-1 -: MEM_NWORDSLOG2];
+  assign mem_block_idx  = { cpu_block_idx,  {((MEM_NWORDSLOG2-NWORDSLOG2 >= 0) ? (MEM_NWORDSLOG2-NWORDSLOG2) : 0 ){1'b0}} };
 
 
   genvar i;
@@ -409,7 +410,6 @@ module generic_cache #(
       mem_wr                   = 1'b0;
       inc_addr                 = 1'b0;
       load_cpu_addr            = 1'b0;
-      load_wrap_addr           = 1'b0;
       load_wb_wrap_addr        = 1'b0;
       cache_evict              = 1'b0;
       linefill_load_addr       = 1'b0;
@@ -518,9 +518,7 @@ module generic_cache #(
     if (~reset_n)
       mem_addr_r <= 'b0;
     else if (load_cpu_addr)
-      mem_addr_r <= { cpu_addr[31:MEM_D_NWORDS], {MEM_D_NWORDS{1'b0}} };
-    else if (load_wrap_addr) // XXX: not used anymore
-      mem_addr_r <= { cpu_addr_tag, cpu_line_addr, {LINE_WIDTH{1'b0}} };
+      mem_addr_r <= { cpu_addr[31:CPU_PRIV_WIDTH], {CPU_PRIV_WIDTH{1'b0}} };
     else if (load_wb_wrap_addr)
       mem_addr_r <= { tag_banks[bank_sel][cpu_line_addr].tag, cpu_line_addr, {LINE_WIDTH{1'b0}} };
     else if (inc_addr)
@@ -557,17 +555,23 @@ module generic_cache #(
     end // else: !if(~reset_n)
 `undef _FIRST_CYCLE
 
-`ifdef TRACE_ENABLE
+`ifdef CACHE_TRACE_ENABLE
+  integer trace_file;
+
+  initial begin
+    trace_file = $fopen("cache.trace", "w");
+  end
+
   always_ff @(posedge clock)
     begin
       if (cache_evict)
-        $display("%d %m evict:     [%d:%x,tag: %x] (%s) for %x", $time, bank_sel, cpu_line_addr, tag_banks[bank_sel][cpu_line_addr].tag, (tag_banks[bank_sel][cpu_line_addr].dirty ? "dirty" : "clean"), cpu_addr);
+        $fwrite(trace_file, "%d %m evict:     [%d:%x,tag: %x] (%s) for %x\n", $time, bank_sel, cpu_line_addr, tag_banks[bank_sel][cpu_line_addr].tag, (tag_banks[bank_sel][cpu_line_addr].dirty ? "dirty" : "clean"), cpu_addr);
 
       if (linefill_load_addr)
-        $display("%d %m allocate:  [%d:%x,tag: %x]         for %x", $time, bank_sel, cpu_line_addr, cpu_addr_tag, cpu_addr);
+        $fwrite(trace_file, "%d %m allocate:  [%d:%x,tag: %x]         for %x\n", $time, bank_sel, cpu_line_addr, cpu_addr_tag, cpu_addr);
 
       if (state != WRITEBACK && next_state == WRITEBACK)
-        $display("%d %m writeback: [%d:%x,tag: %x]         for %x", $time, bank_sel, cpu_line_addr, tag_banks[bank_sel][cpu_line_addr].tag, cpu_addr);
+        $fwrite(trace_file, "%d %m writeback: [%d:%x,tag: %x]         for %x\n", $time, bank_sel, cpu_line_addr, tag_banks[bank_sel][cpu_line_addr].tag, cpu_addr);
     end
 `endif
 

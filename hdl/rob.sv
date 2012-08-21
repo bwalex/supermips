@@ -142,10 +142,13 @@ module rob #(
     if (~reset_n)
       ;
     else begin
-      for (integer i = 0; i < INS_COUNT; i++) begin
-        if (reserve_i) begin
-          valid[ins_ptr + i]      <= 1'b0;
-          in_transit[ins_ptr + i] <= 1'b0;
+      automatic bit [DEPTHLOG2-1:0] k;
+      if (reserve_i) begin
+        for (integer i = 0; i <= reserve_count; i++) begin
+	  k = ins_ptr + i;
+	  $fwrite(trace_file, "Invalidating slot %d\n", k);
+          valid[k]      <= 1'b0;
+          in_transit[k] <= 1'b0;
         end
       end
       for (integer i = 0; i < WR_COUNT; i++)
@@ -179,9 +182,11 @@ module rob #(
 
   always_comb
     begin
+      automatic bit [DEPTHLOG2-1:0] k;
       for (integer i = 0; i < INS_COUNT; i++) begin
-        slot_data[i]   = buffer[ext_ptr + i];
-        slot_valid[i]  = valid[ext_ptr + i] && (i < used_count);
+        k = ext_ptr + i;
+        slot_data[i]   = buffer[k];
+        slot_valid[i]  = valid[k] && (i < used_count);
       end
     end
 
@@ -223,8 +228,14 @@ module rob #(
 
 
   always_ff @(posedge clock) begin
+    bit [DEPTHLOG2-1:0] k;
+
     $fwrite(trace_file, "%d ROB: ins_ptr: %d, ext_ptr: %d, used_count: %d, empty: %b, full: %b\n",
             $time, ins_ptr, ext_ptr, used_count, empty, full);
+
+    for (k = ext_ptr; k != ins_ptr; k++) begin
+      $fwrite(trace_file, "    ROB slot %d: pc: %x, valid: %b\n", k, insns[k].pc, valid[k]);
+    end
 
     if (reserve_i) begin
       for (integer i = 0; i <= reserve_count; i++)
