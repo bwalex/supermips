@@ -161,7 +161,10 @@ package pipTypes;
   typedef struct {
     bit [3:0]    rob_slot;
     dec_inst_t   dec_inst;
-    fwd_info_t   fwd_info;
   } iq_entry_t;
 
+typedef struct {
+    bit [3:0]    rob_slot;
+    dec_inst_t   dec_inst;
+  } iq_entry_int_t;
 endpackage
