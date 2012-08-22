@@ -292,7 +292,7 @@ module iss#(
         consumed++;
       end
       else if (di[i].alu_inst && ex_unit_ready(ex_used, ex_ready)) begin
-        for (integer k = 0; i < EX_UNITS; i++) begin
+        for (integer k = 0; k < EX_UNITS; k++) begin
           if (!ex_used[k] && ex_ready[k]) begin
             ex_used[k]         = 1'b1;
             ex_inst[k]         = di[i];
