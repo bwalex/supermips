@@ -229,14 +229,20 @@ module pipeline#(
     end
   endgenerate
 
-  // Only EX units are guaranteed to yield a result in exactly one cycle,
+  // Only ALU insts are guaranteed to yield a result in exactly one cycle,
   // so don't mark any other one as in transit.
   assign ex_agg_rob_transit_idx_valid[0]  = 1'b0 & iss_ls_inst_valid;
-  assign ex_agg_rob_transit_idx_valid[1]  = 1'b0 & iss_exmul1_inst_valid;
+  assign ex_agg_rob_transit_idx_valid[1]  =   iss_exmul1_inst.alu_inst
+                                           & ~iss.exmul1_inst.muldiv_inst
+                                           & ~iss.exmul1_inst.can_inval
+                                           &  iss_exmul1_inst_valid
+					   ;
   assign ex_agg_rob_transit_idx_valid[2]  = 1'b0;
   generate
     for (i = 0; i < EX_UNITS; i++) begin : GEN_EX_ROB_TRANSIT_IDX_V
-      assign ex_agg_rob_transit_idx_valid[3+i]  = ~iss_ex_inst[i].can_inval & iss_ex_inst_valid[i];
+      assign ex_agg_rob_transit_idx_valid[3+i]  = ~iss_ex_inst[i].can_inval
+                                                 & iss_ex_inst_valid[i]
+						 ;
     end
   endgenerate
 
