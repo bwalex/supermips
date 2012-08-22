@@ -4,10 +4,7 @@ module circ_buf #(
   parameter type T     = iq_entry_t,
   parameter      DEPTH     = 16,
                  INS_COUNT = 4,
-                 EXT_COUNT = 4,
-                 DEPTHLOG2 = $clog2(DEPTH),
-                 EXTCOUNTLOG2  = $clog2(EXT_COUNT),
-                 INSCOUNTLOG2  = $clog2(INS_COUNT)
+                 EXT_COUNT = 4
 )(
   input                    clock,
   input                    reset_n,
@@ -27,17 +24,16 @@ module circ_buf #(
   output                   empty,
   output reg [DEPTHLOG2:0] used_count
 );
+  localparam DEPTHLOG2  = $clog2(DEPTH);
+  localparam EXTCOUNTLOG2  = $clog2(EXT_COUNT);
+  localparam INSCOUNTLOG2  = $clog2(INS_COUNT);
 
   wire                     ins_enable_i;
   wire                     ext_enable_i;
   wire [EXTCOUNTLOG2-1:0]  ext_consumed_i;
 
 
-  reg [DEPTHLOG2-1:0]      ext_ptr;
-  reg [DEPTHLOG2-1:0]      ins_ptr;
-
-  T buffer[DEPTH];
-  bit valid[DEPTH];
+  T buffer[$];
 
   assign ins_enable_i    = ins_enable & ~full;
   assign ext_enable_i    = ext_enable & ~empty;
@@ -46,83 +42,49 @@ module circ_buf #(
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
-      ins_ptr <= 'b0;
-    else if (flush)
-      ins_ptr <= 'b0;
-    else if (ins_enable_i) begin
-      automatic bit [DEPTHLOG2-1:0] idx  = ins_ptr;
-
-      for (integer i = 0; i <= new_count; i++) begin
-        buffer[idx] <= new_elements[i];
-        idx         += 1;
-      end
-
-      ins_ptr <= idx;
-    end // else: !if(~reset_n)
-
-
-  always_ff @(posedge clock, negedge reset_n)
-    if (~reset_n)
-      for (integer i = 0; i < DEPTH; i++)
-        valid[i] <= 1'b0;
+      buffer <= { };
     else begin
-      automatic bit [DEPTHLOG2-1:0] idx;
-
-      if (ins_enable_i) begin
-        idx  = ins_ptr;
-        for (integer i = 0; i <= new_count; i++) begin
-          valid[idx] <= 1'b1;
-          idx        += 1;
-        end
-      end
-
-      if (ext_enable_i) begin
-        idx  = ext_ptr;
+      if (ext_enable_i)
         for (integer i = 0; i <= ext_consumed_i; i++) begin
-          valid[idx] <= 1'b0;
-          idx        += 1;
+          automatic iq_entry_t e = buffer.pop_front();
+`ifdef IQ_TRACE_ENABLE
+          $fwrite(trace_file, "%d IQ: extract from slot %d, pc=%x, iw=%x, rob_slot=%d\n",
+                  $time, i, e.dec_inst.pc, e.dec_inst.inst_word, e.rob_slot);
+`endif
         end
-      end
 
-      if (flush)
-        for (integer i = 0; i < DEPTH; i++)
-	  valid[i] <= 1'b0;
+      if (ins_enable_i)
+        for (integer i = 0; i <= new_count; i++) begin
+          buffer.push_back(new_elements[i]);
+`ifdef IQ_TRACE_ENABLE
+          $fwrite(trace_file, "%d IQ: insert at slot %d, pc=%x, iw=%x, rob_slot=%d\n",
+                  $time,
+                  buffer.size()-1, new_elements[i].dec_inst.pc, new_elements[i].dec_inst.inst_word,
+                  new_elements[i].rob_slot);
+`endif
+        end
+
+      if (flush) begin
+`ifdef IQ_TRACE_ENABLE
+        $fwrite(trace_file, "%d IQ: flush %d instructions\n", $time, buffer.size());
+`endif
+        buffer  = {};
+      end
     end
 
 
+  always_comb begin
+    for (integer i = 0; i < buffer.size(); i++) begin
+      out_elements[i]  = buffer[i];
+      ext_valid[i]     = 1'b1;
+    end
+    for (integer i = buffer.size(); i < EXT_COUNT; i++) begin
+      ext_valid[i]     = 1'b0;
+    end
+  end
 
   always_comb
-    begin
-      automatic bit [DEPTHLOG2-1:0] idx  = ext_ptr;
-
-      for (integer i = 0; i < EXT_COUNT; i++) begin
-        out_elements[i] = buffer[idx];
-        ext_valid[i]    = valid[idx];
-        idx             += 1;
-      end
-    end
-
-
-  always_ff @(posedge clock, negedge reset_n)
-    if (~reset_n)
-      ext_ptr <= 'b0;
-    else if (flush)
-      ext_ptr <= 'b0;
-    else if (ext_enable_i) begin
-      ext_ptr <= ext_ptr + ext_consumed_i + 1;
-    end
-
-
-  always_ff @(posedge clock, negedge reset_n)
-    if (~reset_n)
-      used_count <= 0;
-    else if (flush)
-      used_count <= 'b0;
-    else
-      used_count <=  used_count
-                   + ((new_count      + 1) & {(INSCOUNTLOG2+1){ins_enable_i}})
-                   - ((ext_consumed_i + 1) & {(EXTCOUNTLOG2+1){ext_enable_i}});
-
+    used_count  = buffer.size();
 
   assign empty      = (used_count == 0);
   assign full       = (used_count > DEPTH-INS_COUNT);
@@ -136,33 +98,11 @@ module circ_buf #(
     trace_file  = $fopen("iq.trace", "w");
   end
 
-
   always_ff @(posedge clock) begin
-    $fwrite(trace_file, "%d IQ: ins_ptr: %d, ext_ptr: %d, used_count: %d, empty: %b, full: %b\n",
-            $time,
-            ins_ptr, ext_ptr, used_count, empty, full);
-
-    if (flush)
-      $fwrite(trace_file, "%d IQ: flush\n", $time);
-
-    if (ins_enable_i)
-      for (integer i = 0; i <= new_count; i++)
-        $fwrite(trace_file, "%d IQ: insert at slot %d, pc=%x, iw=%x, rob_slot=%d\n",
-                $time,
-                ins_ptr+i, new_elements[i].dec_inst.pc, new_elements[i].dec_inst.inst_word,
-                new_elements[i].rob_slot);
-
-    if (ext_enable_i)
-      for (integer i = 0; i <= ext_consumed_i; i++)
-        $fwrite(trace_file, "%d IQ: extract from slot %d, pc=%x, iw=%x, rob_slot=%d\n",
-                $time,
-                ext_ptr+i, out_elements[i].dec_inst.pc, out_elements[i].dec_inst.inst_word,
-                out_elements[i].rob_slot);
+    $fwrite(trace_file, "%d IQ: used_count: %d, empty: %b, full: %b\n",
+            $time, used_count, empty, full);
   end
-
-
 `endif
-
 
 
 endmodule // circbuf
