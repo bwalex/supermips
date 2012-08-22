@@ -263,7 +263,7 @@ module iss#(
 	  // don't allow branch to proceed if we can't schedule the BDS, either
 	  && ( ((di[i+1].load_inst | di[i+1].store_inst) && !ls_used && ls_ready)
 	    || (di[i+1].muldiv_inst && !exmul1_used && exmul1_ready)
-	    || (di[i+1].alu_inst && ((!ex1_used && ex1_ready) || (!exmul1_used && exmul1_ready))) )
+	    || (di[i+1].alu_inst && (ex_unit_ready(ex_used, ex_ready) || (!exmul1_used && exmul1_ready))) )
 	  ) begin
         b_used           = 1'b1;
 	      b_idx            = i;
@@ -329,8 +329,9 @@ module iss#(
     bi_inst_valid      = b_used;
     ls_inst_valid      = ls_used & (~ls_speculative | ~branch_flush);
     exmul1_inst_valid  = exmul1_used & (~exmul1_speculative | ~branch_flush);
-    ex1_inst_valid     = ex1_used & (~ex1_speculative | ~branch_flush);
-  end
+    for (integer i = 0; i < EX_UNITS; i++)
+      ex_inst_valid[i]     = ex_used[i] & (~ex_speculative[i] | ~branch_flush);
+  end // always_comb
 
 
 
@@ -429,21 +430,25 @@ module iss#(
   end
 
   always_ff @(posedge clock) begin
-    $fwrite(trace_file, "%d: ISS: ls_ready=%b, ex1_ready=%b, exmul1_ready=%b, branch_ready=%b\n",
-      $time, ls_ready, ex1_ready, exmul1_ready, branch_ready);
+    $fwrite(trace_file, "%d: ISS: ls_ready=%b, exmul1_ready=%b, branch_ready=%b, ",
+      $time, ls_ready, exmul1_ready, branch_ready);
+    for (integer i = 0; i < EX_UNITS; i++)
+      $fwrite(trace_file, "ex%1d_ready=%b, ", i, ex_ready[i]);
+    $fwrite(trace_file, "\n");
 
     if (ls_inst_valid)
       $fwrite(trace_file, "%d: ISS: issuing to LS:     pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
         $time, ls_inst.pc, ls_A, ls_B, ls_rob_slot, ls_inst.inst_word);
 
-    if (ex1_inst_valid)
-      $fwrite(trace_file, "%d: ISS: issuing to EX1:    pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
-        $time, ex1_inst.pc, ex1_A, ex1_B, ex1_rob_slot, ex1_inst.inst_word);
-    
+    for (integer i = 0; i < EX_UNITS; i++)
+      if (ex_inst_valid[i])
+        $fwrite(trace_file, "%d: ISS: issuing to EX%1d:    pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
+                $time, i, ex_inst[i].pc, ex_A[i], ex_B[i], ex_rob_slot[i], ex_inst[i].inst_word);
+
     if (exmul1_inst_valid)
       $fwrite(trace_file, "%d: ISS: issuing to EXMUL1: pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
         $time, exmul1_inst.pc, exmul1_A, exmul1_B, exmul1_rob_slot, exmul1_inst.inst_word);
-    
+
     if (bi_inst_valid)
       $fwrite(trace_file, "%d: ISS: issuing to BRANCH: pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
         $time, bi.pc, branch_A, branch_B, branch_rob_slot, bi.inst_word);
