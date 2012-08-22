@@ -3,28 +3,28 @@ import pipTypes::*;
 module ls_wrapper #(
                     parameter ROB_DEPTHLOG2 = 4
 )(
-  input                     clock,
-  input                     reset_n,
+  input                      clock,
+  input                      reset_n,
 
-  input                     dec_inst_t inst,
-  input                     inst_valid,
-  input [31:0]              A,
-  input [31:0]              B,
-  input [ROB_DEPTHLOG2-1:0] rob_slot,
+  input                      dec_inst_t inst,
+  input                      inst_valid,
+  input [31:0]               A,
+  input [31:0]               B,
+  input [ROB_DEPTHLOG2-1:0]  rob_slot,
 
-  output                    ready,
+  output                     ready,
 
-  output                    rob_data_valid,
-  output [ 3:0]             rob_data_idx,
-  output                    rob_entry_t rob_data,
+  output                     rob_data_valid,
+  output [ROB_DEPTHLOG2-1:0] rob_data_idx,
+  output                     rob_entry_t rob_data,
 
-  output                    cache_rd,
-  output                    cache_wr,
-  output [31:0]             cache_addr,
-  output [31:0]             cache_wr_data,
-  output [ 3:0]             cache_wr_be,
-  input  [31:0]             cache_data,
-  input                     cache_waitrequest
+  output                     cache_rd,
+  output                     cache_wr,
+  output [31:0]              cache_addr,
+  output [31:0]              cache_wr_data,
+  output [ 3:0]              cache_wr_be,
+  input  [31:0]              cache_data,
+  input                      cache_waitrequest
 );
 
   wire          stall;
