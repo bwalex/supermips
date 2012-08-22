@@ -5,7 +5,10 @@ module top#(
                      MEM_WIDTH = 32,
                      BURSTLEN_WIDTH = 2,
                      LSTRACE_FILE = "ls.trace",
-                     RFTRACE_FILE = "rf.trace"
+                     RFTRACE_FILE = "rf.trace",
+                     EX_UNITS = 1,
+                     IQ_DEPTH = 16,
+                     ROB_DEPTH = 16
 )(
 );
   logic clock;
@@ -55,7 +58,11 @@ module top#(
 `endif
 
 
-  pipeline CPU(
+  pipeline #(
+             .EX_UNITS(EX_UNITS),
+             .IQ_DEPTH(IQ_DEPTH),
+             .ROB_DEPTH(ROB_DEPTH)
+  )CPU(
                // Outputs
                .icache_addr             (icache_addr),
                .icache_rd               (icache_rd),

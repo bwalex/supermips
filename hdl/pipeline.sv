@@ -4,7 +4,10 @@ import pipTypes::*;
 module pipeline#(
   parameter ADDR_WIDTH = 32,
             DATA_WIDTH = 32,
-            BE_WIDTH = DATA_WIDTH/8
+            BE_WIDTH = DATA_WIDTH/8,
+            EX_UNITS = 1,
+            IQ_DEPTH = 16,
+            ROB_DEPTH = 16
 )(
   input                   clock,
   input                   reset_n,
@@ -25,18 +28,17 @@ module pipeline#(
   input                   dcache_waitrequest//
 );
 
-  localparam IQ_DEPTH       = 16;
-  localparam ROB_DEPTH      = 16;
+  localparam ISS_PER_CYLCE  = 3+EX_UNITS;
 
   localparam IQ_INS_COUNT   = 4;
-  localparam IQ_EXT_COUNT   = 4;
+  localparam IQ_EXT_COUNT   = ISS_PER_CYCLE;
 
   localparam ROB_INS_COUNT  = 4;
   localparam ROB_EXT_COUNT  = 4;
-  localparam ROB_AS_COUNT   = 4;
-  localparam ROB_WR_COUNT   = 4;
+  localparam ROB_AS_COUNT   = ISS_PER_CYCLE;
+  localparam ROB_WR_COUNT   = ISS_PER_CYCLE;
 
-  localparam RFILE_RD_PORTS = 8;
+  localparam RFILE_RD_PORTS = 2*ISS_PER_CYCLE;
   localparam RFILE_WR_PORTS = ROB_EXT_COUNT;
 
   localparam ROB_DEPTHLOG2      = $clog2(ROB_DEPTH);
@@ -94,7 +96,7 @@ module pipeline#(
   wire                         issiq_ext_enable;
   wire [IQ_EXT_DEPTHLOG2-1:0]  issiq_ext_consumed;
   dec_inst_t                   iss_ls_inst;
-  dec_inst_t                   iss_ex1_inst;
+  dec_inst_t                   iss_ex_inst[EX_UNITS];
   dec_inst_t                   iss_exmul1_inst;
   wire [ROB_DEPTHLOG2-1:0]     issrob_as_query_idx[ROB_AS_COUNT];
   wire [ 4:0]                  issrob_as_areg[ROB_AS_COUNT];
@@ -103,10 +105,10 @@ module pipeline#(
   wire [31:0]                  iss_ls_A;
   wire [31:0]                  iss_ls_B;
   wire                         iss_ls_inst_valid;
-  wire [ROB_DEPTHLOG2-1:0]     iss_ex1_rob_slot;
-  wire [31:0]                  iss_ex1_A;
-  wire [31:0]                  iss_ex1_B;
-  wire                         iss_ex1_inst_valid;
+  wire [ROB_DEPTHLOG2-1:0]     iss_ex_rob_slot[EX_UNITS];
+  wire [31:0]                  iss_ex_A[EX_UNITS];
+  wire [31:0]                  iss_ex_B[EX_UNITS];
+  wire                         iss_ex_inst_valid[EX_UNITS];
   wire [ROB_DEPTHLOG2-1:0]     iss_exmul1_rob_slot;
   wire [31:0]                  iss_exmul1_A;
   wire [31:0]                  iss_exmul1_B;
@@ -126,11 +128,11 @@ module pipeline#(
   wire                         ls_rob_wr_valid;
   wire [ROB_DEPTHLOG2-1:0]     ls_rob_wr_slot;
 
-  // Outputs from EX1
-  wire                         ex1_ready;
-  rob_entry_t                  ex1_rob_wr_data;
-  wire                         ex1_rob_wr_valid;
-  wire [ROB_DEPTHLOG2-1:0]     ex1_rob_wr_slot;
+  // Outputs from EX1..EX_UNITS
+  wire                         ex_ready[EX_UNITS];
+  rob_entry_t                  ex_rob_wr_data[EX_UNITS];
+  wire                         ex_rob_wr_valid[EX_UNITS];
+  wire [ROB_DEPTHLOG2-1:0]     ex_rob_wr_slot[EX_UNITS];
 
 
   // Outputs from EXMUL1
@@ -161,19 +163,34 @@ module pipeline#(
   wire [ROB_DEPTHLOG2-1:0]     ex_rob_wr_slot[ROB_WR_COUNT];
   wire                         ex_rob_wr_valid[ROB_WR_COUNT];
 
+  genvar                       i;
 
   assign ex_rob_wr_data[0]   = ls_rob_wr_data;
-  assign ex_rob_wr_data[1]   = ex1_rob_wr_data;
-  assign ex_rob_wr_data[2]   = exmul1_rob_wr_data;
-  assign ex_rob_wr_data[3]   = branch_rob_data;
+  assign ex_rob_wr_data[1]   = exmul1_rob_wr_data;
+  assign ex_rob_wr_data[2]  = branch_rob_data;
+  generate
+    for (i = 0; i < EX_UNITS; i++) begin : GEN_EX_ROB_WR_DATA
+      assign ex_rob_wr_data[3+i]  = ex_rob_wr_data[i];
+    end
+  endgenerate
+
   assign ex_rob_wr_slot[0]   = ls_rob_wr_slot;
-  assign ex_rob_wr_slot[1]   = ex1_rob_wr_slot;
-  assign ex_rob_wr_slot[2]   = exmul1_rob_wr_slot;
-  assign ex_rob_wr_slot[3]   = branch_rob_wr_slot;
+  assign ex_rob_wr_slot[1]   = exmul1_rob_wr_slot;
+  assign ex_rob_wr_slot[2]   = branch_rob_wr_slot;
+  generate
+    for (i = 0; i < EX_UNITS; i++) begin : GEN_EX_ROB_WR_SLOT
+      assign ex_rob_wr_slot[3+i]  = ex_rob_wr_slot[i];
+    end
+  endgenerate
+
   assign ex_rob_wr_valid[0]  = ls_rob_wr_valid;
-  assign ex_rob_wr_valid[1]  = ex1_rob_wr_valid;
-  assign ex_rob_wr_valid[2]  = exmul1_rob_wr_valid;
-  assign ex_rob_wr_valid[3]  = branch_rob_wr_valid;
+  assign ex_rob_wr_valid[1]  = exmul1_rob_wr_valid;
+  assign ex_rob_wr_valid[2]  = branch_rob_wr_valid;
+  generate
+    for (i = 0; i < EX_UNITS; i++) begin : GEN_EX_ROB_WR_VALID
+      assign ex_rob_wr_valid[3+i]  = ex_rob_wr_valid[i];
+    end
+  endgenerate
 
 
   // Aggregate IF outputs
@@ -270,13 +287,15 @@ module pipeline#(
 
 
   iss#(
-       .ROB_DEPTHLOG2(ROB_DEPTHLOG2))
+       .ROB_DEPTHLOG2(ROB_DEPTHLOG2),
+       .EX_UNITS(EX_UNITS),
+       .ISSUE_PER_CYCLE(ISS_PER_CYCLE))
   ISS(
           // Interfaces
           .insns                        (iq_out_elements),
           .wr_data                      (branch_rob_data),
           .ls_inst                      (iss_ls_inst),
-          .ex1_inst                     (iss_ex1_inst),
+          .ex_inst                      (iss_ex_inst),
           .exmul1_inst                  (iss_exmul1_inst),
           // Outputs
           .ext_enable                   (issiq_ext_enable),
@@ -290,10 +309,10 @@ module pipeline#(
           .ls_A                         (iss_ls_A),
           .ls_B                         (iss_ls_B),
           .ls_inst_valid                (iss_ls_inst_valid),
-          .ex1_rob_slot                 (iss_ex1_rob_slot),
-          .ex1_A                        (iss_ex1_A),
-          .ex1_B                        (iss_ex1_B),
-          .ex1_inst_valid               (iss_ex1_inst_valid),
+          .ex_rob_slot                  (iss_ex_rob_slot),
+          .ex_A                         (iss_ex_A),
+          .ex_B                         (iss_ex_B),
+          .ex_inst_valid                (iss_ex_inst_valid),
           .exmul1_rob_slot              (iss_exmul1_rob_slot),
           .exmul1_A                     (iss_exmul1_A),
           .exmul1_B                     (iss_exmul1_B),
@@ -314,7 +333,7 @@ module pipeline#(
           .as_aval_present              (rob_as_aval_present),
           .as_bval_present              (rob_as_bval_present),
           .ls_ready                     (ls_ready),
-          .ex1_ready                    (ex1_ready),
+          .ex_ready                     (ex_ready),
           .exmul1_ready                 (exmul1_ready),
           .branch_stall                 (if_branch_stall),
           .rd_data                      (rfile_rd_data));
@@ -347,25 +366,27 @@ module pipeline#(
                 .cache_waitrequest      (dcache_waitrequest));
 
 
-
-  ex_wrapper#(
-              .ROB_DEPTHLOG2(ROB_DEPTHLOG2))
-  EX1(
-                 // Interfaces
-                 .inst                  (iss_ex1_inst),
-                 .rob_data              (ex1_rob_wr_data),
-                 // Outputs
-                 .ready                 (ex1_ready),
-                 .rob_data_valid        (ex1_rob_wr_valid),
-                 .rob_data_idx          (ex1_rob_wr_slot),
-                 // Inputs
-                 .clock                 (clock),
-                 .reset_n               (reset_n),
-                 .inst_valid            (iss_ex1_inst_valid),
-                 .A                     (iss_ex1_A),
-                 .B                     (iss_ex1_B),
-                 .rob_slot              (iss_ex1_rob_slot));
-
+  generate
+    for (i = 0; i < EX_UNITS; i++) begin : GEN_EX_UNITS
+      ex_wrapper#(
+                  .ROB_DEPTHLOG2(ROB_DEPTHLOG2))
+      EX(
+          // Interfaces
+          .inst                  (iss_ex_inst[i]),
+          .rob_data              (ex_rob_wr_data[i]),
+          // Outputs
+          .ready                 (ex_ready[i]),
+          .rob_data_valid        (ex_rob_wr_valid[i]),
+          .rob_data_idx          (ex_rob_wr_slot[i]),
+          // Inputs
+          .clock                 (clock),
+          .reset_n               (reset_n),
+          .inst_valid            (iss_ex_inst_valid[i]),
+          .A                     (iss_ex_A[i]),
+          .B                     (iss_ex_B[i]),
+          .rob_slot              (iss_ex_rob_slot[i]));
+    end
+  endgenerate
 
 
   ex_mul_wrapper#(

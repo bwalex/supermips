@@ -1,33 +1,35 @@
 import pipTypes::*;
 
 module iss#(
-            parameter ROB_DEPTHLOG2 = 4
-            )
-(
+            parameter ROB_DEPTHLOG2 = 4,
+                      EX_UNITS = 1,
+                      ISSUE_PER_CYCLE = 4,
+                      ISS_PC_LOG2 = $clog2(ISSUE_PER_CYCLE)
+)(
   input                          clock,
   input                          reset_n,
 
   // IQ interface
   output reg                     ext_enable,
-  output reg [1:0]               ext_consumed,
-  input                          ext_valid[4],
-  input                          iq_entry_t insns[4],
+  output reg [ISS_PC_LOG2-1:0]   ext_consumed,
+  input                          ext_valid[ISSUE_PER_CYCLE],
+  input                          iq_entry_t insns[ISSUE_PER_CYCLE],
   input                          empty,
 
 
   // ROB Associative Lookup interface
-  output [ROB_DEPTHLOG2-1:0]     as_query_idx[4],
-  output [4:0]                   as_areg[4],
-  output [4:0]                   as_breg[4],
+  output [ROB_DEPTHLOG2-1:0]     as_query_idx[ISSUE_PER_CYCLE],
+  output [4:0]                   as_areg[ISSUE_PER_CYCLE],
+  output [4:0]                   as_breg[ISSUE_PER_CYCLE],
 
-  input [31:0]                   as_aval[4],
-  input [31:0]                   as_bval[4],
+  input [31:0]                   as_aval[ISSUE_PER_CYCLE],
+  input [31:0]                   as_bval[ISSUE_PER_CYCLE],
 
-  input                          as_aval_valid[4],
-  input                          as_bval_valid[4],
+  input                          as_aval_valid[ISSUE_PER_CYCLE],
+  input                          as_bval_valid[ISSUE_PER_CYCLE],
 
-  input                          as_aval_present[4],
-  input                          as_bval_present[4],
+  input                          as_aval_present[ISSUE_PER_CYCLE],
+  input                          as_bval_present[ISSUE_PER_CYCLE],
 
   // ROB store interface for "branch unit"
   output [ROB_DEPTHLOG2-1:0]     wr_slot,
@@ -43,12 +45,12 @@ module iss#(
   input                          ls_ready,
 
   // EX unit interface
-  output reg [ROB_DEPTHLOG2-1:0] ex1_rob_slot,
-  output reg [31:0]              ex1_A,
-  output reg [31:0]              ex1_B,
-  output                         dec_inst_t ex1_inst,
-  output reg                     ex1_inst_valid,
-  input                          ex1_ready,
+  output reg [ROB_DEPTHLOG2-1:0] ex_rob_slot[EX_UNITS],
+  output reg [31:0]              ex_A[EX_UNITS],
+  output reg [31:0]              ex_B[EX_UNITS],
+  output                         dec_inst_t ex_inst[EX_UNITS],
+  output reg                     ex_inst_valid[EX_UNITS],
+  input                          ex_ready[EX_UNITS],
 
   // EXMUL unit interface
   output reg [ROB_DEPTHLOG2-1:0] exmul1_rob_slot,
@@ -66,25 +68,22 @@ module iss#(
   output                         branch_flush,
 
   // Register file interface
-  output [ 4:0]                  rd_addr[8],
-  input [31:0]                   rd_data[8]
+  output [ 4:0]                  rd_addr[ISSUE_PER_CYCLE*2],
+  input [31:0]                   rd_data[ISSUE_PER_CYCLE*2]
 );
 
-  dec_inst_t    di[4];
-  wire [ROB_DEPTHLOG2-1:0]       rob_slot[4];
-  wire [31:0]   di_A[4];
-  wire [31:0]   di_B[4];
-  wire          di_A_valid[4];
-  wire          di_B_valid[4];
-  wire          di_ops_ready[4];
+  dec_inst_t    di[ISSUE_PER_CYCLE];
+  wire [ROB_DEPTHLOG2-1:0]       rob_slot[ISSUE_PER_CYCLE];
+  wire [31:0]   di_A[ISSUE_PER_CYCLE];
+  wire [31:0]   di_B[ISSUE_PER_CYCLE];
+  wire          di_A_valid[ISSUE_PER_CYCLE];
+  wire          di_B_valid[ISSUE_PER_CYCLE];
+  wire          di_ops_ready[ISSUE_PER_CYCLE];
 
-  dec_inst_t    lsi;
-  dec_inst_t    ex1i;
-  dec_inst_t    exmul1i;
   dec_inst_t    bi;
 
   reg           ls_speculative;
-  reg           ex1_speculative;
+  reg           ex_speculative[EX_UNITS];
   reg           exmul1_speculative;
 
   reg [31:0]    branch_A;
@@ -117,57 +116,64 @@ module iss#(
   wire          stall_i;
   wire          branch_cond_ok;
 
-  assign di[0]  = insns[0].dec_inst;
-  assign di[1]  = insns[1].dec_inst;
-  assign di[2]  = insns[2].dec_inst;
-  assign di[3]  = insns[3].dec_inst;
-
-  assign rob_slot[0]  = insns[0].rob_slot;
-  assign rob_slot[1]  = insns[1].rob_slot;
-  assign rob_slot[2]  = insns[2].rob_slot;
-  assign rob_slot[3]  = insns[3].rob_slot;
-
-  assign as_query_idx[0]  = rob_slot[0];
-  assign as_query_idx[1]  = rob_slot[1];
-  assign as_query_idx[2]  = rob_slot[2];
-  assign as_query_idx[3]  = rob_slot[3];
-
-  assign as_areg[0]  = di[0].A_reg;
-  assign as_areg[1]  = di[1].A_reg;
-  assign as_areg[2]  = di[2].A_reg;
-  assign as_areg[3]  = di[3].A_reg;
-
-  assign as_breg[0]  = di[0].B_reg;
-  assign as_breg[1]  = di[1].B_reg;
-  assign as_breg[2]  = di[2].B_reg;
-  assign as_breg[3]  = di[3].B_reg;
-
-  assign rd_addr[0]  = di[0].A_reg;
-  assign rd_addr[1]  = di[0].B_reg;
-  assign rd_addr[2]  = di[1].A_reg;
-  assign rd_addr[3]  = di[1].B_reg;
-  assign rd_addr[4]  = di[2].A_reg;
-  assign rd_addr[5]  = di[2].B_reg;
-  assign rd_addr[6]  = di[3].A_reg;
-  assign rd_addr[7]  = di[3].B_reg;
-
-
   genvar        i;
+
   generate
-    for (i = 0; i < 4; i++) begin : AS_FWD
+    for (i = 0; i < ISSUE_PER_CYCLE; i++) begin : GEN_DI
+      assign di[i]  = insns[i].dec_inst;
+    end
+  endgenerate
+
+  generate
+    for (i = 0; i < ISSUE_PER_CYCLE; i++) begin : GEN_ROB_SLOT
+      assign rob_slot[i]  = insns[i].rob_slot;
+    end
+  endgenerate
+
+  generate
+    for (i = 0; i < ISSUE_PER_CYCLE; i++) begin : GEN_AS_QUERY_IDX
+      assign as_query_idx[i]  = rob_slot[i];
+    end
+  endgenerate
+
+  generate
+    for (i = 0; i < ISSUE_PER_CYCLE; i++) begin : GEN_AS_AREG
+      assign as_areg[i]  = di[i].A_reg;
+    end
+  endgenerate
+
+  generate
+    for (i = 0; i < ISSUE_PER_CYCLE; i++) begin : GEN_AS_AREG
+      assign as_breg[i]  = di[i].B_reg;
+    end
+  endgenerate
+
+  generate
+    for (i = 0; i < ISSUE_PER_CYCLE; i++) begin : GEN_RD_ADDR
+      assign rd_addr[i*2  ]  = di[i].A_reg;
+      assign rd_addr[i*2+1]  = di[i].B_reg;
+    end
+  endgenerate
+
+  generate
+    for (i = 0; i < ISSUE_PER_CYCLE; i++) begin : AS_FWD
       assign di_A[i]  = (as_aval_present[i]) ? as_aval[i] : rd_data[i*2 + 0];
       assign di_B[i]  = (as_bval_present[i]) ? as_bval[i] : rd_data[i*2 + 1];
     end
+  endgenerate
 
-    for (i = 0; i < 4; i++) begin : AS_FWD_VALID
+  generate
+    for (i = 0; i < ISSUE_PER_CYCLE; i++) begin : AS_FWD_VALID
       // the values are valid when they are either not in the ROB (~present) and hence
       // are in up-to-date in the register file; OR when they are both present and valid
       // in the ROB.
       assign di_A_valid[i]  = ~as_aval_present[i] | (as_aval_present[i] & as_aval_valid[i]);
       assign di_B_valid[i]  = ~as_bval_present[i] | (as_bval_present[i] & as_bval_valid[i]);
     end
+  endgenerate
 
-    for (i = 0; i < 4; i++) begin : OPS_READY
+  generate
+    for (i = 0; i < ISSUE_PER_CYCLE; i++) begin : OPS_READY
       // Signal whether all operands are ready. This is the case when every operand
       // is either not required (~reg_valid) or valid.
       assign di_ops_ready[i]  =  (di_A_valid[i] | ~di[i].A_reg_valid)
@@ -177,25 +183,37 @@ module iss#(
   endgenerate
 
 
+  function bit ex_unit_ready(bit ex_used[EX_UNITS], bit ex_ready[EX_UNITS]);
+    for (integer i = 0; i < EX_UNITS; i++)
+      if (!ex_used[i] && ex_ready[i])
+        return 1'b1;
+
+    return 1'b0;
+  endfunction // ex_unit_ready
+
+
   always_comb begin
-    automatic bit b_used, ls_used, ex1_used, exmul1_used, spec;
+    automatic bit b_used, ls_used, ex_used[EX_UNITS], exmul1_used, spec;
     automatic integer consumed, b_idx;
 
-    consumed           = 0;
+    consumed            = 0;
 
-    b_used             = 1'b0;
-    ls_used            = 1'b0;
-    ex1_used           = 1'b0;
-    exmul1_used        = 1'b0;
-    spec               = 1'b0;
+    b_used              = 1'b0;
+    ls_used             = 1'b0;
+    for (integer i = 0; i < EX_UNITS; i++)
+      ex_used[i]        = 1'b0;
+    exmul1_used         = 1'b0;
+    spec                = 1'b0;
 
-    ls_speculative     = 1'b0;
-    ex1_speculative    = 1'b0;
-    exmul1_speculative = 1'b0;
+    ls_speculative      = 1'b0;
+    for (integer i = 0; i < EX_UNITS; i++)
+      ex_speculative[i]  = 1'b0;
+    exmul1_speculative   = 1'b0;
 
-    bi                 = di[0];
-    ls_inst            = di[0];
-    ex1_inst           = di[0];
+    bi                   = di[0];
+    ls_inst              = di[0];
+    for (integer i = 0; i < EX_UNITS; i++)
+      ex_inst[i]       = di[0];
     exmul1_inst        = di[0];
     branch_A           = di_A[0];
     branch_B           = di_B[0];
@@ -206,9 +224,11 @@ module iss#(
     exmul1_A           = di_A[0];
     exmul1_B           = di_B[0];
     exmul1_rob_slot    = rob_slot[0];
-    ex1_A              = di_A[0];
-    ex1_B              = di_B[0];
-    ex1_rob_slot       = rob_slot[0];
+    for (integer i = 0; i < EX_UNITS; i++) begin
+      ex_A[i]          = di_A[0];
+      ex_B[i]          = di_B[0];
+      ex_rob_slot[i]   = rob_slot[0];
+    end
 
 
     // XXX: directly wire up to output foo_inst signals instead of using internal '_used' vars
@@ -216,9 +236,10 @@ module iss#(
     bi_inst_valid      = 1'b0;
     ls_inst_valid      = 1'b0;
     exmul1_inst_valid  = 1'b0;
-    ex1_inst_valid     = 1'b0;
+    for (integer i = 0; i < EX_UNITS; i++)
+      ex_inst_valid[i] = 1'b0;
 
-    for (integer i = 0; i < 4; i++) begin
+    for (integer i = 0; i < ISSUE_PER_CYCLE; i++) begin
       if (!ext_valid[i]) begin
         // If this instruction is not valid, then stop here; we cannot
         // extract out of order.
@@ -232,8 +253,8 @@ module iss#(
       end
 
       if (b_used && i > (b_idx + 1)) begin
-	// Anything after the BDS is speculative
-	spec = 1'b1;
+	      // Anything after the BDS is speculative
+	      spec = 1'b1;
       end
 
       if ((di[i].branch_inst | di[i].jmp_inst) && !b_used && branch_ready
@@ -245,7 +266,7 @@ module iss#(
 	    || (di[i+1].alu_inst && ((!ex1_used && ex1_ready) || (!exmul1_used && exmul1_ready))) )
 	  ) begin
         b_used           = 1'b1;
-	b_idx            = i;
+	      b_idx            = i;
         bi               = di[i];
         branch_A         = di_A[i];
         branch_B         = di_B[i];
@@ -258,7 +279,7 @@ module iss#(
         ls_A         = di_A[i];
         ls_B         = di_B[i];
         ls_rob_slot  = rob_slot[i];
-	ls_speculative = spec;
+	      ls_speculative = spec;
         consumed++;
       end
       else if (di[i].muldiv_inst && !exmul1_used && exmul1_ready) begin
@@ -267,16 +288,21 @@ module iss#(
         exmul1_A         = di_A[i];
         exmul1_B         = di_B[i];
         exmul1_rob_slot  = rob_slot[i];
-	exmul1_speculative = spec;
+	      exmul1_speculative = spec;
         consumed++;
       end
-      else if (di[i].alu_inst && !ex1_used && ex1_ready) begin
-        ex1_used      = 1'b1;
-        ex1_inst      = di[i];
-        ex1_A         = di_A[i];
-        ex1_B         = di_B[i];
-        ex1_rob_slot  = rob_slot[i];
-	ex1_speculative = spec;
+      else if (di[i].alu_inst && ex_unit_ready(ex_used, ex_ready)) begin
+        for (integer i = 0; i < EX_UNITS; i++) begin
+          if (!ex_used[i] && ex_ready[i]) begin
+            ex_used[i]         = 1'b1;
+            ex_inst[i]         = di[i];
+            ex_A[i]            = di_A[i];
+            ex_B[i]            = di_B[i];
+            ex_rob_slot[i]     = rob_slot[i];
+	          ex_speculative[i]  = spec;
+            break;
+          end
+        end
         consumed++;
       end
       else if (di[i].alu_inst && !exmul1_used && exmul1_ready) begin
@@ -285,7 +311,7 @@ module iss#(
         exmul1_A         = di_A[i];
         exmul1_B         = di_B[i];
         exmul1_rob_slot  = rob_slot[i];
-	exmul1_speculative = spec;
+	      exmul1_speculative = spec;
         consumed++;
       end
       else begin
@@ -293,8 +319,9 @@ module iss#(
         // for this instruction then we stop here since we are issuing
         // strictly in order.
         break;
-      end
-      end // for (integer i = 0; i < 4; i++)
+      end // else: !if(di[i].alu_inst && !exmul1_used && exmul1_ready)
+    end // for (integer i = 0; i < ISSUE_PER_CYCLE; i++)
+
 
     ext_consumed       = consumed - 1;
     ext_enable         = (consumed > 0) ? 1'b1 : 1'b0;
