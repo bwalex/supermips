@@ -259,7 +259,7 @@ module iss#(
 
       if ((di[i].branch_inst | di[i].jmp_inst) && !b_used && branch_ready
           // don't allow branch to proceed if we don't have the BDS insn available and ready, too
-          && i != 3 && ext_valid[i+1] && di_ops_ready[i+1]
+          && i != (ISSUE_PER_CYCLE-1) && ext_valid[i+1] && di_ops_ready[i+1]
 	  // don't allow branch to proceed if we can't schedule the BDS, either
 	  && ( ((di[i+1].load_inst | di[i+1].store_inst) && !ls_used && ls_ready)
 	    || (di[i+1].muldiv_inst && !exmul1_used && exmul1_ready)
@@ -292,14 +292,14 @@ module iss#(
         consumed++;
       end
       else if (di[i].alu_inst && ex_unit_ready(ex_used, ex_ready)) begin
-        for (integer i = 0; i < EX_UNITS; i++) begin
-          if (!ex_used[i] && ex_ready[i]) begin
-            ex_used[i]         = 1'b1;
-            ex_inst[i]         = di[i];
-            ex_A[i]            = di_A[i];
-            ex_B[i]            = di_B[i];
-            ex_rob_slot[i]     = rob_slot[i];
-	          ex_speculative[i]  = spec;
+        for (integer k = 0; i < EX_UNITS; i++) begin
+          if (!ex_used[k] && ex_ready[k]) begin
+            ex_used[k]         = 1'b1;
+            ex_inst[k]         = di[i];
+            ex_A[k]            = di_A[i];
+            ex_B[k]            = di_B[i];
+            ex_rob_slot[k]     = rob_slot[i];
+	          ex_speculative[k]  = spec;
             break;
           end
         end
