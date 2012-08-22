@@ -244,18 +244,18 @@ module iss#(
     end
 
     ls_fwd_info.A_fwd          = ~di_A_valid[0];
-    ls_fwd_info.A_rob_idx      = as_aval_idx[0];
+    ls_fwd_info.A_rob_slot     = as_aval_idx[0];
     ls_fwd_info.B_fwd          = ~di_B_valid[0];
-    ls_fwd_info.B_rob_idx      = as_bval_idx[0];
+    ls_fwd_info.B_rob_slot     = as_bval_idx[0];
     exmul1_fwd_info.A_fwd      = ~di_A_valid[0];
-    exmul1_fwd_info.A_rob_idx  = as_aval_idx[0];
+    exmul1_fwd_info.A_rob_slot = as_aval_idx[0];
     exmul1_fwd_info.B_fwd      = ~di_B_valid[0];
-    exmul1_fwd_info.B_rob_idx  = as_bval_idx[0];
+    exmul1_fwd_info.B_rob_slot = as_bval_idx[0];
     for (integer i = 0; i < EX_UNITS; i++) begin
       ex_fwd_info[i].A_fwd      = ~di_A_valid[0];
-      ex_fwd_info[i].A_rob_idx  = as_aval_idx[0];
+      ex_fwd_info[i].A_rob_slot = as_aval_idx[0];
       ex_fwd_info[i].B_fwd      = ~di_B_valid[0];
-      ex_fwd_info[i].B_rob_idx  = as_bval_idx[0];
+      ex_fwd_info[i].B_rob_slot = as_bval_idx[0];
     end
 
 
