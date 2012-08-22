@@ -28,7 +28,7 @@ module pipeline#(
   input                   dcache_waitrequest//
 );
 
-  localparam ISS_PER_CYLCE  = 3+EX_UNITS;
+  localparam ISS_PER_CYCLE  = 3+EX_UNITS;
 
   localparam IQ_INS_COUNT   = 4;
   localparam IQ_EXT_COUNT   = ISS_PER_CYCLE;
