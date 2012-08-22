@@ -159,36 +159,36 @@ module pipeline#(
   wire [ROB_EXT_DEPTHLOG2-1:0] wrrob_consume_count;
 
   // Aggregated EX/LS/etc outputs to ROB
-  rob_entry_t                  ex_rob_wr_data[ROB_WR_COUNT];
-  wire [ROB_DEPTHLOG2-1:0]     ex_rob_wr_slot[ROB_WR_COUNT];
-  wire                         ex_rob_wr_valid[ROB_WR_COUNT];
+  rob_entry_t                  ex_agg_rob_wr_data[ROB_WR_COUNT];
+  wire [ROB_DEPTHLOG2-1:0]     ex_agg_rob_wr_slot[ROB_WR_COUNT];
+  wire                         ex_agg_rob_wr_valid[ROB_WR_COUNT];
 
   genvar                       i;
 
-  assign ex_rob_wr_data[0]   = ls_rob_wr_data;
-  assign ex_rob_wr_data[1]   = exmul1_rob_wr_data;
-  assign ex_rob_wr_data[2]  = branch_rob_data;
+  assign ex_agg_rob_wr_data[0]   = ls_rob_wr_data;
+  assign ex_agg_rob_wr_data[1]   = exmul1_rob_wr_data;
+  assign ex_agg_rob_wr_data[2]  = branch_rob_data;
   generate
     for (i = 0; i < EX_UNITS; i++) begin : GEN_EX_ROB_WR_DATA
-      assign ex_rob_wr_data[3+i]  = ex_rob_wr_data[i];
+      assign ex_agg_rob_wr_data[3+i]  = ex_rob_wr_data[i];
     end
   endgenerate
 
-  assign ex_rob_wr_slot[0]   = ls_rob_wr_slot;
-  assign ex_rob_wr_slot[1]   = exmul1_rob_wr_slot;
-  assign ex_rob_wr_slot[2]   = branch_rob_wr_slot;
+  assign ex_agg_rob_wr_slot[0]   = ls_rob_wr_slot;
+  assign ex_agg_rob_wr_slot[1]   = exmul1_rob_wr_slot;
+  assign ex_agg_rob_wr_slot[2]   = branch_rob_wr_slot;
   generate
     for (i = 0; i < EX_UNITS; i++) begin : GEN_EX_ROB_WR_SLOT
-      assign ex_rob_wr_slot[3+i]  = ex_rob_wr_slot[i];
+      assign ex_agg_rob_wr_slot[3+i]  = ex_rob_wr_slot[i];
     end
   endgenerate
 
-  assign ex_rob_wr_valid[0]  = ls_rob_wr_valid;
-  assign ex_rob_wr_valid[1]  = exmul1_rob_wr_valid;
-  assign ex_rob_wr_valid[2]  = branch_rob_wr_valid;
+  assign ex_agg_rob_wr_valid[0]  = ls_rob_wr_valid;
+  assign ex_agg_rob_wr_valid[1]  = exmul1_rob_wr_valid;
+  assign ex_agg_rob_wr_valid[2]  = branch_rob_wr_valid;
   generate
     for (i = 0; i < EX_UNITS; i++) begin : GEN_EX_ROB_WR_VALID
-      assign ex_rob_wr_valid[3+i]  = ex_rob_wr_valid[i];
+      assign ex_agg_rob_wr_valid[3+i]  = ex_rob_wr_valid[i];
     end
   endgenerate
 
@@ -417,7 +417,7 @@ module pipeline#(
        .WR_COUNT(ROB_WR_COUNT))
   ROB (
            // Interfaces
-           .write_data                  (ex_rob_wr_data),
+           .write_data                  (ex_agg_rob_wr_data),
            .slot_data                   (rob_slot_data),
            .instructions                (idrob_instructions),
            // Outputs
@@ -443,8 +443,8 @@ module pipeline#(
            .as_query_idx                (issrob_as_query_idx),
            .as_areg                     (issrob_as_areg),
            .as_breg                     (issrob_as_breg),
-           .write_slot                  (ex_rob_wr_slot),
-           .write_valid                 (ex_rob_wr_valid),
+           .write_slot                  (ex_agg_rob_wr_slot),
+           .write_valid                 (ex_agg_rob_wr_valid),
            .consume                     (wrrob_consume),
            .consume_count               (wrrob_consume_count),
            .flush                       (branch_flush),
