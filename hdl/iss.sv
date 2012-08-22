@@ -275,7 +275,10 @@ module iss#(
       end
 
       if   (!di_ops_ready[i]
-        && !(di_ops_almost_ready[i] && !(di[i].branch_inst || di[i].jmp_inst))) begin
+`ifdef ROB_FORWARDING
+        && !(di_ops_almost_ready[i] && !(di[i].branch_inst || di[i].jmp_inst))
+`endif
+      ) begin
         // If the instruction is still missing operands then we also stop
         // here since issue happens strictly in order.
         //

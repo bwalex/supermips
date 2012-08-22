@@ -8,6 +8,7 @@ TRACE?=DISABLE
 EX_UNITS?=1
 IQ_DEPTH?=16
 ROB_DEPTH?=16
+ROB_FORWARDING?=ENABLE
 
 all:
 	echo "Targets: ncv, ncv_batch, modelsim, vcs"
@@ -36,6 +37,7 @@ vcs:
 		+define+ID_TRACE_$(TRACE) \
 		+define+LS_TRACE_$(TRACE) \
 		+define+CACHE_TRACE_$(TRACE) \
+		+define+ROB_FORWARDING_$(ROB_FORWARDING) \
 		-parameters ./.vcs.params \
 		-pvalue+top/CPU/LS/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
 		$(HDL_BASE)/top.sv \

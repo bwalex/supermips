@@ -115,7 +115,7 @@ module rob #(
             as_aval_valid[i]    = valid[k];
             as_aval_present[i]  = 1'b1;
             as_aval_transit[i]  = in_transit[k];
-            as_aval_idx         = k;
+            as_aval_idx[i]      = k;
             break;
           end
         end
@@ -130,7 +130,7 @@ module rob #(
       as_bval_present[i]  = 1'b0;
       as_bval_transit[i]  = 1'b0;
       as_bval[i]          = 32'b0;
-      as_bval_idx         = 'b0;
+      as_bval_idx[i]      = 'b0;
 
       if (as_query_idx[i] != ext_ptr) begin
         comp = ext_ptr-1;
@@ -140,7 +140,7 @@ module rob #(
             as_bval_valid[i]    = valid[k];
             as_bval_present[i]  = 1'b1;
             as_bval_transit[i]  = in_transit[k];
-            as_bval_idx         = k;
+            as_bval_idx[i]      = k;
             break;
           end
         end
