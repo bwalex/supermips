@@ -33,6 +33,7 @@ module ex_mul_wrapper #(
 
   // "pipeline" registered signals
   dec_inst_t    inst_r;
+  fwd_info_t    fwd_info_r;
   reg           inst_valid_r;
   reg  [31:0]   A_r;
   reg  [31:0]   B_r;
@@ -50,17 +51,18 @@ module ex_mul_wrapper #(
     end
     else if (ready) begin
       inst_r       <= inst;
+      fwd_info_r   <= fwd_info;
       inst_valid_r <= inst_valid;
       A_r          <= A;
       B_r          <= B;
       rob_slot_r   <= rob_slot;
     end
 
-  assign A_lookup_idx  = fwd_info.A_rob_slot;
-  assign B_lookup_idx  = fwd_info.B_rob_slot;
+  assign A_lookup_idx  = fwd_info_r.A_rob_slot;
+  assign B_lookup_idx  = fwd_info_r.B_rob_slot;
 
-  assign A_i  = (fwd_info.A_fwd) ? A_fwd : A_r;
-  assign B_i  = (fwd_info.B_fwd) ? B_fwd : B_r;
+  assign A_i  = (fwd_info_r.A_fwd) ? A_fwd : A_r;
+  assign B_i  = (fwd_info_r.B_fwd) ? B_fwd : B_r;
 
   assign ready           = ~stall;
   assign rob_data_valid  = inst_valid_r & ready;
