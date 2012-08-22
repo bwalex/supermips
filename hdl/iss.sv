@@ -143,7 +143,7 @@ module iss#(
   endgenerate
 
   generate
-    for (i = 0; i < ISSUE_PER_CYCLE; i++) begin : GEN_AS_AREG
+    for (i = 0; i < ISSUE_PER_CYCLE; i++) begin : GEN_AS_BREG
       assign as_breg[i]  = di[i].B_reg;
     end
   endgenerate
