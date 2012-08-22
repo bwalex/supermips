@@ -7,6 +7,7 @@ module rob #(
                  EXT_COUNT = 4,
                  AS_COUNT  = 4,
                  WR_COUNT  = 4,
+                 LK_COUNT  = WR_COUNT*2,
                  DEPTHLOG2 = $clog2(DEPTH),
                  EXTCOUNTLOG2  = $clog2(EXT_COUNT),
                  INSCOUNTLOG2  = $clog2(INS_COUNT)
@@ -33,6 +34,18 @@ module rob #(
   output reg                 as_bval_valid[AS_COUNT],
   output reg                 as_aval_present[AS_COUNT],
   output reg                 as_bval_present[AS_COUNT],
+  output reg                 as_aval_transit[AS_COUNT],
+  output reg                 as_bval_transit[AS_COUNT],
+  output reg [DEPTHLOG2-1:0] as_aval_idx[AS_COUNT],
+  output reg [DEPTHLOG2-1:0] as_bval_idx[AS_COUNT],
+
+  // Direct lookup interface
+  input [DEPTHLOG2-1:0]      dt_query_idx[LK_COUNT],
+  output reg [31:0]          dt_result[LK_COUNT],
+
+  // In-transit marking interface
+  input [DEPTHLOG2-1:0]      transit_idx[WR_COUNT],
+  input                      transit_idx_valid[WR_COUNT],
 
   // Store interface
   input [DEPTHLOG2-1:0]      write_slot[WR_COUNT],
@@ -77,6 +90,12 @@ module rob #(
 
 
 
+  // Direct lookup interface
+  always_comb begin
+    for (integer i = 0; i < LK_COUNT; i++)
+      dt_result[i]  = buffer[dt_query_idx[i]].result_lo;
+  end
+
 
   // High-level associative lookup interface
   always_comb begin
@@ -84,7 +103,9 @@ module rob #(
     for (integer i = 0; i < AS_COUNT; i++) begin
       as_aval_valid[i]    = 1'b0;
       as_aval_present[i]  = 1'b0;
+      as_aval_transit[i]  = 1'b0;
       as_aval[i]          = 32'b0;
+      as_aval_idx[i]      = 'b0;
 
       if (as_query_idx[i] != ext_ptr) begin
         comp = ext_ptr-1;
@@ -93,6 +114,8 @@ module rob #(
             as_aval[i]          = buffer[k].result_lo;
             as_aval_valid[i]    = valid[k];
             as_aval_present[i]  = 1'b1;
+            as_aval_transit[i]  = in_transit[k];
+            as_aval_idx         = k;
             break;
           end
         end
@@ -105,7 +128,9 @@ module rob #(
     for (integer i = 0; i < AS_COUNT; i++) begin
       as_bval_valid[i]    = 1'b0;
       as_bval_present[i]  = 1'b0;
+      as_bval_transit[i]  = 1'b0;
       as_bval[i]          = 32'b0;
+      as_bval_idx         = 'b0;
 
       if (as_query_idx[i] != ext_ptr) begin
         comp = ext_ptr-1;
@@ -114,6 +139,8 @@ module rob #(
             as_bval[i]          = buffer[k].result_lo;
             as_bval_valid[i]    = valid[k];
             as_bval_present[i]  = 1'b1;
+            as_bval_transit[i]  = in_transit[k];
+            as_bval_idx         = k;
             break;
           end
         end
@@ -145,7 +172,7 @@ module rob #(
       automatic bit [DEPTHLOG2-1:0] k;
       if (reserve_i) begin
         for (integer i = 0; i <= reserve_count; i++) begin
-	  k = ins_ptr + i;
+	        k = ins_ptr + i;
           valid[k]      <= 1'b0;
           in_transit[k] <= 1'b0;
         end
@@ -153,6 +180,9 @@ module rob #(
       for (integer i = 0; i < WR_COUNT; i++)
         if (write_valid[i])
           valid[write_slot[i]] <= 1'b1;
+      for (integer i = 0; i < WR_COUNT; i++)
+        if (transit_idx_valid[i])
+          in_transit[transit_idx[i]] <= 1'b1;
     end
 
 
@@ -163,8 +193,8 @@ module rob #(
     else begin
       if (reserve_i)
         for (integer i = 0; i <= reserve_count; i++) begin
-          buffer[reserved_slots[i]].dest_reg        <= dest_reg[i];
-          buffer[reserved_slots[i]].dest_reg_valid  <= dest_reg_valid[i];
+          buffer[reserved_slots[i]].dest_reg       <= dest_reg[i];
+          buffer[reserved_slots[i]].dest_reg_valid <= dest_reg_valid[i];
         end
       for (integer i = 0; i < WR_COUNT; i++)
         if (write_valid[i])
@@ -233,7 +263,8 @@ module rob #(
             $time, ins_ptr, ext_ptr, used_count, empty, full);
 
     for (k = ext_ptr; k != ins_ptr; k++) begin
-      $fwrite(trace_file, "    ROB slot %d: pc: %x, valid: %b\n", k, insns[k].pc, valid[k]);
+      $fwrite(trace_file, "    ROB slot %d: pc: %x, valid: %b, in_transit: %b\n",
+              k, insns[k].pc, valid[k], in_transit[k]);
     end
 
     if (reserve_i) begin

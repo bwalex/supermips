@@ -14,6 +14,12 @@ module ex_mul_wrapper #(
 
   output                     ready,
 
+  input                      fwd_info_t fwd_info,
+  output [ROB_DEPTHLOG2-1:0] A_lookup_idx,
+  output [ROB_DEPTHLOG2-1:0] B_lookup_idx,
+  input [31:0]               A_fwd,
+  input [31:0]               B_fwd,
+
   output                     rob_data_valid,
   output [ROB_DEPTHLOG2-1:0] rob_data_idx,
   output                     rob_entry_t rob_data
@@ -30,6 +36,8 @@ module ex_mul_wrapper #(
   reg           inst_valid_r;
   reg  [31:0]   A_r;
   reg  [31:0]   B_r;
+  wire [31:0]   A_i;
+  wire [31:0]   B_i;
   reg [ROB_DEPTHLOG2-1:0] rob_slot_r;
 
 
@@ -48,6 +56,12 @@ module ex_mul_wrapper #(
       rob_slot_r   <= rob_slot;
     end
 
+  assign A_lookup_idx  = fwd_info.A_rob_slot;
+  assign B_lookup_idx  = fwd_info.B_rob_slot;
+
+  assign A_i  = (fwd_info.A_fwd) ? A_fwd : A_r;
+  assign B_i  = (fwd_info.B_fwd) ? B_fwd : B_r;
+
   assign ready           = ~stall;
   assign rob_data_valid  = inst_valid_r & ready;
   assign rob_data_idx    = rob_slot_r;
@@ -65,8 +79,8 @@ module ex_mul_wrapper #(
 
    .pc             (inst_r.pc),
 
-   .A_val          (A_r),
-   .B_val          (B_r),
+   .A_val          (A_i),
+   .B_val          (B_i),
 
    .A_reg          (inst_r.A_reg),
    .A_reg_valid    (inst_r.A_reg_valid),

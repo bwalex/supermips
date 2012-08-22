@@ -37,6 +37,7 @@ module pipeline#(
   localparam ROB_EXT_COUNT  = 4;
   localparam ROB_AS_COUNT   = ISS_PER_CYCLE;
   localparam ROB_WR_COUNT   = ISS_PER_CYCLE;
+  localparam ROB_LK_COUNT   = 2*ISS_PER_CYCLE;
 
   localparam RFILE_RD_PORTS = 2*ISS_PER_CYCLE;
   localparam RFILE_WR_PORTS = ROB_EXT_COUNT;
@@ -104,14 +105,17 @@ module pipeline#(
   wire [ROB_DEPTHLOG2-1:0]     iss_ls_rob_slot;
   wire [31:0]                  iss_ls_A;
   wire [31:0]                  iss_ls_B;
+  fwd_info_t                   iss_ls_fwd_info;
   wire                         iss_ls_inst_valid;
   wire [ROB_DEPTHLOG2-1:0]     iss_ex_rob_slot[EX_UNITS];
   wire [31:0]                  iss_ex_A[EX_UNITS];
   wire [31:0]                  iss_ex_B[EX_UNITS];
+  fwd_info_t                   iss_ex_fwd_info[EX_UNITS];
   wire                         iss_ex_inst_valid[EX_UNITS];
   wire [ROB_DEPTHLOG2-1:0]     iss_exmul1_rob_slot;
   wire [31:0]                  iss_exmul1_A;
   wire [31:0]                  iss_exmul1_B;
+  fwd_info_t                   iss_exmul1_fwd_info;
   wire                         iss_exmul1_inst_valid;
 
   // Outputs from branch unit
@@ -121,25 +125,32 @@ module pipeline#(
   wire                         branch_load_pc;
   wire [31:0]                  branch_new_pc;
   wire                         branch_flush;
+  wire [ROB_DEPTHLOG2-1:0]     branch_rob_dt_idx_a;
+  wire [ROB_DEPTHLOG2-1:0]     branch_rob_dt_idx_b;
 
   // Outputs from LS
   wire                         ls_ready;
   rob_entry_t                  ls_rob_wr_data;
   wire                         ls_rob_wr_valid;
   wire [ROB_DEPTHLOG2-1:0]     ls_rob_wr_slot;
+  wire [ROB_DEPTHLOG2-1:0]     ls_rob_dt_idx_a;
+  wire [ROB_DEPTHLOG2-1:0]     ls_rob_dt_idx_b;
 
   // Outputs from EX1..EX_UNITS
   wire                         ex_ready[EX_UNITS];
   rob_entry_t                  ex_rob_wr_data[EX_UNITS];
   wire                         ex_rob_wr_valid[EX_UNITS];
   wire [ROB_DEPTHLOG2-1:0]     ex_rob_wr_slot[EX_UNITS];
-
+  wire [ROB_DEPTHLOG2-1:0]     ex_rob_dt_idx_a[EX_UNITS];
+  wire [ROB_DEPTHLOG2-1:0]     ex_rob_dt_idx_b[EX_UNITS];
 
   // Outputs from EXMUL1
   wire                         exmul1_ready;
   rob_entry_t                  exmul1_rob_wr_data;
   wire                         exmul1_rob_wr_valid;
   wire [ROB_DEPTHLOG2-1:0]     exmul1_rob_wr_slot;
+  wire [ROB_DEPTHLOG2-1:0]     exmul1_rob_dt_idx_a;
+  wire [ROB_DEPTHLOG2-1:0]     exmul1_rob_dt_idx_b;
 
   // Outputs from ROB
   rob_entry_t                  rob_slot_data[ROB_EXT_COUNT];
@@ -151,8 +162,22 @@ module pipeline#(
   wire                         rob_as_bval_valid[ROB_AS_COUNT];
   wire                         rob_as_aval_present[ROB_AS_COUNT];
   wire                         rob_as_bval_present[ROB_AS_COUNT];
+  wire                         rob_as_aval_transit[ROB_AS_COUNT];
+  wire                         rob_as_bval_transit[ROB_AS_COUNT];
+  wire [ROB_DEPTHLOG2-1:0]     rob_as_aval_idx[ROB_AS_COUNT];
+  wire [ROB_DEPTHLOG2-1:0]     rob_as_bval_idx[ROB_AS_COUNT];
   wire                         rob_slot_valid[ROB_EXT_COUNT];
   wire [ROB_DEPTHLOG2:0]       rob_used_count;
+  wire [31:0]                  rob_dt_result[ROB_LK_COUNT];
+
+  wire [31:0]                  rob_ls_dt_result_a;
+  wire [31:0]                  rob_ls_dt_result_b;
+  wire [31:0]                  rob_exmul1_dt_result_a;
+  wire [31:0]                  rob_exmul1_dt_result_b;
+  wire [31:0]                  rob_branch_dt_result_a;
+  wire [31:0]                  rob_branch_dt_result_b;
+  wire [31:0]                  rob_ex_dt_result_a[EX_UNITS];
+  wire [31:0]                  rob_ex_dt_result_b[EX_UNITS];
 
   // Outputs from WB
   wire                         wrrob_consume;
@@ -162,6 +187,9 @@ module pipeline#(
   rob_entry_t                  ex_agg_rob_wr_data[ROB_WR_COUNT];
   wire [ROB_DEPTHLOG2-1:0]     ex_agg_rob_wr_slot[ROB_WR_COUNT];
   wire                         ex_agg_rob_wr_valid[ROB_WR_COUNT];
+  wire [ROB_DEPTHLOG2-1:0]     ex_agg_rob_transit_idx[ROB_WR_COUNT];
+  wire                         ex_agg_rob_transit_idx_valid[ROB_WR_COUNT];
+  wire [ROB_DEPTHLOG2-1:0]     ex_agg_rob_dt_idx[ROB_LK_COUNT];
 
   genvar                       i;
 
@@ -192,6 +220,51 @@ module pipeline#(
     end
   endgenerate
 
+  assign ex_agg_rob_transit_idx[0]  = iss_ls_rob_slot;
+  assign ex_agg_rob_transit_idx[1]  = iss_exmul1_rob_slot;
+  assign ex_agg_rob_transit_idx[2]  = branch_rob_wr_slot;
+  generate
+    for (i = 0; i < EX_UNITS; i++) begin : GEN_EX_ROB_TRANSIT_IDX
+      assign ex_agg_rob_transit_idx[3+i]  = iss_ex_rob_slot[i];
+    end
+  endgenerate
+
+  // Only EX units are guaranteed to yield a result in exactly one cycle,
+  // so don't mark any other one as in transit.
+  assign ex_agg_rob_transit_idx_valid[0]  = 1'b0 & iss_ls_inst_valid;
+  assign ex_agg_rob_transit_idx_valid[1]  = 1'b0 & iss_exmul1_inst_valid;
+  assign ex_agg_rob_transit_idx_valid[2]  = 1'b0;
+  generate
+    for (i = 0; i < EX_UNITS; i++) begin : GEN_EX_ROB_TRANSIT_IDX_V
+      assign ex_agg_rob_transit_idx_valid[3+i]  = ~iss_ex_inst[i].can_inval & iss_ex_inst_valid[i];
+    end
+  endgenerate
+
+  assign ex_agg_rob_dt_idx[0]  = ls_rob_dt_idx_a;
+  assign ex_agg_rob_dt_idx[1]  = ls_rob_dt_idx_b;
+  assign ex_agg_rob_dt_idx[2]  = exmul1_rob_dt_idx_a;
+  assign ex_agg_rob_dt_idx[3]  = exmul1_rob_dt_idx_b;
+  assign ex_agg_rob_dt_idx[4]  = branch_rob_dt_idx_a;
+  assign ex_agg_rob_dt_idx[5]  = branch_rob_dt_idx_b;
+  generate
+    for (i = 0; i < EX_UNITS; i++) begin : GEN_EX_ROB_DT_QUERY_IDX
+      assign ex_agg_rob_dt_idx[6+i*2]  = ex_rob_dt_idx_a[i];
+      assign ex_agg_rob_dt_idx[7+i*2]  = ex_rob_dt_idx_b[i];
+    end
+  endgenerate
+
+  assign rob_ls_dt_result_a      = rob_dt_result[0];
+  assign rob_ls_dt_result_b      = rob_dt_result[1];
+  assign rob_exmul1_dt_result_a  = rob_dt_result[2];
+  assign rob_exmul1_dt_result_b  = rob_dt_result[3];
+  assign rob_branch_dt_result_a  = rob_dt_result[4];
+  assign rob_branch_dt_result_b  = rob_dt_result[5];
+  generate
+    for (i = 0; i < EX_UNITS; i++) begin : GEN_EX_ROB_DT_RES
+      assign rob_ex_dt_result_a[i]  = rob_dt_result[6+i*2];
+      assign rob_ex_dt_result_b[i]  = rob_dt_result[7+i*2];
+    end
+  endgenerate
 
   // Aggregate IF outputs
   assign if_inst_word_r[0]        = if_inst_word0_r;
@@ -308,14 +381,17 @@ module pipeline#(
           .ls_rob_slot                  (iss_ls_rob_slot),
           .ls_A                         (iss_ls_A),
           .ls_B                         (iss_ls_B),
+          .ls_fwd_info                  (iss_ls_fwd_info),
           .ls_inst_valid                (iss_ls_inst_valid),
           .ex_rob_slot                  (iss_ex_rob_slot),
           .ex_A                         (iss_ex_A),
           .ex_B                         (iss_ex_B),
+          .ex_fwd_info                  (iss_ex_fwd_info),
           .ex_inst_valid                (iss_ex_inst_valid),
           .exmul1_rob_slot              (iss_exmul1_rob_slot),
           .exmul1_A                     (iss_exmul1_A),
           .exmul1_B                     (iss_exmul1_B),
+          .exmul1_fwd_info              (iss_exmul1_fwd_info),
           .exmul1_inst_valid            (iss_exmul1_inst_valid),
           .new_pc                       (branch_new_pc),
           .new_pc_valid                 (branch_load_pc),
@@ -332,6 +408,10 @@ module pipeline#(
           .as_bval_valid                (rob_as_bval_valid),
           .as_aval_present              (rob_as_aval_present),
           .as_bval_present              (rob_as_bval_present),
+          .as_aval_transit              (rob_as_aval_transit),
+          .as_bval_transit              (rob_as_bval_transit),
+          .as_aval_idx                  (rob_as_aval_idx),
+          .as_bval_idx                  (rob_as_bval_idx),
           .ls_ready                     (ls_ready),
           .ex_ready                     (ex_ready),
           .exmul1_ready                 (exmul1_ready),
@@ -345,11 +425,14 @@ module pipeline#(
   LS(
                 // Interfaces
                 .inst                   (iss_ls_inst),
+                .fwd_info               (iss_ls_fwd_info),
                 .rob_data               (ls_rob_wr_data),
                 // Outputs
                 .ready                  (ls_ready),
                 .rob_data_valid         (ls_rob_wr_valid),
                 .rob_data_idx           (ls_rob_wr_slot),
+                .A_lookup_idx           (ls_rob_dt_idx_a),
+                .B_lookup_idx           (ls_rob_dt_idx_b),
                 .cache_rd               (dcache_rd),
                 .cache_wr               (dcache_wr),
                 .cache_addr             (dcache_addr),
@@ -361,6 +444,8 @@ module pipeline#(
                 .inst_valid             (iss_ls_inst_valid),
                 .A                      (iss_ls_A),
                 .B                      (iss_ls_B),
+                .A_fwd                  (rob_ls_dt_result_a),
+                .B_fwd                  (rob_ls_dt_result_b),
                 .rob_slot               (iss_ls_rob_slot),
                 .cache_data             (dcache_data),
                 .cache_waitrequest      (dcache_waitrequest));
@@ -373,17 +458,22 @@ module pipeline#(
       EX(
           // Interfaces
           .inst                  (iss_ex_inst[i]),
+          .fwd_info              (iss_ex_fwd_info[i]),
           .rob_data              (ex_rob_wr_data[i]),
           // Outputs
           .ready                 (ex_ready[i]),
           .rob_data_valid        (ex_rob_wr_valid[i]),
           .rob_data_idx          (ex_rob_wr_slot[i]),
+          .A_lookup_idx          (ex_rob_dt_idx_a[i]),
+          .B_lookup_idx          (ex_rob_dt_idx_b[i]),
           // Inputs
           .clock                 (clock),
           .reset_n               (reset_n),
           .inst_valid            (iss_ex_inst_valid[i]),
           .A                     (iss_ex_A[i]),
           .B                     (iss_ex_B[i]),
+          .A_fwd                 (rob_ex_dt_result_a[i]),
+          .B_fwd                 (rob_ex_dt_result_b[i]),
           .rob_slot              (iss_ex_rob_slot[i]));
     end
   endgenerate
@@ -394,17 +484,22 @@ module pipeline#(
   EXMUL1(
                         // Interfaces
                         .inst           (iss_exmul1_inst),
+                        .fwd_info       (iss_exmul1_fwd_info),
                         .rob_data       (exmul1_rob_wr_data),
                         // Outputs
                         .ready          (exmul1_ready),
                         .rob_data_valid (exmul1_rob_wr_valid),
                         .rob_data_idx   (exmul1_rob_wr_slot),
+                        .A_lookup_idx   (exmul1_rob_dt_idx_a),
+                        .B_lookup_idx   (exmul1_rob_dt_idx_b),
                         // Inputs
                         .clock          (clock),
                         .reset_n        (reset_n),
                         .inst_valid     (iss_exmul1_inst_valid),
                         .A              (iss_exmul1_A),
                         .B              (iss_exmul1_B),
+                        .A_fwd          (rob_exmul1_dt_result_a),
+                        .B_fwd          (rob_exmul1_dt_result_b),
                         .rob_slot       (iss_exmul1_rob_slot));
 
 
@@ -414,6 +509,7 @@ module pipeline#(
        .INS_COUNT(ROB_INS_COUNT),
        .EXT_COUNT(ROB_EXT_COUNT),
        .AS_COUNT(ROB_AS_COUNT),
+       .LK_COUNT(ROB_LK_COUNT),
        .WR_COUNT(ROB_WR_COUNT))
   ROB (
            // Interfaces
@@ -430,6 +526,11 @@ module pipeline#(
            .as_bval_valid               (rob_as_bval_valid),
            .as_aval_present             (rob_as_aval_present),
            .as_bval_present             (rob_as_bval_present),
+           .as_aval_transit             (rob_as_aval_transit),
+           .as_bval_transit             (rob_as_bval_transit),
+           .as_aval_idx                 (rob_as_aval_idx),
+           .as_bval_idx                 (rob_as_bval_idx),
+           .dt_result                   (rob_dt_result),
            .slot_valid                  (rob_slot_valid),
            .empty                       (rob_empty),
            .used_count                  (rob_used_count),
@@ -443,8 +544,11 @@ module pipeline#(
            .as_query_idx                (issrob_as_query_idx),
            .as_areg                     (issrob_as_areg),
            .as_breg                     (issrob_as_breg),
+           .dt_query_idx                (ex_agg_rob_dt_idx),
            .write_slot                  (ex_agg_rob_wr_slot),
            .write_valid                 (ex_agg_rob_wr_valid),
+           .transit_idx                 (ex_agg_rob_transit_idx),
+           .transit_idx_valid           (ex_agg_rob_transit_idx_valid),
            .consume                     (wrrob_consume),
            .consume_count               (wrrob_consume_count),
            .flush                       (branch_flush),

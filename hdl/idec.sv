@@ -35,12 +35,11 @@ module idec
   reg                        A_reg_valid;
   reg [ 4:0]                 B_reg;
   reg                        B_reg_valid;
-  reg [ 4:0]                 C_reg;
-  reg                        C_reg_valid;
-
 
   reg [ 4:0]                 dest_reg;
   reg                        dest_reg_valid;
+
+  reg                        can_inval;
 
   wire [31:0]                imm;
   wire                       imm_valid;
@@ -91,8 +90,6 @@ module idec
     A_reg_valid     = 1'b0;
     B_reg           = inst_rt;
     B_reg_valid     = 1'b0;
-    C_reg           = inst_rd;
-    C_reg_valid     = 1'b0;
     dest_reg        = inst_rt;
     shamt           = inst_shamt;
     shamt_valid     = 1'b0;
@@ -106,6 +103,7 @@ module idec
     jmp_inst        = 1'b0;
     branch_inst     = 1'b0;
     dest_reg_valid  = 1'b1;
+    can_inval       = 1'b0;
     imm_sext        = 1'b0;
     inst_rformat    = 1'b0;
     inst_iformat    = 1'b1;
@@ -178,20 +176,18 @@ module idec
             A_reg_valid  = 1'b1;
           end
           6'd10: begin // movz
-            // use three operands so it isn't speculative
             alu_inst     = 1'b1;
             alu_op       = OP_MOVZ;
             A_reg_valid  = 1'b1;
             B_reg_valid  = 1'b1;
-            C_reg_valid  = 1'b1;
+            can_inval    = 1'b1;
           end
           6'd11: begin // movn
-            // use three operands so it isn't speculative
             alu_inst     = 1'b1;
             alu_op       = OP_MOVN;
             A_reg_valid  = 1'b1;
             B_reg_valid  = 1'b1;
-            C_reg_valid  = 1'b1;
+            can_inval    = 1'b1;
           end
           6'd13: begin // break
             // XXX: this is not really a break exception; it halts simulation.
@@ -386,7 +382,7 @@ module idec
         inst_iformat = 1'b0;
         inst_jformat = 1'b1;
         dest_reg     = 5'd31;
-	alu_op       = OP_PASS_B;
+	      alu_op       = OP_PASS_B;
         jmp_inst     = 1'b1;
       end
 
@@ -697,11 +693,9 @@ module idec
       di.B_reg           = B_reg;
       di.B_reg_valid     = B_reg_valid;
 
-      di.C_reg           = C_reg;
-      di.C_reg_valid     = C_reg_valid;
-
       di.dest_reg        = dest_reg;
       di.dest_reg_valid  = dest_reg_valid;
+      di.can_inval       = can_inval;
 
       di.imm             = imm;
       di.imm_valid       = imm_valid;

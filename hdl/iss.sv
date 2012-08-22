@@ -25,11 +25,18 @@ module iss#(
   input [31:0]                   as_aval[ISSUE_PER_CYCLE],
   input [31:0]                   as_bval[ISSUE_PER_CYCLE],
 
+  input [ROB_DEPTHLOG2-1:0]      as_aval_idx[ISSUE_PER_CYCLE],
+  input [ROB_DEPTHLOG2-1:0]      as_bval_idx[ISSUE_PER_CYCLE],
+
   input                          as_aval_valid[ISSUE_PER_CYCLE],
   input                          as_bval_valid[ISSUE_PER_CYCLE],
 
   input                          as_aval_present[ISSUE_PER_CYCLE],
   input                          as_bval_present[ISSUE_PER_CYCLE],
+
+  input                          as_aval_transit[ISSUE_PER_CYCLE],
+  input                          as_bval_transit[ISSUE_PER_CYCLE],
+
 
   // ROB store interface for "branch unit"
   output [ROB_DEPTHLOG2-1:0]     wr_slot,
@@ -40,6 +47,7 @@ module iss#(
   output reg [ROB_DEPTHLOG2-1:0] ls_rob_slot,
   output reg [31:0]              ls_A,
   output reg [31:0]              ls_B,
+  output                         fwd_info_t ls_fwd_info,
   output                         dec_inst_t ls_inst,
   output reg                     ls_inst_valid,
   input                          ls_ready,
@@ -48,6 +56,7 @@ module iss#(
   output reg [ROB_DEPTHLOG2-1:0] ex_rob_slot[EX_UNITS],
   output reg [31:0]              ex_A[EX_UNITS],
   output reg [31:0]              ex_B[EX_UNITS],
+  output                         fwd_info_t ex_fwd_info[EX_UNITS],
   output                         dec_inst_t ex_inst[EX_UNITS],
   output reg                     ex_inst_valid[EX_UNITS],
   input                          ex_ready[EX_UNITS],
@@ -56,10 +65,10 @@ module iss#(
   output reg [ROB_DEPTHLOG2-1:0] exmul1_rob_slot,
   output reg [31:0]              exmul1_A,
   output reg [31:0]              exmul1_B,
+  output                         fwd_info_t exmul1_fwd_info,
   output                         dec_inst_t exmul1_inst,
   output reg                     exmul1_inst_valid,
   input                          exmul1_ready,
-
 
   // IF interface
   input                          branch_stall,
@@ -79,6 +88,7 @@ module iss#(
   wire          di_A_valid[ISSUE_PER_CYCLE];
   wire          di_B_valid[ISSUE_PER_CYCLE];
   wire          di_ops_ready[ISSUE_PER_CYCLE];
+  wire          di_ops_almost_ready[ISSUE_PER_CYCLE];
 
   dec_inst_t    bi;
 
@@ -179,6 +189,9 @@ module iss#(
       assign di_ops_ready[i]  =  (di_A_valid[i] | ~di[i].A_reg_valid)
                                & (di_B_valid[i] | ~di[i].B_reg_valid)
                                ;
+      assign di_ops_almost_ready[i]  =  (~di[i].A_reg_valid | as_aval_transit[i])
+                                      & (~di[i].B_reg_valid | as_bval_transit[i])
+                                      ;
     end
   endgenerate
 
@@ -230,12 +243,27 @@ module iss#(
       ex_rob_slot[i]   = rob_slot[0];
     end
 
+    ls_fwd_info.A_fwd          = ~di_A_valid[0];
+    ls_fwd_info.A_rob_idx      = as_aval_idx[0];
+    ls_fwd_info.B_fwd          = ~di_B_valid[0];
+    ls_fwd_info.B_rob_idx      = as_bval_idx[0];
+    exmul1_fwd_info.A_fwd      = ~di_A_valid[0];
+    exmul1_fwd_info.A_rob_idx  = as_aval_idx[0];
+    exmul1_fwd_info.B_fwd      = ~di_B_valid[0];
+    exmul1_fwd_info.B_rob_idx  = as_bval_idx[0];
+    for (integer i = 0; i < EX_UNITS; i++) begin
+      ex_fwd_info[i].A_fwd      = ~di_A_valid[0];
+      ex_fwd_info[i].A_rob_idx  = as_aval_idx[0];
+      ex_fwd_info[i].B_fwd      = ~di_B_valid[0];
+      ex_fwd_info[i].B_rob_idx  = as_bval_idx[0];
+    end
+
 
     // XXX: directly wire up to output foo_inst signals instead of using internal '_used' vars
 
-    bi_inst_valid      = 1'b0;
-    ls_inst_valid      = 1'b0;
-    exmul1_inst_valid  = 1'b0;
+      bi_inst_valid          = 1'b0;
+      ls_inst_valid          = 1'b0;
+      exmul1_inst_valid      = 1'b0;
     for (integer i = 0; i < EX_UNITS; i++)
       ex_inst_valid[i] = 1'b0;
 
@@ -246,9 +274,14 @@ module iss#(
         break;
       end
 
-      if (!di_ops_ready[i]) begin
+      if   (!di_ops_ready[i]
+        && !(di_ops_almost_ready[i] && !(di[i].branch_inst || di[i].jmp_inst))) begin
         // If the instruction is still missing operands then we also stop
         // here since issue happens strictly in order.
+        //
+        // Alternatively, if the operands are almost ready and this is not
+        // going to go to the branch unit, we can issue early and set up
+        // forwarding.
         break;
       end
 
@@ -274,44 +307,60 @@ module iss#(
         consumed++;
       end
       else if ((di[i].load_inst | di[i].store_inst) && !ls_used && ls_ready) begin
-        ls_used      = 1'b1;
-        ls_inst      = di[i];
-        ls_A         = di_A[i];
-        ls_B         = di_B[i];
-        ls_rob_slot  = rob_slot[i];
-	      ls_speculative = spec;
+        ls_used                 = 1'b1;
+        ls_inst                 = di[i];
+        ls_A                    = di_A[i];
+        ls_B                    = di_B[i];
+        ls_rob_slot             = rob_slot[i];
+	      ls_speculative          = spec;
+        ls_fwd_info.A_fwd       = ~di_A_valid[i];
+        ls_fwd_info.A_rob_slot  = as_aval_idx[i];
+        ls_fwd_info.B_fwd       = ~di_B_valid[i];
+        ls_fwd_info.B_rob_slot  = as_bval_idx[i];
         consumed++;
       end
       else if (di[i].muldiv_inst && !exmul1_used && exmul1_ready) begin
-        exmul1_used      = 1'b1;
-        exmul1_inst      = di[i];
-        exmul1_A         = di_A[i];
-        exmul1_B         = di_B[i];
-        exmul1_rob_slot  = rob_slot[i];
-	      exmul1_speculative = spec;
+        exmul1_used                 = 1'b1;
+        exmul1_inst                 = di[i];
+        exmul1_A                    = di_A[i];
+        exmul1_B                    = di_B[i];
+        exmul1_rob_slot             = rob_slot[i];
+	      exmul1_speculative          = spec;
+        exmul1_fwd_info.A_fwd       = ~di_A_valid[i];
+        exmul1_fwd_info.A_rob_slot  = as_aval_idx[i];
+        exmul1_fwd_info.B_fwd       = ~di_B_valid[i];
+        exmul1_fwd_info.B_rob_slot  = as_bval_idx[i];
         consumed++;
       end
       else if (di[i].alu_inst && ex_unit_ready(ex_used, ex_ready)) begin
         for (integer k = 0; k < EX_UNITS; k++) begin
           if (!ex_used[k] && ex_ready[k]) begin
-            ex_used[k]         = 1'b1;
-            ex_inst[k]         = di[i];
-            ex_A[k]            = di_A[i];
-            ex_B[k]            = di_B[i];
-            ex_rob_slot[k]     = rob_slot[i];
-	          ex_speculative[k]  = spec;
+            ex_used[k]                 = 1'b1;
+            ex_inst[k]                 = di[i];
+            ex_A[k]                    = di_A[i];
+            ex_B[k]                    = di_B[i];
+            ex_rob_slot[k]             = rob_slot[i];
+	          ex_speculative[k]          = spec;
+            ex_fwd_info[k].A_fwd       = ~di_A_valid[i];
+            ex_fwd_info[k].A_rob_slot  = as_aval_idx[i];
+            ex_fwd_info[k].B_fwd       = ~di_B_valid[i];
+            ex_fwd_info[k].B_rob_slot  = as_bval_idx[i];
             break;
           end
         end
         consumed++;
       end
       else if (di[i].alu_inst && !exmul1_used && exmul1_ready) begin
-        exmul1_used      = 1'b1;
-        exmul1_inst      = di[i];
-        exmul1_A         = di_A[i];
-        exmul1_B         = di_B[i];
-        exmul1_rob_slot  = rob_slot[i];
-	      exmul1_speculative = spec;
+        exmul1_used                 = 1'b1;
+        exmul1_inst                 = di[i];
+        exmul1_A                    = di_A[i];
+        exmul1_B                    = di_B[i];
+        exmul1_rob_slot             = rob_slot[i];
+	      exmul1_speculative          = spec;
+        exmul1_fwd_info.A_fwd       = ~di_A_valid[i];
+        exmul1_fwd_info.A_rob_slot  = as_aval_idx[i];
+        exmul1_fwd_info.B_fwd       = ~di_B_valid[i];
+        exmul1_fwd_info.B_rob_slot  = as_bval_idx[i];
         consumed++;
       end
       else begin
@@ -437,21 +486,29 @@ module iss#(
     $fwrite(trace_file, "\n");
 
     if (ls_inst_valid)
-      $fwrite(trace_file, "%d: ISS: issuing to LS:     pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
-        $time, ls_inst.pc, ls_A, ls_B, ls_rob_slot, ls_inst.inst_word);
+      $fwrite(trace_file, "%d: ISS: issuing to LS:     pc=%x, A=%x (fwd=%b), B=%x (fwd=%b), rob_slot=%d, iw: %x\n",
+              $time, ls_inst.pc, ls_A, ls_fwd_info.A_fwd & ls_inst.A_reg_valid,
+              ls_B, ls_fwd_info.B_fwd & ls_inst.B_reg_valid,
+              ls_rob_slot, ls_inst.inst_word);
 
     for (integer i = 0; i < EX_UNITS; i++)
       if (ex_inst_valid[i])
-        $fwrite(trace_file, "%d: ISS: issuing to EX%1d:    pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
-                $time, i, ex_inst[i].pc, ex_A[i], ex_B[i], ex_rob_slot[i], ex_inst[i].inst_word);
+        $fwrite(trace_file, "%d: ISS: issuing to EX%1d:    pc=%x, A=%x (fwd=%b), B=%x (fwd=%b), rob_slot=%d, iw: %x\n",
+                $time, i, ex_inst[i].pc,
+                ex_A[i], ex_fwd_info[i].A_fwd & ex_inst[i].A_reg_valid,
+                ex_B[i], ex_fwd_info[i].B_fwd & ex_inst[i].B_reg_valid,
+                ex_rob_slot[i], ex_inst[i].inst_word);
 
     if (exmul1_inst_valid)
-      $fwrite(trace_file, "%d: ISS: issuing to EXMUL1: pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
-        $time, exmul1_inst.pc, exmul1_A, exmul1_B, exmul1_rob_slot, exmul1_inst.inst_word);
+      $fwrite(trace_file, "%d: ISS: issuing to EXMUL1: pc=%x, A=%x (fwd=%b), B=%x (fwd=%b), rob_slot=%d, iw: %x\n",
+              $time, exmul1_inst.pc,
+              exmul1_A, exmul1_fwd_info.A_fwd & exmul1_inst.A_reg_valid,
+              exmul1_B, exmul1_fwd_info.B_fwd & exmul1_inst.B_reg_valid,
+              exmul1_rob_slot, exmul1_inst.inst_word);
 
     if (bi_inst_valid)
       $fwrite(trace_file, "%d: ISS: issuing to BRANCH: pc=%x, A=%x, B=%x, rob_slot=%d, iw: %x\n",
-        $time, bi.pc, branch_A, branch_B, branch_rob_slot, bi.inst_word);
+              $time, bi.pc, branch_A, branch_B, branch_rob_slot, bi.inst_word);
   end
 `endif
 endmodule

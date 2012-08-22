@@ -18,12 +18,18 @@ module ls_wrapper #(
   output [ROB_DEPTHLOG2-1:0] rob_data_idx,
   output                     rob_entry_t rob_data,
 
+  input                      fwd_info_t fwd_info,
+  output [ROB_DEPTHLOG2-1:0] A_lookup_idx,
+  output [ROB_DEPTHLOG2-1:0] B_lookup_idx,
+  input [31:0]               A_fwd,
+  input [31:0]               B_fwd,
+
   output                     cache_rd,
   output                     cache_wr,
   output [31:0]              cache_addr,
   output [31:0]              cache_wr_data,
   output [ 3:0]              cache_wr_be,
-  input  [31:0]              cache_data,
+  input [31:0]               cache_data,
   input                      cache_waitrequest
 );
 
@@ -47,6 +53,8 @@ module ls_wrapper #(
   reg           inst_valid_r;
   reg    [31:0] A_r;
   reg    [31:0] B_r;
+  wire   [31:0] A_i;
+  wire   [31:0] B_i;
   reg    [31:0] B_r_r;
   reg           inst_valid_r_r;
   reg [ROB_DEPTHLOG2-1:0] rob_slot_r;
@@ -68,6 +76,11 @@ module ls_wrapper #(
       rob_slot_r   <= rob_slot;
     end
 
+  assign A_lookup_idx  = fwd_info.A_rob_slot;
+  assign B_lookup_idx  = fwd_info.B_rob_slot;
+
+  assign A_i  = (fwd_info.A_fwd) ? A_fwd : A_r;
+  assign B_i  = (fwd_info.B_fwd) ? B_fwd : B_r;
 
   // Reverse pipeline register between LS and AGU
   always_ff @(posedge clock, negedge reset_n)
@@ -91,7 +104,7 @@ module ls_wrapper #(
       agu_address_r  <= agu_address;
       load_inst_r    <= load_inst_i;
       store_inst_r   <= store_inst_i;
-      B_r_r          <= B_r;
+      B_r_r          <= B_i;
       inst_r_r       <= inst_r;
       rob_slot_r_r   <= rob_slot_r;
       inst_valid_r_r <= inst_valid_r;
@@ -114,7 +127,7 @@ module ls_wrapper #(
    .clock             (clock),
    .reset_n           (reset_n),
 
-   .A_val             (A_r),
+   .A_val             (A_i),
 
    .imm               (inst_r.imm),
    .imm_valid         (inst_r.imm_valid),
@@ -126,7 +139,7 @@ module ls_wrapper #(
   (
    .clock             (clock),
    .reset_n           (reset_n),
- 
+
    .pc                (inst_r_r.pc),
 
    .cache_rd          (cache_rd),

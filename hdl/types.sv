@@ -76,13 +76,10 @@ package pipTypes;
     bit [ 4:0]   B_reg;
     bit          B_reg_valid;
 
-    // extra source reg (6 bits)
-    bit [ 4:0]   C_reg;
-    bit          C_reg_valid;
-
     // destination register (6 bits)
     bit [ 4:0]   dest_reg;
     bit          dest_reg_valid;
+    bit          can_inval; // instruction can invalidate dest_reg in flight
 
     // immediate value (33 bits)
     bit [31:0]   imm;
@@ -122,34 +119,6 @@ package pipTypes;
 
 
   typedef struct {
-    bit          A_fwd_from_rfile;
-    bit [ 3:0]   A_fwd_rob_idx;
-    bit          B_fwd_from_rfile;
-    bit [ 3:0]   B_fwd_rob_idx;
-    bit          C_fwd_from_rfile;
-    bit [ 3:0]   C_fwd_rob_idx;
-  } fwd_info_t;
-
-
-  typedef struct {
-    bit          ready;
-    bit          almost_ready;
-  } fwd_status_t;
-
-
-  typedef struct {
-    bit [ 4:0]   rob_entry;
-    bit          rfile;
-  } rob_reg_info_t;
-
-
-  typedef struct {
-    bit [ 4:0]   dest_reg;
-    bit          dest_reg_valid;
-  } dest_reg_t;
-
-
-  typedef struct {
     bit [31:0]   result_hi;
     bit [31:0]   result_lo;
     bit [ 4:0]   dest_reg;
@@ -157,6 +126,12 @@ package pipTypes;
     bit          pc_valid; // for flushing
   } rob_entry_t;
 
+  typedef struct {
+    bit [6:0]    A_rob_slot;
+    bit [6:0]    B_rob_slot;
+    bit          A_fwd;
+    bit          B_fwd;
+  } fwd_info_t;
 
   typedef struct {
     bit [6:0]    rob_slot;
