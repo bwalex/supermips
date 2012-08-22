@@ -316,13 +316,8 @@ module iss#(
         ls_B                    = di_B[i];
         ls_rob_slot             = rob_slot[i];
 	      ls_speculative          = spec;
-`ifdef ROB_FORWARDING_ENABLE
         ls_fwd_info.A_fwd       = ~di_A_valid[i];
         ls_fwd_info.B_fwd       = ~di_B_valid[i];
-`else
-        ls_fwd_info.A_fwd       = 1'b0;
-        ls_fwd_info.B_fwd       = 1'b0;
-`endif
         ls_fwd_info.A_rob_slot  = as_aval_idx[i];
         ls_fwd_info.B_rob_slot  = as_bval_idx[i];
         consumed++;
@@ -334,13 +329,8 @@ module iss#(
         exmul1_B                    = di_B[i];
         exmul1_rob_slot             = rob_slot[i];
 	      exmul1_speculative          = spec;
-`ifdef ROB_FORWARDING_ENABLE
         exmul1_fwd_info.A_fwd       = ~di_A_valid[i];
         exmul1_fwd_info.B_fwd       = ~di_B_valid[i];
-`else
-        exmul1_fwd_info.A_fwd       = 1'b0;
-        exmul1_fwd_info.B_fwd       = 1'b0;
-`endif
         exmul1_fwd_info.A_rob_slot  = as_aval_idx[i];
         exmul1_fwd_info.B_rob_slot  = as_bval_idx[i];
         consumed++;
@@ -354,13 +344,8 @@ module iss#(
             ex_B[k]                    = di_B[i];
             ex_rob_slot[k]             = rob_slot[i];
 	          ex_speculative[k]          = spec;
-`ifdef ROB_FORWARDING_ENABLE
             ex_fwd_info[k].A_fwd       = ~di_A_valid[i];
             ex_fwd_info[k].B_fwd       = ~di_B_valid[i];
-`else
-            ex_fwd_info[k].A_fwd  = 1'b0;
-            ex_fwd_info[k].B_fwd  = 1'b0;
-`endif
             ex_fwd_info[k].A_rob_slot  = as_aval_idx[i];
             ex_fwd_info[k].B_rob_slot  = as_bval_idx[i];
             break;
@@ -375,13 +360,8 @@ module iss#(
         exmul1_B                    = di_B[i];
         exmul1_rob_slot             = rob_slot[i];
 	      exmul1_speculative          = spec;
-`ifdef ROB_FORWARDING_ENABLE
         exmul1_fwd_info.A_fwd       = ~di_A_valid[i];
         exmul1_fwd_info.B_fwd       = ~di_B_valid[i];
-`else
-        exmul1_fwd_info.A_fwd       = 1'b0;
-        exmul1_fwd_info.B_fwd       = 1'b0;
-`endif
         exmul1_fwd_info.A_rob_slot  = as_aval_idx[i];
         exmul1_fwd_info.B_rob_slot  = as_bval_idx[i];
         consumed++;
