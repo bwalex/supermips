@@ -27,7 +27,7 @@ vcs:
 	@echo assign $(MEM_FILE)  top/MEM_FILE   > .vcs.params
 	@echo assign $(EX_UNITS)  top/EX_UNITS  >> .vcs.params
 	@echo assign $(IQ_DEPTH)  top/IQ_DEPTH  >> .vcs.params
-	@echo assign $(ROB_DEPTH) top/ROB_DEPTH >> .vcs_params
+	@echo assign $(ROB_DEPTH) top/ROB_DEPTH >> .vcs.params
 	vcs $(VCS_FLAGS) -sverilog \
 		+define+REAL_CACHE \
 		+define+ROB_TRACE_$(TRACE) \
