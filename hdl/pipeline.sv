@@ -369,7 +369,7 @@ module pipeline#(
               .new_count                (idiq_new_count),
               .ext_enable               (issiq_ext_enable),
               .ext_consumed             (issiq_ext_consumed),
-              .flush                    (branch_flush)
+              .flush                    (branch_flush),
               .flush_stream             (branch_flush_stream));
 
 
