@@ -305,7 +305,7 @@ module iss#(
       end
 
       if ((di[i].branch_inst | di[i].jmp_inst) && !b_used && branch_ready
-`ifndef FAST_BRANCH_ENABLE
+`ifdef FAST_BRANCH_DISABLE
           // don't allow branch to proceed if we don't have the BDS insn available and ready, too
           && i != (ISSUE_PER_CYCLE-1) && ext_valid[i+1] && di_ops_ready[i+1]
 	  // don't allow branch to proceed if we can't schedule the BDS, either
@@ -425,7 +425,7 @@ module iss#(
     else
       branch_stall_d1 <= branch_stall;
 
-  assign branch_ready = ~branch_stall_d1;
+  assign branch_ready = ~branch_stall_d1 & ~bds_missing_r;
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n) begin
