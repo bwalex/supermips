@@ -188,6 +188,7 @@ module rob #(
       if (flush) begin
         k  = flush_idx;
         k++;
+        k++;
         while ((buffer[k].stream == buffer[flush_idx].stream) && k != flush_idx) begin
           kill[k]  <= 1'b1;
           valid[k] <= 1'b1;
