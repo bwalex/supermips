@@ -113,7 +113,7 @@ module rob #(
       if (as_query_idx[i] != ext_ptr) begin
         comp = ext_ptr-1;
         for (k = as_query_idx[i]-1; k != comp; k--) begin
-          if (buffer[k].dest_reg == as_areg[i] && buffer[k].dest_reg_valid) begin
+          if (!kill[k] && buffer[k].dest_reg == as_areg[i] && buffer[k].dest_reg_valid) begin
             as_aval[i]          = buffer[k].result_lo;
             as_aval_valid[i]    = valid[k];
             as_aval_present[i]  = 1'b1;
@@ -138,7 +138,7 @@ module rob #(
       if (as_query_idx[i] != ext_ptr) begin
         comp = ext_ptr-1;
         for (k = as_query_idx[i]-1; k != comp; k--) begin
-          if (buffer[k].dest_reg == as_breg[i] && buffer[k].dest_reg_valid) begin
+          if (!kill[k] && buffer[k].dest_reg == as_breg[i] && buffer[k].dest_reg_valid) begin
             as_bval[i]          = buffer[k].result_lo;
             as_bval_valid[i]    = valid[k];
             as_bval_present[i]  = 1'b1;
@@ -188,9 +188,10 @@ module rob #(
       if (flush) begin
         k  = flush_idx;
         k++;
-        while (buffer[k].stream == buffer[flush_idx].stream) begin
+        while ((buffer[k].stream == buffer[flush_idx].stream) && k != flush_idx) begin
           kill[k]  <= 1'b1;
           valid[k] <= 1'b1;
+          k++;
         end
       end
     end
