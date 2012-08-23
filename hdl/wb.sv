@@ -11,6 +11,7 @@ module wb #(
   output reg [COUNT_WIDTH-1:0] consume_count,
   input                        rob_entry_t slot_data[RETIRE_COUNT],
   input                        slot_valid[RETIRE_COUNT],
+  input                        slot_kill[RETIRE_COUNT],
   input                        empty,
 
   output [ 4:0]                rfile_wr_addr[RETIRE_COUNT],
@@ -32,9 +33,13 @@ module wb #(
 
   generate
     for (i = 0; i < RETIRE_COUNT; i++) begin : RFILE_WR_SIGNALS
-      assign rfile_wr_addr[i]    = slot_data[i].dest_reg;
-      assign rfile_wr_enable[i]  = slot_data[i].dest_reg_valid & slot_valid[i] & in_order[i];
-      assign rfile_wr_data[i]    = slot_data[i].result_lo;
+      assign rfile_wr_addr[i]    =   slot_data[i].dest_reg;
+      assign rfile_wr_enable[i]  =   slot_data[i].dest_reg_valid
+                                  &  slot_valid[i]
+                                  &  in_order[i]
+                                  & ~slot_kill[i]
+                                  ;
+      assign rfile_wr_data[i]    =   slot_data[i].result_lo;
     end
   endgenerate
 

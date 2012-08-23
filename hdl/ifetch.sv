@@ -20,9 +20,11 @@ module ifetch #(
   output reg              inst_word2_valid_r,
   output reg              inst_word3_valid_r,
 
+  output reg              inst_stream_r,
+
   input                   stall,
   input                   load_pc,
-  input      [31:0]       new_pc,
+  input [31:0]            new_pc,
 
   output reg [31:0]       pc_out0_r,
   output reg [31:0]       pc_out1_r,
@@ -49,6 +51,8 @@ module ifetch #(
   wire                    inst_word2_valid;
   wire                    inst_word3_valid;
 
+  reg                     inst_stream;
+
   wire [31:0]             pc_out0;
   wire [31:0]             pc_out1;
   wire [31:0]             pc_out2;
@@ -69,6 +73,8 @@ module ifetch #(
       inst_word2_valid_r <= 1'b0;
       inst_word3_valid_r <= 1'b0;
 
+      inst_stream_r       <= 1'b0;
+
       pc_out0_r          <= 32'b0;
       pc_out1_r          <= 32'b0;
       pc_out2_r          <= 32'b0;
@@ -85,19 +91,20 @@ module ifetch #(
       inst_word2_valid_r <= inst_word2_valid;
       inst_word3_valid_r <= inst_word3_valid;
 
+      inst_stream_r       <= inst_stream;
+
       pc_out0_r          <= pc_out0;
       pc_out1_r          <= pc_out1;
       pc_out2_r          <= pc_out2;
       pc_out3_r          <= pc_out3;
     end
-    else if (load_pc) begin
-      inst_word0_valid_r <= 1'b0;
-      inst_word1_valid_r <= 1'b0;
-      inst_word2_valid_r <= 1'b0;
-      inst_word3_valid_r <= 1'b0;
-    end
 
 
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      inst_stream <= 1'b0;
+    else if (load_pc & ~branch_stall)
+      inst_stream <= ~inst_stream;
 
 
   always_ff @(posedge clock, negedge reset_n)
@@ -130,10 +137,10 @@ module ifetch #(
     endcase
 
 
-  assign inst_word0_valid  = (!load_pc) && (!stall_i) && (line_idx == 2'b00);
-  assign inst_word1_valid  = (!load_pc) && (!stall_i) && (line_idx == 2'b01 || inst_word0_valid);
-  assign inst_word2_valid  = (!load_pc) && (!stall_i) && (line_idx == 2'b10 || inst_word1_valid);
-  assign inst_word3_valid  = (!load_pc) && (!stall_i) && (line_idx == 2'b11 || inst_word2_valid);
+  assign inst_word0_valid  = (!stall_i) && (line_idx == 2'b00);
+  assign inst_word1_valid  = (!stall_i) && (line_idx == 2'b01 || inst_word0_valid);
+  assign inst_word2_valid  = (!stall_i) && (line_idx == 2'b10 || inst_word1_valid);
+  assign inst_word3_valid  = (!stall_i) && (line_idx == 2'b11 || inst_word2_valid);
 
 
   assign branch_stall  = cache_waitrequest;

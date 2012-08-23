@@ -9,12 +9,16 @@ module id#(
  input [31:0]              inst_word[4],
  input [31:0]              inst_pc[4],
  input                     inst_word_valid[4],
+ input                     inst_stream,
  output                    stall,
+
+ input                     flush,
+ input                     flush_stream,
 
  // ROB reservation interface + forwarding setup interface
  output [4:0]              dest_reg[4],
  output                    dest_reg_valid[4],
- output dec_inst_t         instructions[4],
+ output                    dec_inst_t instructions[4],
 
  output                    reserve,
  output reg [1:0]          reserve_count,
@@ -30,6 +34,10 @@ module id#(
 
   dec_inst_t dec_inst[4];
   reg         insns_valid;
+
+  reg         flush_stream_r;
+  reg         flush_r;
+
 
   idec dec0
   (
@@ -73,7 +81,23 @@ module id#(
         $time, i, inst_pc[i], inst_word[i], dec_inst[i].pc, inst_word_valid[i]);
     end
   end
-`endif
+`endif //  `ifdef ID_TRACE_ENABLE
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n) begin
+      flush_r        <= 1'b0;
+      flush_stream_r <= 1'b0;
+    end
+    else if (flush && (inst_stream == flush_stream)) begin
+      flush_r        <= flush;
+      flush_stream_r <= flush_stream;
+    end
+    else if (flush_r && (inst_stream != flush_stream_r)) begin
+      flush_r        <= 1'b0;
+      flush_stream_r <= 1'b0;
+    end
+
 
 
   always_comb
@@ -88,8 +112,16 @@ module id#(
     end
 
   assign stall       = rob_full | iq_full;
-  assign reserve     = ~stall   & insns_valid;
-  assign ins_enable  = ~stall   & insns_valid;
+  assign reserve     = ~stall
+                      & insns_valid
+                      & (~flush   | (inst_stream != flush_stream  ))
+                      & (~flush_r | (inst_stream != flush_stream_r))
+                      ;
+  assign ins_enable  = ~stall
+                      & insns_valid
+                      & (~flush   | (inst_stream != flush_stream  ))
+                      & (~flush_r | (inst_stream != flush_stream_r))
+                      ;
 
   assign new_count   = reserve_count;
 
@@ -146,6 +178,12 @@ module id#(
     begin
       new_elements[3].rob_slot  = reserved_slots[3];
       new_elements[3].dec_inst  = dec_inst[3];
+    end
+
+  always_comb
+    begin
+      for (integer i = 0; i < 4; i++)
+        new_elements[i].stream  = inst_stream;
     end
 
 

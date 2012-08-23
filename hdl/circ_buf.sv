@@ -22,6 +22,7 @@ module circ_buf #(
   output                   T out_elements[EXT_COUNT],
 
   input                    flush,
+  input                    flush_stream,
 
   output                   full,
   output                   empty,
@@ -54,32 +55,37 @@ module circ_buf #(
           automatic iq_entry_int_t e = buffer.pop_front();
 
 `ifdef IQ_TRACE_ENABLE
-          $fwrite(trace_file, "%d IQ: extract from slot %d, pc=%x, iw=%x, rob_slot=%d\n",
-                  $time, i, e.dec_inst.pc, e.dec_inst.inst_word, e.rob_slot);
+          $fwrite(trace_file, "%d IQ: extract from slot %d, pc=%x, iw=%x, rob_slot=%d, stream=%b\n",
+                  $time, i, e.dec_inst.pc, e.dec_inst.inst_word, e.rob_slot, e.stream);
 `endif
         end
 
       if (ins_enable_i)
         for (integer i = 0; i <= new_count; i++) begin
-	  automatic iq_entry_int_t e;
-	  e.rob_slot = new_elements[i].rob_slot;
-	  e.dec_inst = new_elements[i].dec_inst;
+          automatic iq_entry_int_t e;
+          e.rob_slot  = new_elements[i].rob_slot;
+          e.dec_inst  = new_elements[i].dec_inst;
+          e.stream    = new_elements[i].stream;
           buffer.push_back(e);
 
 `ifdef IQ_TRACE_ENABLE
-          $fwrite(trace_file, "%d IQ: insert at slot %d, pc=%x, iw=%x, rob_slot=%d\n",
+          $fwrite(trace_file, "%d IQ: insert at slot %d, pc=%x, iw=%x, rob_slot=%d, stream=%b\n",
                   $time,
                   buffer.size()-1, new_elements[i].dec_inst.pc, new_elements[i].dec_inst.inst_word,
-                  new_elements[i].rob_slot);
+                  new_elements[i].rob_slot, new_elements[i].stream);
 `endif
         end
 
       if (flush) begin
 `ifdef IQ_TRACE_ENABLE
-        $fwrite(trace_file, "%d IQ: flush %d instructions\n", $time, buffer.size());
+        integer count  = buffer.size();
 `endif
-
-        buffer  = {};
+        while (buffer[0].stream == flush_stream)
+          buffer.pop_front();
+`ifdef IQ_TRACE_ENABLE
+        $fwrite(trace_file, "%d IQ: flush %d instructions, stream=%b\n",
+                $time, count - buffer.size(), flush_stream);
+`endif
       end
 
       used_count <= buffer.size();
@@ -87,7 +93,8 @@ module circ_buf #(
       for (integer i = 0; i < buffer.size(); i++) begin
         out_elements[i].dec_inst <= buffer[i].dec_inst;
         out_elements[i].rob_slot <= buffer[i].rob_slot;
-	ext_valid[i] <= 1'b1;
+        out_elements[i].stream   <= buffer[i].stream;
+        ext_valid[i]             <= 1'b1;
       end
       for (integer i = buffer.size(); i < EXT_COUNT; i++) begin
         ext_valid[i] <= 1'b0;

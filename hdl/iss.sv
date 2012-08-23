@@ -75,6 +75,8 @@ module iss#(
   output [31:0]                  new_pc,
   output                         new_pc_valid,
   output                         branch_flush,
+  output                         branch_flush_stream,
+  output [ROB_DEPTHLOG2-1:0]     branch_flush_slot,
 
   // Register file interface
   output [ 4:0]                  rd_addr[ISSUE_PER_CYCLE*2],
@@ -95,6 +97,14 @@ module iss#(
   reg           ls_speculative;
   reg           ex_speculative[EX_UNITS];
   reg           exmul1_speculative;
+
+  reg [ISS_PC_LOG2-1:0] branch_idx;
+  reg           bds_issued;
+  reg           bds_issued_d1;
+  reg           bds_missing;
+  reg           bds_missing_r;
+  reg [ROB_DEPTHLOG2-1:0] bds_flush_slot;
+  reg [ROB_DEPTHLOG2-1:0] bds_flush_slot_r;
 
   reg [31:0]    branch_A;
   reg [31:0]    branch_B;
@@ -207,9 +217,10 @@ module iss#(
 
   always_comb begin
     automatic bit b_used, ls_used, ex_used[EX_UNITS], exmul1_used, spec;
-    automatic integer consumed, b_idx;
+    automatic integer consumed;
 
     consumed            = 0;
+    branch_idx          = 'b0;
 
     b_used              = 1'b0;
     ls_used             = 1'b0;
@@ -288,21 +299,23 @@ module iss#(
         break;
       end
 
-      if (b_used && i > (b_idx + 1)) begin
+      if (b_used && i > (branch_idx + 1)) begin
 	      // Anything after the BDS is speculative
 	      spec = 1'b1;
       end
 
       if ((di[i].branch_inst | di[i].jmp_inst) && !b_used && branch_ready
+`ifndef FAST_BRANCH_ENABLE
           // don't allow branch to proceed if we don't have the BDS insn available and ready, too
           && i != (ISSUE_PER_CYCLE-1) && ext_valid[i+1] && di_ops_ready[i+1]
 	  // don't allow branch to proceed if we can't schedule the BDS, either
 	  && ( ((di[i+1].load_inst | di[i+1].store_inst) && !ls_used && ls_ready)
 	    || (di[i+1].muldiv_inst && !exmul1_used && exmul1_ready)
 	    || (di[i+1].alu_inst && (ex_unit_ready(ex_used, ex_ready) || (!exmul1_used && exmul1_ready))) )
+`endif
 	  ) begin
         b_used           = 1'b1;
-	      b_idx            = i;
+        branch_idx       = i;
         bi               = di[i];
         branch_A         = di_A[i];
         branch_B         = di_B[i];
@@ -350,7 +363,7 @@ module iss#(
             ex_fwd_info[k].B_rob_slot  = as_bval_idx[i];
             break;
           end
-        end
+        end // for (integer k = 0; k < EX_UNITS; k++)
         consumed++;
       end
       else if (di[i].alu_inst && !exmul1_used && exmul1_ready) begin
@@ -436,7 +449,13 @@ module iss#(
   assign bi_inst_valid_act   = (branch_stall_d1) ? bi_inst_valid_retained   : bi_inst_valid;
   assign branch_rob_slot_act = (branch_stall_d1) ? branch_rob_slot_retained : branch_rob_slot;
 
-  assign branch_flush = new_pc_valid & ~branch_stall_d1;
+  // Flush only in the first cycle of a taken branch, and only if we aren't missing the BDS
+  //  ... or if we branched some time ago and we only now got the BDS.
+  assign branch_flush  =  (new_pc_valid & ~branch_stall_d1 & ~bds_missing)
+                        | (bds_missing_r & ext_enable)
+                        ;
+  assign branch_flush_stream  = (bds_missing_r) ? insns[0].stream  : insns[branch_idx].stream;
+  assign branch_flush_idx     = (bds_missing_r) ? bds_flush_slot_r : bds_flush_slot;
 
   assign AB_equal  = (branch_A_act == branch_B_act);
   assign A_gtz     = A_gez & ~A_eqz;
@@ -468,9 +487,27 @@ module iss#(
   assign wr_valid                = ~branch_stall & bi_inst_valid_act;
   assign wr_data.result_lo       = pc_plus_8;
   assign wr_data.dest_reg        = bi_act.dest_reg;
-  assign wr_data.dest_reg_valid  = bi_act.dest_reg_valid;
+  assign wr_data.dest_reg_valid  = bi_act.dest_reg_valid; // XXX: addme: & new_pc_valid;
   assign wr_data.pc_valid        = new_pc_valid;
 
+
+  assign bds_missing     = new_pc_valid & bi_inst_valid & (ext_consumed == branch_idx);
+  assign bds_flush_slot  = branch_rob_slot;
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n) begin
+      bds_missing_r    <= 1'b0;
+      bds_flush_slot_r <= 'b0;
+    end
+    else if (branch_flush) begin
+      bds_missing_r    <= 1'b0;
+      bds_flush_slot_r <= 'b0;
+    end
+    else if (bds_missing) begin
+      bds_missing_r    <= 1'b1;
+      bds_flush_slot_r <= bds_flush_slot;
+    end
 
 
 

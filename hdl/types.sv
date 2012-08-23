@@ -124,6 +124,7 @@ package pipTypes;
     bit [ 4:0]   dest_reg;
     bit          dest_reg_valid;
     bit          pc_valid; // for flushing
+    bit          stream;
   } rob_entry_t;
 
   typedef struct {
@@ -134,11 +135,13 @@ package pipTypes;
   } fwd_info_t;
 
   typedef struct {
+    bit          stream;
     bit [6:0]    rob_slot;
     dec_inst_t   dec_inst;
   } iq_entry_t;
 
 typedef struct {
+    bit          stream;
     bit [6:0]    rob_slot;
     dec_inst_t   dec_inst;
   } iq_entry_int_t;

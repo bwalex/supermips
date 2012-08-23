@@ -22,6 +22,7 @@ module rob #(
   output                     full,
   input [4:0]                dest_reg[INS_COUNT],
   input                      dest_reg_valid[INS_COUNT],
+  input                      stream[INS_COUNT],
   input dec_inst_t           instructions[INS_COUNT],
 
   // Associate lookup interface
@@ -57,6 +58,7 @@ module rob #(
   input [EXTCOUNTLOG2-1:0]   consume_count,
   output                     T slot_data[EXT_COUNT],
   output reg                 slot_valid[EXT_COUNT],
+  output reg                 slot_kill[EXT_COUNT],
   output                     empty,
 
   // Flush interface
@@ -76,6 +78,7 @@ module rob #(
 
   T buffer[DEPTH];
   bit valid[DEPTH];
+  bit kill[DEPTH];
   bit in_transit[DEPTH];
 
   // XXX: temporary
@@ -158,8 +161,6 @@ module rob #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       ins_ptr <= 'b0;
-    else if (flush)
-      ins_ptr <= flush_idx + 2; // leave the branch and BDS in place; idx is the branch
     else if (reserve_i)
       ins_ptr <= ins_ptr + reserve_count + 1;
 
@@ -172,9 +173,10 @@ module rob #(
       automatic bit [DEPTHLOG2-1:0] k;
       if (reserve_i) begin
         for (integer i = 0; i <= reserve_count; i++) begin
-	        k = ins_ptr + i;
+          k              = ins_ptr + i;
           valid[k]      <= 1'b0;
           in_transit[k] <= 1'b0;
+          kill[k]       <= 1'b0;
         end
       end
       for (integer i = 0; i < WR_COUNT; i++)
@@ -183,6 +185,12 @@ module rob #(
       for (integer i = 0; i < WR_COUNT; i++)
         if (transit_idx_valid[i])
           in_transit[transit_idx[i]] <= 1'b1;
+      if (flush) begin
+        k  = flush_idx;
+        k++;
+        while (buffer[k].stream == buffer[flush_idx].stream)
+          kill[k] <= 1'b1;
+      end
     end
 
 
@@ -195,6 +203,7 @@ module rob #(
         for (integer i = 0; i <= reserve_count; i++) begin
           buffer[reserved_slots[i]].dest_reg       <= dest_reg[i];
           buffer[reserved_slots[i]].dest_reg_valid <= dest_reg_valid[i];
+          buffer[reserved_slots[i]].stream         <= stream[i];
         end
       for (integer i = 0; i < WR_COUNT; i++)
         if (write_valid[i])
@@ -213,9 +222,10 @@ module rob #(
     begin
       automatic bit [DEPTHLOG2-1:0] k;
       for (integer i = 0; i < INS_COUNT; i++) begin
-        k = ext_ptr + i;
+        k              = ext_ptr + i;
         slot_data[i]   = buffer[k];
         slot_valid[i]  = valid[k] && (i < used_count);
+        slot_kill[i]   = kill[k];
       end
     end
 
@@ -269,9 +279,9 @@ module rob #(
 
     if (reserve_i) begin
       for (integer i = 0; i <= reserve_count; i++)
-        $fwrite(trace_file, "%d ROB: Reserve slot %d for pc=%x (dest_reg=%d [valid=%b])\n",
+        $fwrite(trace_file, "%d ROB: Reserve slot %d for pc=%x (dest_reg=%d [valid=%b], stream=%b)\n",
                  $time, reserved_slots[i], instructions[i].pc, dest_reg[i],
-                 dest_reg_valid[i]);
+                 dest_reg_valid[i], stream);
     end
     for (integer i = 0; i < WR_COUNT; i++) begin
       if (write_valid[i])
