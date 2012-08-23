@@ -455,7 +455,7 @@ module iss#(
                         | (bds_missing_r & ext_enable)
                         ;
   assign branch_flush_stream  = (bds_missing_r) ? insns[0].stream  : insns[branch_idx].stream;
-  assign branch_flush_idx     = (bds_missing_r) ? bds_flush_slot_r : bds_flush_slot;
+  assign branch_flush_slot    = (bds_missing_r) ? bds_flush_slot_r : bds_flush_slot;
 
   assign AB_equal  = (branch_A_act == branch_B_act);
   assign A_gtz     = A_gez & ~A_eqz;
