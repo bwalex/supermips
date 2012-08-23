@@ -80,7 +80,7 @@ module circ_buf #(
 `ifdef IQ_TRACE_ENABLE
         integer count  = buffer.size();
 `endif
-        while (buffer[0].stream == flush_stream)
+        while (buffer.size() > 0 && buffer[0].stream == flush_stream)
           buffer.pop_front();
 `ifdef IQ_TRACE_ENABLE
         $fwrite(trace_file, "%d IQ: flush %d instructions, stream=%b\n",
