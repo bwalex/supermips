@@ -7,8 +7,9 @@ VCS_FLAGS?=
 TRACE?=DISABLE
 EX_UNITS?=1
 IQ_DEPTH?=16
-ROB_DEPTH?=16
+ROB_DEPTH?=32
 ROB_FORWARDING?=ENABLE
+RETIRE_COUNT?=4
 
 all:
 	echo "Targets: ncv, ncv_batch, modelsim, vcs"
@@ -25,10 +26,11 @@ vcs:
 	#
 	# For some weird reason, vcs doesn't like overriding string parameters via
 	# -pvalue; not even after escaping the string all over.
-	@echo assign $(MEM_FILE)  top/MEM_FILE   > .vcs.params
-	@echo assign $(EX_UNITS)  top/EX_UNITS  >> .vcs.params
-	@echo assign $(IQ_DEPTH)  top/IQ_DEPTH  >> .vcs.params
-	@echo assign $(ROB_DEPTH) top/ROB_DEPTH >> .vcs.params
+	@echo assign $(MEM_FILE)     top/MEM_FILE      > .vcs.params
+	@echo assign $(EX_UNITS)     top/EX_UNITS     >> .vcs.params
+	@echo assign $(IQ_DEPTH)     top/IQ_DEPTH     >> .vcs.params
+	@echo assign $(ROB_DEPTH)    top/ROB_DEPTH    >> .vcs.params
+	@echo assign $(RETIRE_COUNT) top/RETIRE_COUNT >> .vcs.params
 	vcs $(VCS_FLAGS) -sverilog \
 		+define+REAL_CACHE \
 		+define+ROB_TRACE_$(TRACE) \

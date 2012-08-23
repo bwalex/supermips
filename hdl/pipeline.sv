@@ -6,6 +6,7 @@ module pipeline#(
             DATA_WIDTH = 32,
             BE_WIDTH = DATA_WIDTH/8,
             EX_UNITS = 1,
+            RETIRE_COUNT = 4,
             IQ_DEPTH = 16,
             ROB_DEPTH = 16
 )(
@@ -34,13 +35,13 @@ module pipeline#(
   localparam IQ_EXT_COUNT   = ISS_PER_CYCLE;
 
   localparam ROB_INS_COUNT  = 4;
-  localparam ROB_EXT_COUNT  = 4;
+  localparam ROB_EXT_COUNT  = RETIRE_COUNT;
   localparam ROB_AS_COUNT   = ISS_PER_CYCLE;
   localparam ROB_WR_COUNT   = ISS_PER_CYCLE;
   localparam ROB_LK_COUNT   = 2*ISS_PER_CYCLE;
 
   localparam RFILE_RD_PORTS = 2*ISS_PER_CYCLE;
-  localparam RFILE_WR_PORTS = ROB_EXT_COUNT;
+  localparam RFILE_WR_PORTS = RETIRE_COUNT;
 
   localparam ROB_DEPTHLOG2      = $clog2(ROB_DEPTH);
   localparam IQ_DEPTHLOG2       = $clog2(IQ_DEPTH);
@@ -575,7 +576,7 @@ module pipeline#(
 
 
   wb#(
-      .RETIRE_COUNT(ROB_EXT_COUNT))
+      .RETIRE_COUNT(RETIRE_COUNT))
   WB(
         // Interfaces
         .slot_data                      (rob_slot_data),

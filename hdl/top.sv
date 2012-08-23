@@ -7,6 +7,7 @@ module top#(
                      LSTRACE_FILE = "ls.trace",
                      RFTRACE_FILE = "rf.trace",
                      EX_UNITS = 1,
+                     RETIRE_COUNT = 4,
                      IQ_DEPTH = 16,
                      ROB_DEPTH = 16
 )(
@@ -60,6 +61,7 @@ module top#(
 
   pipeline #(
              .EX_UNITS(EX_UNITS),
+             .RETIRE_COUNT(RETIRE_COUNT),
              .IQ_DEPTH(IQ_DEPTH),
              .ROB_DEPTH(ROB_DEPTH)
   )CPU(
