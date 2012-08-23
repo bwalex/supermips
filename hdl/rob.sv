@@ -80,7 +80,7 @@ module rob #(
   bit valid[DEPTH];
   bit kill[DEPTH];
   bit in_transit[DEPTH];
-  bit stream[DEPTH];
+  bit inst_stream[DEPTH];
 
   // XXX: temporary
   dec_inst_t insns[DEPTH];
@@ -190,7 +190,7 @@ module rob #(
         k  = flush_idx;
         k++;
         k++;
-        while ((stream[k] == stream[flush_idx]) && k != flush_idx) begin
+        while ((inst_stream[k] == inst_stream[flush_idx]) && k != flush_idx) begin
           kill[k]  <= 1'b1;
           valid[k] <= 1'b1;
           k++;
@@ -208,7 +208,7 @@ module rob #(
         for (integer i = 0; i <= reserve_count; i++) begin
           buffer[reserved_slots[i]].dest_reg       <= dest_reg[i];
           buffer[reserved_slots[i]].dest_reg_valid <= dest_reg_valid[i];
-          stream[reserved_slots[i]]                <= stream;
+          inst_stream[reserved_slots[i]]           <= stream;
         end
       for (integer i = 0; i < WR_COUNT; i++)
         if (write_valid[i])
@@ -275,7 +275,7 @@ module rob #(
 
     for (k = ext_ptr; k != ins_ptr; k++) begin
       $fwrite(trace_file, "    ROB slot %d: pc: %x, valid: %b, in_transit: %b, stream: %b, kill: %b\n",
-              k, insns[k].pc, valid[k], in_transit[k], stream[k], kill[k]);
+              k, insns[k].pc, valid[k], in_transit[k], inst_stream[k], kill[k]);
     end
 
     if (reserve_i) begin
