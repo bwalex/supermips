@@ -237,10 +237,6 @@ module rob #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       used_count <= 0;
-    else if (flush)
-      used_count <=  used_count
-                   - flush_amt
-                   - ((consume_count_i + 1) & {(EXTCOUNTLOG2+1){consume_i}});
     else
       used_count <=  used_count
                    + ((reserve_count   + 1) & {(INSCOUNTLOG2+1){reserve_i}})
