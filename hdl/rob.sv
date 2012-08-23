@@ -294,9 +294,10 @@ module rob #(
         $fwrite(trace_file, "%d ROB: Consume slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
                  $time, k, insns[k].pc, buffer[k].result_lo,
                  buffer[k].dest_reg, buffer[k].dest_reg_valid);
-        $fwrite(ret_trace_file, "%d Retire ROB slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
-                 $time, k, insns[k].pc, buffer[k].result_lo,
-                 buffer[k].dest_reg, buffer[k].dest_reg_valid);
+        if (!kill[k])
+          $fwrite(ret_trace_file, "%d Retire ROB slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
+                  $time, k, insns[k].pc, buffer[k].result_lo,
+                  buffer[k].dest_reg, buffer[k].dest_reg_valid);
       end
     end
     if (flush) begin
