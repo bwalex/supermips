@@ -190,7 +190,7 @@ module rob #(
         k  = flush_idx;
         k++;
         k++;
-        while ((inst_stream[k] == inst_stream[flush_idx]) && k != flush_idx) begin
+        while ((inst_stream[k] == inst_stream[flush_idx]) && k != ins_ptr) begin
           kill[k]  <= 1'b1;
           valid[k] <= 1'b1;
           k++;
