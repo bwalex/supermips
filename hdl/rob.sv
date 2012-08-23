@@ -275,8 +275,8 @@ module rob #(
             $time, ins_ptr, ext_ptr, used_count, empty, full);
 
     for (k = ext_ptr; k != ins_ptr; k++) begin
-      $fwrite(trace_file, "    ROB slot %d: pc: %x, valid: %b, in_transit: %b\n",
-              k, insns[k].pc, valid[k], in_transit[k]);
+      $fwrite(trace_file, "    ROB slot %d: pc: %x, valid: %b, in_transit: %b, stream: %b, kill: %b\n",
+              k, insns[k].pc, valid[k], in_transit[k], buffer[k].stream, kill[k]);
     end
 
     if (reserve_i) begin
