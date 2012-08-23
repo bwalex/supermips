@@ -77,8 +77,8 @@ module id#(
 
   always_ff @(posedge clock) begin
     for (integer i = 0; i < 4; i++) begin
-      $fwrite(trace_file, "%d: ID slot %d, pc=%x, iw=%x, di.pc=%x, valid=%b\n",
-        $time, i, inst_pc[i], inst_word[i], dec_inst[i].pc, inst_word_valid[i]);
+      $fwrite(trace_file, "%d: ID slot %d, pc=%x, iw=%x, di.pc=%x, valid=%b, stream=%b (reserve: %b)\n",
+        $time, i, inst_pc[i], inst_word[i], dec_inst[i].pc, inst_word_valid[i], inst_stream, reserve);
     end
   end
 `endif //  `ifdef ID_TRACE_ENABLE

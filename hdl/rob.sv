@@ -22,7 +22,7 @@ module rob #(
   output                     full,
   input [4:0]                dest_reg[INS_COUNT],
   input                      dest_reg_valid[INS_COUNT],
-  input                      stream[INS_COUNT],
+  input                      stream,
   input dec_inst_t           instructions[INS_COUNT],
 
   // Associate lookup interface
@@ -188,8 +188,10 @@ module rob #(
       if (flush) begin
         k  = flush_idx;
         k++;
-        while (buffer[k].stream == buffer[flush_idx].stream)
-          kill[k] <= 1'b1;
+        while (buffer[k].stream == buffer[flush_idx].stream) begin
+          kill[k]  <= 1'b1;
+          valid[k] <= 1'b1;
+        end
       end
     end
 
@@ -203,7 +205,7 @@ module rob #(
         for (integer i = 0; i <= reserve_count; i++) begin
           buffer[reserved_slots[i]].dest_reg       <= dest_reg[i];
           buffer[reserved_slots[i]].dest_reg_valid <= dest_reg_valid[i];
-          buffer[reserved_slots[i]].stream         <= stream[i];
+          buffer[reserved_slots[i]].stream         <= stream;
         end
       for (integer i = 0; i < WR_COUNT; i++)
         if (write_valid[i])

@@ -74,6 +74,7 @@ module pipeline#(
   wire [31:0]                  if_inst_word_r[4];
   wire                         if_inst_word_valid_r[4];
   wire [31:0]                  if_pc_out_r[4];
+  wire                         if_inst_stream_r;
 
   // Outputs from ID
   wire                         id_stall;
@@ -125,6 +126,8 @@ module pipeline#(
   wire                         branch_load_pc;
   wire [31:0]                  branch_new_pc;
   wire                         branch_flush;
+  wire                         branch_flush_stream;
+  wire [ROB_DEPTHLOG2-1:0]     branch_flush_slot;
   wire [ROB_DEPTHLOG2-1:0]     branch_rob_dt_idx_a;
   wire [ROB_DEPTHLOG2-1:0]     branch_rob_dt_idx_b;
 
@@ -167,6 +170,7 @@ module pipeline#(
   wire [ROB_DEPTHLOG2-1:0]     rob_as_aval_idx[ROB_AS_COUNT];
   wire [ROB_DEPTHLOG2-1:0]     rob_as_bval_idx[ROB_AS_COUNT];
   wire                         rob_slot_valid[ROB_EXT_COUNT];
+  wire                         rob_slot_kill[ROB_EXT_COUNT];
   wire [ROB_DEPTHLOG2:0]       rob_used_count;
   wire [31:0]                  rob_dt_result[ROB_LK_COUNT];
 
@@ -303,6 +307,7 @@ module pipeline#(
             .pc_out1_r                  (if_pc_out1_r),
             .pc_out2_r                  (if_pc_out2_r),
             .pc_out3_r                  (if_pc_out3_r),
+            .inst_stream_r              (if_inst_stream_r),
             .branch_stall               (if_branch_stall),
             // Inputs
             .clock                      (clock),
@@ -333,9 +338,12 @@ module pipeline#(
         .clock                          (clock),
         .reset_n                        (reset_n),
         .inst_word                      (if_inst_word_r),
+        .inst_stream                    (if_inst_stream_r),
         .inst_pc                        (if_pc_out_r),
         .inst_word_valid                (if_inst_word_valid_r),
         .reserved_slots                 (rob_reserved_slots),
+        .flush                          (branch_flush),
+        .flush_stream                   (branch_flush_stream),
         .rob_full                       (rob_full),
         .iq_full                        (iq_full));
 
@@ -361,7 +369,8 @@ module pipeline#(
               .new_count                (idiq_new_count),
               .ext_enable               (issiq_ext_enable),
               .ext_consumed             (issiq_ext_consumed),
-              .flush                    (branch_flush));
+              .flush                    (branch_flush)
+              .flush_stream             (branch_flush_stream));
 
 
 
@@ -402,6 +411,8 @@ module pipeline#(
           .new_pc                       (branch_new_pc),
           .new_pc_valid                 (branch_load_pc),
           .branch_flush                 (branch_flush),
+          .branch_flush_stream          (branch_flush_stream),
+          .branch_flush_slot            (branch_flush_slot),
           .rd_addr                      (rfile_rd_addr),
           // Inputs
           .clock                        (clock),
@@ -538,6 +549,7 @@ module pipeline#(
            .as_bval_idx                 (rob_as_bval_idx),
            .dt_result                   (rob_dt_result),
            .slot_valid                  (rob_slot_valid),
+           .slot_kill                   (rob_slot_kill),
            .empty                       (rob_empty),
            .used_count                  (rob_used_count),
            // Inputs
@@ -547,6 +559,7 @@ module pipeline#(
            .reserve_count               (idrob_reserve_count),
            .dest_reg                    (idrob_dest_reg),
            .dest_reg_valid              (idrob_dest_reg_valid),
+           .stream                      (if_inst_stream_r),
            .as_query_idx                (issrob_as_query_idx),
            .as_areg                     (issrob_as_areg),
            .as_breg                     (issrob_as_breg),
@@ -558,7 +571,7 @@ module pipeline#(
            .consume                     (wrrob_consume),
            .consume_count               (wrrob_consume_count),
            .flush                       (branch_flush),
-           .flush_idx                   (branch_rob_wr_slot));
+           .flush_idx                   (branch_flush_slot));
 
 
   wb#(
@@ -576,6 +589,7 @@ module pipeline#(
         .clock                          (clock),
         .reset_n                        (reset_n),
         .slot_valid                     (rob_slot_valid),
+        .slot_kill                      (rob_slot_kill),
         .empty                          (rob_empty));
 
 
