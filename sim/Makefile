@@ -19,7 +19,7 @@ modelsim:
 	qhsim -do "source load_sim.tcl"
 
 modelsim_clean:
-	rm -f vsim.wlf transcript
+	rm -f vsim.wlf transcript modelsim.ini
 	rm -rf libraries
 
 vcs:
