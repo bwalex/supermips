@@ -95,11 +95,9 @@ module generic_cache #(
   reg                         data_write_cpu;
 
   tagmem_t                    new_tag;
-  reg [CLINE_WIDTH-1:0]       new_data;
 
   reg [MEM_NWORDSLOG2:0]      wr_count;
   reg [MEM_NWORDSLOG2:0]      rd_count;
-  reg [MEM_NWORDSLOG2-1:0]    rd_idx;
 
   wire [CLINE_WIDTH-1:0]      bank_cur_cline[ASSOC];
 
@@ -282,8 +280,8 @@ module generic_cache #(
                                           -: DATA_WIDTH] <=  (cpu_rd_data  & ~be_expanded)
                                                            | (cpu_wr_data  &  be_expanded);
     if (load_linefill & cpu_wr & lfill_hit) begin
-`ifdef TRACE_ENABLE
-      $display("Loading linefill buffer (%x) into [%d:%d] with simultaneous write", linefillbuf.line, linefillbuf.bank, linefillbuf.index);
+`ifdef CACHE_TRACE_ENABLE
+      $fwrite(trace_file, "Loading linefill buffer (%x) into [%d:%d] with simultaneous write\n", linefillbuf.line, linefillbuf.bank, linefillbuf.index);
 `endif
       for (integer i = 0; i < NWORDS; i++) begin
         data_banks[linefillbuf.bank][linefillbuf.index][CLINE_WIDTH-1-i*DATA_WIDTH
@@ -294,8 +292,8 @@ module generic_cache #(
       end
     end
     else if (load_linefill) begin
-`ifdef TRACE_ENABLE
-      $display("Loading linefill buffer (%x) into [%d:%d]", linefillbuf.line, linefillbuf.bank, linefillbuf.index);
+`ifdef CACHE_TRACE_ENABLE
+      $fwrite(trace_file, "Loading linefill buffer (%x) into [%d:%d]\n", linefillbuf.line, linefillbuf.bank, linefillbuf.index);
 `endif
       data_banks[linefillbuf.bank][linefillbuf.index] <= linefillbuf.line;
     end
@@ -539,7 +537,7 @@ module generic_cache #(
         stat_allocs <= stat_allocs + 1;
       if (state != WRITEBACK && next_state == WRITEBACK)
         stat_wbacks <= stat_wbacks + 1;
-      if (`_FIRST_CYCLE && state == IDLE && ~cache_hit && (cpu_rd || cpu_wr))
+      if (`_FIRST_CYCLE && state == IDLE && !cache_hit && (cpu_rd || cpu_wr))
         stat_misses <= stat_misses + 1;
       if (`_FIRST_CYCLE && state == IDLE && (cpu_rd || cpu_wr))
         stat_access <= stat_access + 1;
