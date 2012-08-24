@@ -6,6 +6,7 @@ PROG?=coremark.vmem
 MEM_FILE?="\"$(SOFTWARE_BASE)/$(PROG)\""
 VCS_FLAGS?=
 TRACE?=DISABLE
+CACHE?=REAL
 
 all:
 	echo "Targets: ncv, ncv_batch, modelsim, vcs"
@@ -24,7 +25,7 @@ vcs:
 	# -pvalue; not even after escaping the string all over.
 	@echo assign $(MEM_FILE) top/MEM_FILE > .vcs.params
 	vcs $(VCS_FLAGS) -sverilog \
-		+define+REAL_CACHE \
+		+define+$(CACHE)_CACHE \
 		+define+TRACE_$(TRACE) \
 		-parameters ./.vcs.params \
 		-pvalue+top/CPU/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
@@ -62,7 +63,7 @@ vcs_coverage:
 		-cm cond \
 		-cm branch \
 		-cm tgl \
-		+define+REAL_CACHE \
+		+define+$(CACHE)_CACHE \
 		+define+TRACE_$(TRACE) \
 		-parameters ./.vcs.params \
 		-pvalue+top/CPU/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
@@ -98,7 +99,7 @@ ncv:
 	ncverilog -sv +access+rc +gui +ncaccess+rc \
 		+define+TEXT_IDEC_ENABLE \
 		+define+TRACE_$(TRACE) \
-		+define+REAL_CACHE \
+		+define+$(CACHE)_CACHE \
 		+defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) \
 		+defparam+top.MEM_FILE=$(MEM_FILE) \
 		+tcl+ncv.tcl \
@@ -126,7 +127,7 @@ ncv:
 
 ncv_batch:
 	ncverilog -sv +access+r +ncbatch \
-		+define+REAL_CACHE \
+		+define+$(CACHE)_CACHE \
 		+define+TRACE_$(TRACE) \
 		+defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) \
 		+defparam+top.MEM_FILE=$(MEM_FILE) \
