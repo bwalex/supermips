@@ -1,0 +1,1 @@
+`define clogb2(n) $clog2(n)
