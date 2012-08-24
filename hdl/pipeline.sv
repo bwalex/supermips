@@ -291,16 +291,12 @@ module pipeline#(
         // Outputs
         .result                         (ex_result[31:0]),
         .result_2                       (ex_result_2[31:0]),
-        //.new_pc                         (ex_new_pc),
-        //.new_pc_valid                   (ex_new_pc_valid),
         .inval_dest_reg                 (ex_inval_dest_reg),
         .stall                          (ex_stall),
         // Inputs
         .clock                          (clock),
         .reset_n                        (reset_n),
         .pc                             (id_pc_r),
-        //.pc_plus_8                      (if_pc),
-        .branch_stall                   (if_branch_stall),
 	.front_stall                    (stall_ex),
         .A_val                          (id_A_r),
         .B_val                          (id_B_r),
@@ -327,9 +323,6 @@ module pipeline#(
         .muldiv_op_u                    (id_muldiv_op_u_r),
         .load_inst                      (id_load_inst_r),
         .store_inst                     (id_store_inst_r),
-        .jmp_inst                       (id_jmp_inst_r),
-        .branch_inst                    (id_branch_inst_r),
-        .branch_cond                    (id_branch_cond_r),
         .dest_reg                       (id_dest_reg_r),
         .dest_reg_valid                 (id_dest_reg_valid_r));
 

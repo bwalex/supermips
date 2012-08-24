@@ -60,30 +60,22 @@ module ex #(
   input                    muldiv_op_u,
   input                    load_inst,
   input                    store_inst,
-  input                    jmp_inst,
-  input                    branch_inst,
-  input cond_t             branch_cond,
 
   input [ 4:0]             dest_reg,
   input                    dest_reg_valid,
 
   output [31:0]            result,
   output [31:0]            result_2,
-  output [31:0]            new_pc,
-  output                   new_pc_valid,
   output                   inval_dest_reg,
   output                   stall,
 
-  input                    front_stall,
-  input                    branch_stall
+  input                    front_stall
 );
 
   wire                     A_fwd_ex_mem;
   wire                     A_fwd_mem_wb;
   wire                     B_fwd_ex_mem;
   wire                     B_fwd_mem_wb;
-
-  wire [31:0]              pc_plus_8;
 
   wire [6:0]                inst_opc;
   wire [6:0]                inst_funct;
@@ -95,7 +87,6 @@ module ex #(
   reg                       flag_carry;
   wire                      flag_zero;
 
-  wire                      branch_cond_ok;
   wire                      AB_equal;
   wire                      A_gez;
   wire                      A_gtz;
@@ -136,8 +127,6 @@ module ex #(
 
   reg [DIVCOUNT_WIDTH-1:0]  muldiv_count;
 
-
-  assign pc_plus_8 = pc + 8;
 
 
   always_ff @(posedge clock, negedge reset_n)

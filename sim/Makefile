@@ -48,6 +48,46 @@ vcs:
 		$(HDL_BASE)/wb.sv
 	./simv
 
+
+vcs_coverage:
+	# Not including text_idec, as it VCS doesn't support a string as a non-ref port
+	#
+	# For some weird reason, vcs doesn't like overriding string parameters via
+	# -pvalue; not even after escaping the string all over.
+	@echo assign $(MEM_FILE) top/MEM_FILE > .vcs.params
+	vcs $(VCS_FLAGS) -sverilog \
+		-cm line \
+		-cm cond \
+		-cm branch \
+		-cm tgl \
+		+define+REAL_CACHE \
+		+define+TRACE_$(TRACE) \
+		-parameters ./.vcs.params \
+		-pvalue+top/CPU/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
+		$(HDL_BASE)/top.sv \
+		$(HDL_BASE)/types.sv \
+		$(HDL_BASE)/generic_shifter.sv \
+		$(HDL_BASE)/ex.sv \
+		$(HDL_BASE)/idec.sv \
+		$(HDL_BASE)/ifetch.sv \
+		$(HDL_BASE)/mem.sv \
+		$(HDL_BASE)/pipeline.sv \
+		$(HDL_BASE)/pipreg_ex_mem.sv \
+		$(HDL_BASE)/pipreg_id_ex.sv \
+		$(HDL_BASE)/pipreg_if_id.sv \
+		$(HDL_BASE)/pipreg_mem_wb.sv \
+		$(HDL_BASE)/rfile.sv \
+		$(HDL_BASE)/tcm.sv \
+		$(HDL_BASE)/memory.sv \
+		$(HDL_BASE)/cache.sv \
+		$(HDL_BASE)/mem_arb.sv \
+		$(HDL_BASE)/trickbox.sv \
+		$(HDL_BASE)/wb.sv
+	./simv -cm line -cm cond -cm branch -cm tgl
+
+
+
+
 vcs_clean:
 	rm -rf simv DVEfiles inter.vpd csrc simv.daidir simv.vdb ucli.key
 

@@ -88,7 +88,6 @@ module idec #(
   reg                        inst_iformat;
 
   reg                        imm_sext;
-  reg  [31:0]                imm_extended;
 
   reg  [31:0]                A_forwarded;
   reg  [31:0]                B_forwarded;
@@ -334,7 +333,7 @@ module idec #(
           6'd13: begin // break
             // XXX: this is not really a break exception; it halts simulation.
             $display("BREAK!");
-            $stop(); // XXX: consider $finish()
+            $finish();
           end
           6'd16: begin // mfhi
             muldiv_inst  = 1'b1;
