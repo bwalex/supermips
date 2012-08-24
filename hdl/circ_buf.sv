@@ -5,9 +5,9 @@ module circ_buf #(
   parameter      DEPTH     = 16,
                  INS_COUNT = 4,
                  EXT_COUNT = 4,
-                 DEPTHLOG2  = $clog2(DEPTH),
-                 EXTCOUNTLOG2  = $clog2(EXT_COUNT),
-                 INSCOUNTLOG2  = $clog2(INS_COUNT)
+                 DEPTHLOG2  = `clogb2(DEPTH),
+                 EXTCOUNTLOG2  = `clogb2(EXT_COUNT),
+                 INSCOUNTLOG2  = `clogb2(INS_COUNT)
 )(
   input                    clock,
   input                    reset_n,

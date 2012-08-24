@@ -38,7 +38,7 @@ module memory #(
 
   assign waitrequest  = 1'b0;
 
-  assign addr_int  = addr >> $clog2(DATA_WIDTH/8);
+  assign addr_int  = addr >> `clogb2(DATA_WIDTH/8);
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)

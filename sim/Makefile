@@ -1,4 +1,5 @@
 HDL_BASE?=../hdl
+SIM_BASE?=../sim
 SOFTWARE_BASE?=../software
 TRICK_ITERATIONS?=100
 PROG?=coremark.vmem
@@ -42,6 +43,7 @@ vcs:
 		+define+ROB_FORWARDING_$(ROB_FORWARDING) \
 		-parameters ./.vcs.params \
 		-pvalue+top/CPU/LS/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
+		$(SIM_BASE)/vcs_helpers.sv \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/generic_shifter.sv \
@@ -73,51 +75,88 @@ vcs_clean:
 
 ncv:
 	ncverilog -sv +access+rc +gui +ncaccess+rc \
-		+define+TEXT_IDEC_ENABLE \
-		+define+TRACE_$(TRACE) \
+		+define+REAL_CACHE \
+		+define+ROB_TRACE_$(TRACE) \
+		+define+IQ_TRACE_$(TRACE) \
+		+define+ISS_TRACE_$(TRACE) \
+		+define+ID_TRACE_$(TRACE) \
+		+define+LS_TRACE_$(TRACE) \
+		+define+CACHE_TRACE_$(TRACE) \
+		+define+ROB_FORWARDING_$(ROB_FORWARDING) \
 		+defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) \
 		+defparam+top.MEM_FILE=$(MEM_FILE) \
-		+tcl+ncv.tcl \
-		$(HDL_BASE)/types.sv \
+		+defparam+top.EX_UNITS=$(EX_UNITS) \
+		+defparam+top.IQ_DEPTH=$(IQ_DEPTH) \
+		+defparam+top.ROB_DEPTH=$(ROB_DEPTH) \
+		+defparam+top.RETIRE_COUNT=$(RETIRE_COUNT) \
+		$(SIM_BASE)/ncv_helpers.sv \
 		$(HDL_BASE)/top.sv \
-		$(HDL_BASE)/text_idec.sv \
+		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/generic_shifter.sv \
 		$(HDL_BASE)/ex.sv \
+		$(HDL_BASE)/exmul.sv \
 		$(HDL_BASE)/idec.sv \
 		$(HDL_BASE)/ifetch.sv \
+		$(HDL_BASE)/agu.sv \
 		$(HDL_BASE)/mem.sv \
 		$(HDL_BASE)/pipeline.sv \
-		$(HDL_BASE)/pipreg_ex_mem.sv \
-		$(HDL_BASE)/pipreg_id_ex.sv \
-		$(HDL_BASE)/pipreg_if_id.sv \
-		$(HDL_BASE)/pipreg_mem_wb.sv \
 		$(HDL_BASE)/rfile.sv \
 		$(HDL_BASE)/tcm.sv \
+		$(HDL_BASE)/memory.sv \
+		$(HDL_BASE)/cache.sv \
+		$(HDL_BASE)/mem_arb.sv \
 		$(HDL_BASE)/trickbox.sv \
+		$(HDL_BASE)/ex_wrapper.sv \
+		$(HDL_BASE)/ex_mul_wrapper.sv \
+		$(HDL_BASE)/ls_wrapper.sv \
+		$(HDL_BASE)/circ_buf.sv \
+		$(HDL_BASE)/rob.sv \
+		$(HDL_BASE)/id.sv \
+		$(HDL_BASE)/iss.sv \
 		$(HDL_BASE)/wb.sv
 
 ncv_batch:
 	ncverilog -sv +access+r +ncbatch \
-		+define+TRACE_$(TRACE) \
+		+define+REAL_CACHE \
+		+define+ROB_TRACE_$(TRACE) \
+		+define+IQ_TRACE_$(TRACE) \
+		+define+ISS_TRACE_$(TRACE) \
+		+define+ID_TRACE_$(TRACE) \
+		+define+LS_TRACE_$(TRACE) \
+		+define+CACHE_TRACE_$(TRACE) \
+		+define+ROB_FORWARDING_$(ROB_FORWARDING) \
 		+defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) \
 		+defparam+top.MEM_FILE=$(MEM_FILE) \
-		$(HDL_BASE)/types.sv \
+		+defparam+top.EX_UNITS=$(EX_UNITS) \
+		+defparam+top.IQ_DEPTH=$(IQ_DEPTH) \
+		+defparam+top.ROB_DEPTH=$(ROB_DEPTH) \
+		+defparam+top.RETIRE_COUNT=$(RETIRE_COUNT) \
+		$(SIM_BASE)/ncv_helpers.sv \
 		$(HDL_BASE)/top.sv \
-		$(HDL_BASE)/text_idec.sv \
+		$(HDL_BASE)/types.sv \
 		$(HDL_BASE)/generic_shifter.sv \
 		$(HDL_BASE)/ex.sv \
+		$(HDL_BASE)/exmul.sv \
 		$(HDL_BASE)/idec.sv \
 		$(HDL_BASE)/ifetch.sv \
+		$(HDL_BASE)/agu.sv \
 		$(HDL_BASE)/mem.sv \
 		$(HDL_BASE)/pipeline.sv \
-		$(HDL_BASE)/pipreg_ex_mem.sv \
-		$(HDL_BASE)/pipreg_id_ex.sv \
-		$(HDL_BASE)/pipreg_if_id.sv \
-		$(HDL_BASE)/pipreg_mem_wb.sv \
 		$(HDL_BASE)/rfile.sv \
 		$(HDL_BASE)/tcm.sv \
+		$(HDL_BASE)/memory.sv \
+		$(HDL_BASE)/cache.sv \
+		$(HDL_BASE)/mem_arb.sv \
 		$(HDL_BASE)/trickbox.sv \
+		$(HDL_BASE)/ex_wrapper.sv \
+		$(HDL_BASE)/ex_mul_wrapper.sv \
+		$(HDL_BASE)/ls_wrapper.sv \
+		$(HDL_BASE)/circ_buf.sv \
+		$(HDL_BASE)/rob.sv \
+		$(HDL_BASE)/id.sv \
+		$(HDL_BASE)/iss.sv \
 		$(HDL_BASE)/wb.sv
+
 
 ncv_clean:
 	rm -rf INCA_libs ncverilog.key ncverilog.log simvision* waves.shm

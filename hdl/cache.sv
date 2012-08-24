@@ -7,9 +7,9 @@ module generic_cache #(
                        NWORDS = CLINE_WIDTH/DATA_WIDTH,
                        MEM_NWORDS = CLINE_WIDTH/MEM_DATA_WIDTH,
                        MEM_D_NWORDS = (MEM_DATA_WIDTH >= DATA_WIDTH) ? 1 : DATA_WIDTH/MEM_DATA_WIDTH,
-                       NWORDSLOG2 = $clog2(NWORDS),
-                       MEM_NWORDSLOG2        = $clog2(MEM_NWORDS),
-                       MEM_ADDR_BITWIDTH     = $clog2(MEM_DATA_WIDTH/8),
+                       NWORDSLOG2 = `clogb2(NWORDS),
+                       MEM_NWORDSLOG2        = `clogb2(MEM_NWORDS),
+                       MEM_ADDR_BITWIDTH     = `clogb2(MEM_DATA_WIDTH/8),
                        LFSR_SEED             = 11'd101,
                        ASSOC                 = 4,
                        CLINE_WIDTH_BYTES     = CLINE_WIDTH/8,
@@ -39,10 +39,10 @@ module generic_cache #(
   output reg                      mem_rd_r
 );
 
-  localparam LINE_ADDR_WIDTH  = $clog2(NLINES);
-  localparam CPU_BLOCK_IDX_WIDTH = $clog2(CLINE_WIDTH) - $clog2(DATA_WIDTH);
-  localparam CPU_PRIV_WIDTH = $clog2(DATA_WIDTH_BYTES);
-  localparam LINE_WIDTH  = $clog2(CLINE_WIDTH_BYTES);
+  localparam LINE_ADDR_WIDTH  = `clogb2(NLINES);
+  localparam CPU_BLOCK_IDX_WIDTH = `clogb2(CLINE_WIDTH) - `clogb2(DATA_WIDTH);
+  localparam CPU_PRIV_WIDTH = `clogb2(DATA_WIDTH_BYTES);
+  localparam LINE_WIDTH  = `clogb2(CLINE_WIDTH_BYTES);
   // [ TAG ( )  |   INDEX ( )      |    block_idx ( ) |
 
   localparam TAG_WIDTH  = ADDR_WIDTH - LINE_ADDR_WIDTH - CPU_BLOCK_IDX_WIDTH - CPU_PRIV_WIDTH;
@@ -63,7 +63,7 @@ module generic_cache #(
 
   typedef struct packed {
     bit                       in_progress;
-    bit [$clog2(ASSOC)-1:0]   bank;
+    bit [`clogb2(ASSOC)-1:0]   bank;
     bit [MEM_NWORDS-1:0]      valid;
     bit                       dirty;
     bit [TAG_WIDTH-1:0]       tag;
@@ -89,7 +89,7 @@ module generic_cache #(
   // Unlike C, foo[a][b] is indexed as foo[a][b] not foo[b][a]...
   tagmem_t                    tag_banks[ASSOC][NLINES];
   reg [CLINE_WIDTH-1:0]       data_banks[ASSOC][NLINES];
-  reg [$clog2(ASSOC)-1:0]     bank_sel;
+  reg [`clogb2(ASSOC)-1:0]     bank_sel;
 
   reg                         tag_write;
   reg                         data_write_cpu;

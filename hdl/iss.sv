@@ -4,7 +4,7 @@ module iss#(
             parameter ROB_DEPTHLOG2 = 4,
                       EX_UNITS = 1,
                       ISSUE_PER_CYCLE = 4,
-                      ISS_PC_LOG2 = $clog2(ISSUE_PER_CYCLE)
+                      ISS_PC_LOG2 = `clogb2(ISSUE_PER_CYCLE)
 )(
   input                          clock,
   input                          reset_n,

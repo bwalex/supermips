@@ -10,6 +10,7 @@ ensure_lib ./libraries/work/
 vmap work ./libraries/work/
 
 # Compile the additional test files
+vlog $VLOG_FLAGS -sv $SIM_BASE/modelsim_helpers.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/types.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/ex.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/exmul.sv
@@ -32,7 +33,6 @@ vlog $VLOG_FLAGS -sv $HDL_BASE/rob.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/rfile.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/tcm.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/wb.sv
-vlog $VLOG_FLAGS -sv $HDL_BASE/text_idec.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/trickbox.sv
 vlog $VLOG_FLAGS -sv $HDL_BASE/top.sv
 

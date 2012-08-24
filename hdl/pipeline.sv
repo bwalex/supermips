@@ -43,10 +43,10 @@ module pipeline#(
   localparam RFILE_RD_PORTS = 2*ISS_PER_CYCLE;
   localparam RFILE_WR_PORTS = RETIRE_COUNT;
 
-  localparam ROB_DEPTHLOG2      = $clog2(ROB_DEPTH);
-  localparam IQ_DEPTHLOG2       = $clog2(IQ_DEPTH);
-  localparam IQ_EXT_DEPTHLOG2   = $clog2(IQ_EXT_COUNT);
-  localparam ROB_EXT_DEPTHLOG2  = $clog2(ROB_EXT_COUNT);
+  localparam ROB_DEPTHLOG2      = `clogb2(ROB_DEPTH);
+  localparam IQ_DEPTHLOG2       = `clogb2(IQ_DEPTH);
+  localparam IQ_EXT_DEPTHLOG2   = `clogb2(IQ_EXT_COUNT);
+  localparam ROB_EXT_DEPTHLOG2  = `clogb2(ROB_EXT_COUNT);
 
 
   // RFILE signals

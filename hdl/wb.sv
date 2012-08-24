@@ -2,7 +2,7 @@ import pipTypes::*;
 
 module wb #(
             parameter RETIRE_COUNT = 4,
-                      COUNT_WIDTH  = $clog2(RETIRE_COUNT)
+                      COUNT_WIDTH  = `clogb2(RETIRE_COUNT)
 )(
   input                        clock,
   input                        reset_n,
