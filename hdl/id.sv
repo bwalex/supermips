@@ -131,18 +131,22 @@ module id#(
       if (inst_word_valid[0]) begin
         new_elements[0].rob_slot  = reserved_slots[0];
         new_elements[0].dec_inst  = dec_inst[0];
+        new_elements[0].stream    = inst_stream;
       end
       else if (~inst_word_valid[0] & inst_word_valid[1]) begin
         new_elements[0].rob_slot  = reserved_slots[0];
         new_elements[0].dec_inst  = dec_inst[1];
+        new_elements[0].stream    = inst_stream;
       end
       else if (~inst_word_valid[0] & ~inst_word_valid[1] & inst_word_valid[2]) begin
         new_elements[0].rob_slot  = reserved_slots[0];
         new_elements[0].dec_inst  = dec_inst[2];
+        new_elements[0].stream    = inst_stream;
       end
       else begin
         new_elements[0].rob_slot  = reserved_slots[0];
         new_elements[0].dec_inst  = dec_inst[3];
+        new_elements[0].stream    = inst_stream;
       end
     end
 
@@ -151,14 +155,17 @@ module id#(
       if (inst_word_valid[0] & inst_word_valid[1]) begin
         new_elements[1].rob_slot  = reserved_slots[1];
         new_elements[1].dec_inst  = dec_inst[1];
+        new_elements[1].stream    = inst_stream;
       end
       else if (~inst_word_valid[0] & inst_word_valid[1] & inst_word_valid[2]) begin
         new_elements[1].rob_slot  = reserved_slots[1];
         new_elements[1].dec_inst  = dec_inst[2];
+        new_elements[1].stream    = inst_stream;
       end
       else begin
         new_elements[1].rob_slot  = reserved_slots[1];
         new_elements[1].dec_inst  = dec_inst[3];
+        new_elements[1].stream    = inst_stream;
       end
     end
 
@@ -167,10 +174,12 @@ module id#(
       if (inst_word_valid[0] & inst_word_valid[1] & inst_word_valid[2]) begin
         new_elements[2].rob_slot  = reserved_slots[2];
         new_elements[2].dec_inst  = dec_inst[2];
+        new_elements[2].stream    = inst_stream;
       end
       else begin
         new_elements[2].rob_slot  = reserved_slots[2];
         new_elements[2].dec_inst  = dec_inst[3];
+        new_elements[2].stream    = inst_stream;
       end
     end
 
@@ -178,12 +187,7 @@ module id#(
     begin
       new_elements[3].rob_slot  = reserved_slots[3];
       new_elements[3].dec_inst  = dec_inst[3];
-    end
-
-  always_comb
-    begin
-      for (integer i = 0; i < 4; i++)
-        new_elements[i].stream  = inst_stream;
+      new_elements[3].stream    = inst_stream;
     end
 
 
