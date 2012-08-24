@@ -150,6 +150,7 @@ module exmul #(
 
 
   // XXX: would be cleaner to integrate ~stall with load_hi,lo
+  // XXX: probably shouldn't load_foo if it's mul (instead of mult, etc)
   assign load_hi =  (muldiv_op == OP_MTHI)
                  || (muldiv_op == OP_MUL)
                  || (muldiv_op == OP_DIV)

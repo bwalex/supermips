@@ -497,7 +497,6 @@ module idec
 
           6'd02: begin // mul
             muldiv_inst     = 1'b1;
-            alu_inst        = 1'b1;
             muldiv_op       = OP_MUL;
             muldiv_op_u     = 1'b1;
             A_reg_valid     = 1'b1;
