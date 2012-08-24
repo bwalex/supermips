@@ -3,7 +3,7 @@ set TOP_LEVEL_NAME "cache_tb"
 set HDL_BASE "../../hdl"
 set SIM_BASE ".."
 #set VLOG_FLAGS "+define+TRACE_ENABLE"
-set VLOG_FLAGS ""
+set VLOG_FLAGS "+define+clogb2=\$clog2"
 
 
 proc ensure_lib { lib } { if ![file isdirectory $lib] { vlib $lib } }

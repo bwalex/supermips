@@ -122,8 +122,8 @@ module cache_tb;
     end while(cpu_waitrequest);
 
     // Write written word to validation memory
-    valmem[addr >> 2]  = ((valmem[addr >> 2] & ~be_expanded) | (word & be_expanded));
-    cpu_wr             = 1'b0;
+    valmem[addr >> 2]  <= ((valmem[addr >> 2] & ~be_expanded) | (word & be_expanded));
+    cpu_wr             <= 1'b0;
   endtask // cache_write
 
 
@@ -176,7 +176,11 @@ module cache_tb;
     for (integer i = 0; i < 16; i++) begin
       cache_read(.addr(i << 2), .word(data), .latency(lat));
       $display("Cache read at %x = > %x (latency: %d cycles)", (i << 2), data, lat);
-      assert(data == (i << 4));
+      assert(data == (i << 4)) begin
+      end else begin
+        $error("expected %x, got %x", (i << 4), data);
+        $stop();
+      end
     end
 
     for (integer i = 256; i < 272; i++) begin
