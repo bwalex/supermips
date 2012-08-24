@@ -37,9 +37,30 @@ module ex_mul_wrapper #(
   reg           inst_valid_r;
   reg  [31:0]   A_r;
   reg  [31:0]   B_r;
+  reg  [31:0]   A_retained;
+  reg  [31:0]   B_retained;
+  reg           stall_d1;
   wire [31:0]   A_i;
   wire [31:0]   B_i;
   reg [ROB_DEPTHLOG2-1:0] rob_slot_r;
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n)
+      stall_d1 <= 1'b0;
+    else
+      stall_d1 <= stall;
+
+
+  always_ff @(posedge clock, negedge reset_n)
+    if (~reset_n) begin
+      A_retained <= 32'b0;
+      B_retained <= 32'b0;
+    end
+    else if (stall & ~stall_d1) begin
+      A_retained <= A_i;
+      B_retained <= B_i;
+    end
 
 
   always_ff @(posedge clock, negedge reset_n)
@@ -61,8 +82,15 @@ module ex_mul_wrapper #(
   assign A_lookup_idx  = fwd_info_r.A_rob_slot;
   assign B_lookup_idx  = fwd_info_r.B_rob_slot;
 
-  assign A_i  = (fwd_info_r.A_fwd) ? A_fwd : A_r;
-  assign B_i  = (fwd_info_r.B_fwd) ? B_fwd : B_r;
+  assign A_i  =  (stall_d1)         ? A_retained
+               : (fwd_info_r.A_fwd) ? A_fwd
+               :                      A_r
+               ;
+
+  assign B_i  =  (stall_d1)         ? B_retained
+               : (fwd_info_r.B_fwd) ? B_fwd
+               :                      B_r
+               ;
 
   assign ready           = ~stall;
   assign rob_data_valid  = inst_valid_r & ready;
