@@ -78,7 +78,7 @@ module circ_buf #(
 
       if (flush) begin
 `ifdef IQ_TRACE_ENABLE
-        integer count  = buffer.size();
+        automatic integer count  = buffer.size();
 `endif
         while (buffer.size() > 0 && buffer[0].stream == flush_stream)
           buffer.pop_front();

@@ -113,7 +113,7 @@ module pipeline#(
   wire [31:0]                  iss_ex_A[EX_UNITS];
   wire [31:0]                  iss_ex_B[EX_UNITS];
   fwd_info_t                   iss_ex_fwd_info[EX_UNITS];
-  wire                         iss_ex_inst_valid[EX_UNITS];
+  logic                        iss_ex_inst_valid[EX_UNITS];
   wire [ROB_DEPTHLOG2-1:0]     iss_exmul1_rob_slot;
   wire [31:0]                  iss_exmul1_A;
   wire [31:0]                  iss_exmul1_B;
@@ -141,7 +141,7 @@ module pipeline#(
   wire [ROB_DEPTHLOG2-1:0]     ls_rob_dt_idx_b;
 
   // Outputs from EX1..EX_UNITS
-  wire                         ex_ready[EX_UNITS];
+  logic                        ex_ready[EX_UNITS];
   rob_entry_t                  ex_rob_wr_data[EX_UNITS];
   wire                         ex_rob_wr_valid[EX_UNITS];
   wire [ROB_DEPTHLOG2-1:0]     ex_rob_wr_slot[EX_UNITS];
@@ -238,8 +238,8 @@ module pipeline#(
   // so don't mark any other one as in transit.
   assign ex_agg_rob_transit_idx_valid[0]  = 1'b0 & iss_ls_inst_valid;
   assign ex_agg_rob_transit_idx_valid[1]  =   iss_exmul1_inst.alu_inst
-                                           & ~iss.exmul1_inst.muldiv_inst
-                                           & ~iss.exmul1_inst.can_inval
+                                           & ~iss_exmul1_inst.muldiv_inst
+                                           & ~iss_exmul1_inst.can_inval
                                            &  iss_exmul1_inst_valid
 					   ;
   assign ex_agg_rob_transit_idx_valid[2]  = 1'b0;

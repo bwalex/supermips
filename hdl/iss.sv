@@ -206,7 +206,7 @@ module iss#(
   endgenerate
 
 
-  function bit ex_unit_ready(bit ex_used[EX_UNITS], bit ex_ready[EX_UNITS]);
+  function bit ex_unit_ready(bit ex_used[EX_UNITS], reg ex_ready[EX_UNITS]);
     for (integer i = 0; i < EX_UNITS; i++)
       if (!ex_used[i] && ex_ready[i])
         return 1'b1;
