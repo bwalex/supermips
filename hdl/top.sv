@@ -291,10 +291,10 @@ module top#(
   end
 
   always @(posedge clock) begin
-    if (CPU.MEM.load_inst) begin
+    if (CPU.MEM.load_inst & ~CPU.MEM.stall) begin
       $fwrite(lstrace_file, "%d load (pc=%x), addr=%x => %x (%x)\n", $time, CPU.ex_pc_r, CPU.MEM.cache_addr, CPU.MEM.cache_data, CPU.MEM.result);
     end
-    if (CPU.MEM.store_inst) begin
+    if (CPU.MEM.store_inst & ~CPU.MEM.stall) begin
       $fwrite(lstrace_file, "%d store (pc=%x), addr=%x => %x, be=%b\n", $time, CPU.ex_pc_r, CPU.MEM.cache_addr, CPU.MEM.cache_wr_data, CPU.MEM.cache_wr_be);
     end
   end
