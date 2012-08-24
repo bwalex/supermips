@@ -190,7 +190,7 @@ module generic_cache #(
   assign cpu_addr_tag  = cpu_addr[ADDR_WIDTH-1 -: TAG_WIDTH];
   assign cpu_block_idx  = cpu_addr[ADDR_WIDTH-TAG_WIDTH-LINE_ADDR_WIDTH-1 -: NWORDSLOG2];
 
-  assign mem_block_idx  = { cpu_block_idx,  {((MEM_NWORDSLOG2-NWORDSLOG2 >= 0) ? (MEM_NWORDSLOG2-NWORDSLOG2) : 0 ){1'b0}} };
+  assign mem_block_idx  = (MEM_NWORDSLOG2-NWORDSLOG2 > 0) ? { cpu_block_idx, {(MEM_NWORDSLOG2-NWORDSLOG2){1'b0}} } : cpu_block_idx;
 
 
   genvar i;
@@ -220,10 +220,10 @@ module generic_cache #(
 
   assign cpu_rd_valid  = cpu_rd & cache_hit;
 
+  bit found;
 
   always_comb begin
-    automatic bit found  = 1'b0;
-    automatic integer j  = rand_bits;
+    found                = 1'b0;
     cpu_rd_line          = bank_cur_cline[0];
     bank_sel             = 'b0;
 
@@ -238,9 +238,7 @@ module generic_cache #(
     // Make sure we evict a random line, not always the first one; we do so
     // by starting at a random index looking for a non-dirty line in the set.
     if (!found) begin
-      j  = rand_bits;
-
-      do begin
+      for (bit [1:0] j = rand_bits+1; j != rand_bits; j++) begin
         if (j == ASSOC-1)
           j  = 0;
         else
@@ -251,7 +249,7 @@ module generic_cache #(
           found     = 1'b1;
           break;
         end
-      end while (j != rand_bits);
+      end
     end
 
     // If all the lines in the set are dirty, just pick a line at random.
