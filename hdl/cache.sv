@@ -81,7 +81,6 @@ module generic_cache #(
   reg [CLINE_WIDTH-1:0]       cpu_rd_line;
 
   reg                         mem_word_count_load;
-  wire                        mem_word_count_dec;
 
   wire [DATA_WIDTH-1:0]       be_expanded;
 
@@ -106,7 +105,6 @@ module generic_cache #(
   wire [NWORDSLOG2-1:0]       cpu_block_idx;
   wire [MEM_NWORDSLOG2-1:0]   mem_block_idx;
 
-  wire                        cache_miss;
   reg                         cache_evict;
 
   wire                        bank_line_valid[ASSOC];
