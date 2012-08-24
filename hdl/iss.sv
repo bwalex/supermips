@@ -285,6 +285,9 @@ module iss#(
         break;
       end
 
+      if (bds_missing_r && i > 0)
+        break;
+
       if   (!di_ops_ready[i]
 `ifdef ROB_FORWARDING_ENABLE
         && !(di_ops_almost_ready[i] && !(di[i].branch_inst || di[i].jmp_inst))
