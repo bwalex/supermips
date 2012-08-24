@@ -239,11 +239,6 @@ module generic_cache #(
     // by starting at a random index looking for a non-dirty line in the set.
     if (!found) begin
       for (bit [1:0] j = rand_bits+1; j != rand_bits; j++) begin
-        if (j == ASSOC-1)
-          j  = 0;
-        else
-          j += 1;
-
         if (~tag_banks[j][cpu_line_addr].dirty & ~tag_banks[j][cpu_line_addr].lfill) begin
           bank_sel  = j;
           found     = 1'b1;
