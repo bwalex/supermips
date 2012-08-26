@@ -270,6 +270,7 @@ module top#(
   string                inst_str_ex;
   string                inst_str_mem;
   string                inst_str_wb;
+  string		inst_str_wb_d1;
 
 
   default clocking cb @(posedge clock);
@@ -277,11 +278,20 @@ module top#(
 
 
 `ifdef TEXT_IDEC_ENABLE
+  reg [31:0] mem_inst_word_r_d1;
+  reg [31:0] mem_pc_r_d1;
+
+  always_ff @(posedge clock) begin
+    mem_inst_word_r_d1 <= CPU.mem_inst_word_r;
+    mem_pc_r_d1        <= CPU.mem_pc_r;
+  end
+
   text_idec tdec_if(.inst_word(CPU.if_inst_word),    .pc(CPU.if_pc),    .inst_str(inst_str_if));
   text_idec tdec_id(.inst_word(CPU.if_inst_word_r),  .pc(CPU.if_pc_r),  .inst_str(inst_str_id));
   text_idec tdec_ex(.inst_word(CPU.id_inst_word_r),  .pc(CPU.id_pc_r),  .inst_str(inst_str_ex));
   text_idec tdec_mem(.inst_word(CPU.ex_inst_word_r), .pc(CPU.ex_pc_r),  .inst_str(inst_str_mem));
   text_idec tdec_wb(.inst_word(CPU.mem_inst_word_r), .pc(CPU.mem_pc_r), .inst_str(inst_str_wb));
+  text_idec tdec_wb_d1(.inst_word(mem_inst_word_r_d1), .pc(mem_pc_r_d1), .inst_str(inst_str_wb_d1));
 `endif
 
 
@@ -311,8 +321,8 @@ module top#(
     if (CPU.WB.dest_reg_valid) begin
       $fwrite(rftrace_file, "%d write (pc =%x), $%d => %x\n", $time, CPU.mem_pc_r, CPU.WB.dest_reg, CPU.WB.result);
     end
-    if (last_wb_pc != CPU.mem_pc_r)
-      $fwrite(ret_file, "%d retire pc=%x; %s\n", $time, CPU.mem_pc_r, inst_str_wb);
+    if ((($past(last_wb_pc) == $past(CPU.mem_pc_r)) && $past(CPU.mem_pc_r) != CPU.mem_pc_r) || ($past(last_wb_pc) != $past(CPU.mem_pc_r)) && $past(CPU.mem_pc_r) != CPU.mem_pc_r )
+      $fwrite(ret_file, "%d retire pc=%x; %s\n", $time, $past(CPU.mem_pc_r), inst_str_wb_d1);
     last_wb_pc <= CPU.mem_pc_r;
   end
 `endif //  `ifdef TRACE_ENABLE

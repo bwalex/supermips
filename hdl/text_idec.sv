@@ -17,7 +17,7 @@ module text_idec(
   wire [31:0]                pc_plus_4;
   wire [4:0]                 ext_msbd;
   wire [4:0]                 ext_lsb;
-  wire [31:0]                imm_sext;
+  wire [15:0]                imm_sext;
   wire [31:0]                branch_addr;
 
 
@@ -34,7 +34,7 @@ module text_idec(
 
   assign pc_plus_4  = pc+4;
   assign jmp_addr   = { pc_plus_4[31:28], inst_addr, 2'b00 };
-  assign imm_sext   = { {16{inst_imm[15]}}, inst_imm };
+  assign imm_sext   = inst_imm;
   assign branch_addr = pc_plus_4 + { {14{inst_imm[15]}}, inst_imm, 2'b00 };
 
 
@@ -186,11 +186,11 @@ module text_idec(
       end
 
       6'h08: begin // addi
-        $sformat(inst_str, "addi $%0d, $%0d, 0x%x", inst_rt, inst_rs, inst_imm);
+        $sformat(inst_str, "addi $%0d, $%0d, %d", inst_rt, inst_rs, $signed(imm_sext));
       end
 
       6'h09: begin // addiu
-        $sformat(inst_str, "addiu $%0d, $%0d, 0x%x", inst_rt, inst_rs, inst_imm);
+        $sformat(inst_str, "addiu $%0d, $%0d, %d", inst_rt, inst_rs, $signed(imm_sext));
       end
 
       6'h0a: begin // slti
@@ -240,7 +240,7 @@ module text_idec(
             $sformat(inst_str, "ext $%0d, $%0d, %d, %d", inst_rt, inst_rs, ext_lsb, ext_msbd+1);
           end
           6'd04: begin // ins
-            $sformat(inst_str, "ins $%0d, $%0d, %d, %d", inst_rt, inst_rt, inst_rs, ext_lsb, ext_msbd+1-ext_lsb);
+            $sformat(inst_str, "ins $%0d, $%0d, $%0d, %d, %d", inst_rt, inst_rt, inst_rs, ext_lsb, ext_msbd+1-ext_lsb);
           end
           6'd32: begin
             case (inst_shamt)
@@ -251,7 +251,7 @@ module text_idec(
                 $sformat(inst_str, "seh $%0d, $%0d", inst_rd, inst_rt);
               end
               default: begin
-                $sformat(inst_str, "Unknown instruction: opc: %x, funct: %d, shamt: %d", inst_opc, inst_funct, inst_shamt, pc);
+                $sformat(inst_str, "Unknown instruction: opc: %x, funct: %d, shamt: %d", inst_opc, inst_funct, inst_shamt);
               end
             endcase // case (inst_shamt)
           end // case: 6'd32
@@ -262,35 +262,35 @@ module text_idec(
       end // case: 6'h1f
 
       6'h20: begin // lb
-        $sformat(inst_str, "lb, $%0d, ($%0d + %d)", inst_rt, inst_rs, $signed(imm_sext));
+        $sformat(inst_str, "lb, $%0d, %d($%0d)", inst_rt, $signed(imm_sext), inst_rs);
       end
 
       6'h21: begin // lh
-        $sformat(inst_str, "lh, $%0d, ($%0d + %d)", inst_rt, inst_rs, $signed(imm_sext));
+        $sformat(inst_str, "lh, $%0d, %d($%0d)", inst_rt, $signed(imm_sext), inst_rs);
       end
 
       6'h23: begin // lw
-        $sformat(inst_str, "lw, $%0d, ($%0d + %d)", inst_rt, inst_rs, $signed(imm_sext));
+        $sformat(inst_str, "lw, $%0d, %d($%0d)", inst_rt, $signed(imm_sext), inst_rs);
       end
 
       6'h24: begin // lbu
-        $sformat(inst_str, "lbu, $%0d, ($%0d + %d)", inst_rt, inst_rs, $signed(imm_sext));
+        $sformat(inst_str, "lbu, $%0d, %d($%0d)", inst_rt, $signed(imm_sext), inst_rs);
       end
 
       6'h25: begin //lhu
-        $sformat(inst_str, "lhu, $%0d, ($%0d + %d)", inst_rt, inst_rs, $signed(imm_sext));
+        $sformat(inst_str, "lhu, $%0d, %d($%0d)", inst_rt, $signed(imm_sext), inst_rs);
       end
 
       6'h28: begin // sb
-        $sformat(inst_str, "sb, $%0d, ($%0d + %d)", inst_rt, inst_rs, $signed(imm_sext));
+        $sformat(inst_str, "sb, $%0d, %d($%0d)", inst_rt, $signed(imm_sext), inst_rs);
       end
 
       6'h29: begin // sh
-        $sformat(inst_str, "sh, $%0d, ($%0d + %d)", inst_rt, inst_rs, $signed(imm_sext));
+        $sformat(inst_str, "sh, $%0d, %d($%0d)", inst_rt, $signed(imm_sext), inst_rs);
       end
 
       6'h2b: begin // sw
-        $sformat(inst_str, "sw, $%0d, ($%0d + %d)", inst_rt, inst_rs, $signed(imm_sext));
+        $sformat(inst_str, "sw, $%0d, %d($%0d)", inst_rt, $signed(imm_sext), inst_rs);
       end
 
       default: begin
