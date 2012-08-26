@@ -305,11 +305,15 @@ module top#(
     end
   end
 
+  reg [31:0] last_wb_pc;
+
   always @(posedge clock) begin
     if (CPU.WB.dest_reg_valid) begin
       $fwrite(rftrace_file, "%d write (pc =%x), $%d => %x\n", $time, CPU.mem_pc_r, CPU.WB.dest_reg, CPU.WB.result);
     end
-    $fwrite(ret_file, "%d retire pc=%x; %s\n", $time, CPU.mem_pc_r, inst_str_wb);
+    if (last_wb_pc != CPU.mem_pc_r)
+      $fwrite(ret_file, "%d retire pc=%x; %s\n", $time, CPU.mem_pc_r, inst_str_wb);
+    last_wb_pc <= CPU.mem_pc_r;
   end
 `endif //  `ifdef TRACE_ENABLE
 

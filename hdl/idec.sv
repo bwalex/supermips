@@ -795,9 +795,6 @@ module idec #(
       dest_reg_valid  = 1'b0;
 
     if (stall) begin
-`ifdef TRACE_ENABLE
-      $display("Introducing a bubble and stalling (pc: %x)", pc);
-`endif
       dest_reg_valid  = 1'b0;
       load_inst       = 1'b0;
       store_inst      = 1'b0;
