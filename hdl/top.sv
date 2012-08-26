@@ -215,7 +215,8 @@ module top#(
 `else // !`ifdef REAL_CACHE
 
   tcm #(
-            .MEM_FILE(MEM_FILE)
+            .MEM_FILE(MEM_FILE),
+            .DATA_WIDTH(128)
           ) ITCM (
            // Outputs
            .cpu_rd_data                 (icache_data),
@@ -230,7 +231,8 @@ module top#(
            .cpu_wr                      (1'b0));
 
   tcm #(
-             .MEM_FILE(MEM_FILE)
+             .MEM_FILE(MEM_FILE),
+             .DATA_WIDTH(32)
            ) DTCM (
            // Outputs
            .cpu_rd_data                 (dcache_data),
@@ -261,30 +263,50 @@ module top#(
 `endif
 
 
-`ifdef TRACE_ENABLE
-  integer               lstrace_file;
-  integer               rftrace_file;
+  integer               ic_file;
+  integer               dc_file;
 
   initial begin
-    lstrace_file  = $fopen(LSTRACE_FILE, "w");
-    rftrace_file  = $fopen(RFTRACE_FILE, "w");
+    ic_file  = $fopen("icache.stats", "w");
+    dc_file  = $fopen("dcache.stats", "w");
   end
 
-  always @(posedge clock) begin
-    if (CPU.MEM.load_inst) begin
-      $fwrite(lstrace_file, "%d load (pc=%x), addr=%x => %x (%x)\n", $time, CPU.ex_pc_r, CPU.MEM.cache_addr, CPU.MEM.cache_data, CPU.MEM.result);
-    end
-    if (CPU.MEM.store_inst) begin
-      $fwrite(lstrace_file, "%d store (pc=%x), addr=%x => %x, be=%b\n", $time, CPU.ex_pc_r, CPU.MEM.cache_addr, CPU.MEM.cache_wr_data, CPU.MEM.cache_wr_be);
-    end
-  end
+  task finish_simulation;
+    $display("End of simulation");
 
-  always @(posedge clock) begin
-    if (CPU.WB.dest_reg_valid) begin
-      $fwrite(rftrace_file, "%d write (pc =%x), $%d => %x\n", $time, CPU.mem_pc_r, CPU.WB.dest_reg, CPU.WB.result);
-    end
-  end
+`ifdef REAL_CACHE
+    $fwrite(ic_file, "access: %d\n", icache.stat_access);
+    $fwrite(ic_file, "hit:    %d\n", icache.stat_access-icache.stat_misses);
+    $fwrite(ic_file, "miss:   %d\n", icache.stat_misses);
+    $fwrite(ic_file, "alloc:  %d\n", icache.stat_allocs);
+    $fwrite(ic_file, "wback:  %d\n", icache.stat_wbacks);
+    $fwrite(ic_file, "evict:  %d\n", icache.stat_evicts);
+
+    $fwrite(dc_file, "access: %d\n", dcache.stat_access);
+    $fwrite(dc_file, "hit:    %d\n", dcache.stat_access-dcache.stat_misses);
+    $fwrite(dc_file, "miss:   %d\n", dcache.stat_misses);
+    $fwrite(dc_file, "alloc:  %d\n", dcache.stat_allocs);
+    $fwrite(dc_file, "wback:  %d\n", dcache.stat_wbacks);
+    $fwrite(dc_file, "evict:  %d\n", dcache.stat_evicts);
 `endif
+    $finish();
+  endtask
+
+  always_ff @(posedge clock) begin
+    bit [`clogb2(ROB_DEPTH)-1:0] k;
+
+    if (CPU.ROB.consume_i) begin
+      for (integer i = 0; i <= CPU.ROB.consume_count; i++) begin
+        k = CPU.ROB.ext_ptr + i;
+        if (!CPU.ROB.kill[k]) begin
+          if (CPU.ROB.insns[k].inst_word == 32'h0000000d) begin // break
+            finish_simulation();
+          end
+        end
+      end
+    end
+  end
+
 
   // 100 MHz clock
   always

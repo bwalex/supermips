@@ -191,8 +191,9 @@ module idec
           end
           6'd13: begin // break
             // XXX: this is not really a break exception; it halts simulation.
-            $display("BREAK!");
-            $stop(); // XXX: consider $finish()
+	    alu_inst       = 1'b1;
+	    dest_reg_valid = 1'b0;
+            //$stop(); // XXX: consider $finish()
           end
           6'd16: begin // mfhi
             muldiv_inst  = 1'b1;
@@ -486,7 +487,7 @@ module idec
             dest_reg_valid  = 1'b0;
           end
 
-          6'd00: begin // maddu
+          6'd01: begin // maddu
             muldiv_inst     = 1'b1;
             muldiv_op       = OP_MADD;
             muldiv_op_u     = 1'b1;

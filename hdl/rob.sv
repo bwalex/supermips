@@ -258,6 +258,7 @@ module rob #(
     trace_file     = $fopen("rob.trace", "w");
     ret_trace_file = $fopen("retire.trace", "w");
   end
+`endif
 
   always_ff @(posedge clock) begin
     if (reserve_i)
@@ -267,6 +268,7 @@ module rob #(
   end
 
 
+`ifdef ROB_TRACE_ENABLE
   always_ff @(posedge clock) begin
     bit [DEPTHLOG2-1:0] k;
 
@@ -290,25 +292,24 @@ module rob #(
                  $time, write_slot[i], insns[write_slot[i]].pc, write_data[i].result_lo,
                  write_data[i].dest_reg, write_data[i].dest_reg_valid);
     end
+
     if (consume_i) begin
       for (integer i = 0; i <= consume_count; i++) begin
         k = ext_ptr + i;
         $fwrite(trace_file, "%d ROB: Consume slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
                  $time, k, insns[k].pc, buffer[k].result_lo,
                  buffer[k].dest_reg, buffer[k].dest_reg_valid);
-        if (!kill[k])
-          $fwrite(ret_trace_file, "%d Retire ROB slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b\n",
+        if (!kill[k]) begin
+          $fwrite(ret_trace_file, "%d Retire ROB slot %d, pc=%x, data=%x, dest_reg=%d, dest_reg_valid=%b, word=%x\n",
                   $time, k, insns[k].pc, buffer[k].result_lo,
-                  buffer[k].dest_reg, buffer[k].dest_reg_valid);
+                  buffer[k].dest_reg, buffer[k].dest_reg_valid, insns[k].inst_word);
+        end
       end
     end
     if (flush) begin
       $fwrite(trace_file, "%d ROB: Flush, flush_idx=%d, flush_amt=%d\n", $time, flush_idx, flush_amt);
     end
-
-
   end
 `endif
-
 
 endmodule

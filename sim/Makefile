@@ -11,6 +11,7 @@ IQ_DEPTH?=16
 ROB_DEPTH?=32
 ROB_FORWARDING?=ENABLE
 RETIRE_COUNT?=4
+CACHE?=REAL
 
 all:
 	echo "Targets: ncv, ncv_batch, modelsim, vcs"
@@ -33,7 +34,7 @@ vcs:
 	@echo assign $(ROB_DEPTH)    top/ROB_DEPTH    >> .vcs.params
 	@echo assign $(RETIRE_COUNT) top/RETIRE_COUNT >> .vcs.params
 	vcs $(VCS_FLAGS) -sverilog \
-		+define+REAL_CACHE \
+		+define+$(CACHE)_CACHE \
 		+define+ROB_TRACE_$(TRACE) \
 		+define+IQ_TRACE_$(TRACE) \
 		+define+ISS_TRACE_$(TRACE) \
