@@ -176,6 +176,15 @@ module pipeline#(
   wire        mem_dest_reg_valid_r;//
 
 
+  wire        id_inst_word_i;
+  wire        ex_inst_word_i;
+  wire        mem_inst_word_i;
+
+
+  assign id_inst_word_i   = (id_stall ) ? 32'b0 : if_inst_word_r;
+  assign ex_inst_word_i   = (ex_stall ) ? 32'b0 : id_inst_word_r;
+  assign mem_inst_word_i  = (mem_stall) ? 32'b0 : ex_inst_word_r;
+
 
   assign stall_mem  = 1'b0;
   assign stall_ex   = mem_stall; // stall ex -> mem pipeline register
@@ -422,7 +431,7 @@ module pipeline#(
                        .ex_dest_reg_valid(id_dest_reg_valid_r),
                        // Inputs
                        .id_pc           (if_pc_r),
-                       .id_inst_word    (if_inst_word_r),
+                       .id_inst_word    (id_inst_word_i),
                        .id_opc          (id_opc),
                        .id_A            (id_A),
                        .id_B            (id_B),
@@ -474,7 +483,7 @@ module pipeline#(
                          .mem_dest_reg_valid    (ex_dest_reg_valid_r),
                          // Inputs
                          .ex_pc                 (id_pc_r),
-                         .ex_inst_word          (id_inst_word_r),
+                         .ex_inst_word          (ex_inst_word_i),
                          .ex_opc                (id_opc_r),
                          .ex_ls_sext            (id_ls_sext_r),
                          .ex_load_inst          (ex_mem_load_inst_i),
@@ -500,7 +509,7 @@ module pipeline#(
                          .wb_dest_reg_valid     (mem_dest_reg_valid_r),
                          // Inputs
                          .mem_pc                (ex_pc_r),
-                         .mem_inst_word         (ex_inst_word_r),
+                         .mem_inst_word         (mem_inst_word_i),
                          .mem_opc               (ex_opc_r),
                          .mem_result            (mem_result),
                          .mem_dest_reg          (ex_dest_reg_r),

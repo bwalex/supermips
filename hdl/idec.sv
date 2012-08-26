@@ -516,7 +516,7 @@ module idec #(
         inst_iformat = 1'b0;
         inst_jformat = 1'b1;
         dest_reg     = 5'd31;
-	alu_op       = OP_PASS_B;
+	      alu_op       = OP_PASS_B;
         jmp_inst     = 1'b1;
       end
 
@@ -620,7 +620,7 @@ module idec #(
             dest_reg_valid  = 1'b0;
           end
 
-          6'd00: begin // maddu
+          6'd01: begin // maddu
             muldiv_inst     = 1'b1;
             muldiv_op       = OP_MADD;
             muldiv_op_u     = 1'b1;
