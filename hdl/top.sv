@@ -288,10 +288,12 @@ module top#(
 `ifdef TRACE_ENABLE
   integer               lstrace_file;
   integer               rftrace_file;
+  integer               ret_file;
 
   initial begin
     lstrace_file  = $fopen(LSTRACE_FILE, "w");
     rftrace_file  = $fopen(RFTRACE_FILE, "w");
+    ret_file      = $fopen("retire.trace", "w");
   end
 
   always @(posedge clock) begin
@@ -307,6 +309,7 @@ module top#(
     if (CPU.WB.dest_reg_valid) begin
       $fwrite(rftrace_file, "%d write (pc =%x), $%d => %x\n", $time, CPU.mem_pc_r, CPU.WB.dest_reg, CPU.WB.result);
     end
+    $fwrite(ret_file, "%d retire pc=%x; %s\n", $time, CPU.mem_pc_r, inst_str_wb);
   end
 `endif //  `ifdef TRACE_ENABLE
 
