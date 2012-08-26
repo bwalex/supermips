@@ -333,7 +333,8 @@ module idec #(
           6'd13: begin // break
             // XXX: this is not really a break exception; it halts simulation.
             $display("BREAK!");
-            $finish();
+            dest_reg_valid  = 1'b0;
+            //$finish();
           end
           6'd16: begin // mfhi
             muldiv_inst  = 1'b1;

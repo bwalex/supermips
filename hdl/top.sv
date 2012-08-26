@@ -308,7 +308,43 @@ module top#(
       $fwrite(rftrace_file, "%d write (pc =%x), $%d => %x\n", $time, CPU.mem_pc_r, CPU.WB.dest_reg, CPU.WB.result);
     end
   end
+`endif //  `ifdef TRACE_ENABLE
+
+  integer               ic_file;
+  integer               dc_file;
+
+  initial begin
+    ic_file  = $fopen("icache.stats", "w");
+    dc_file  = $fopen("dcache.stats", "w");
+  end
+
+  task finish_simulation;
+    $display("End of simulation");
+
+`ifdef REAL_CACHE
+    $fwrite(ic_file, "access: %d\n", icache.stat_access);
+    $fwrite(ic_file, "hit:    %d\n", icache.stat_access-icache.stat_misses);
+    $fwrite(ic_file, "miss:   %d\n", icache.stat_misses);
+    $fwrite(ic_file, "alloc:  %d\n", icache.stat_allocs);
+    $fwrite(ic_file, "wback:  %d\n", icache.stat_wbacks);
+    $fwrite(ic_file, "evict:  %d\n", icache.stat_evicts);
+
+    $fwrite(dc_file, "access: %d\n", dcache.stat_access);
+    $fwrite(dc_file, "hit:    %d\n", dcache.stat_access-dcache.stat_misses);
+    $fwrite(dc_file, "miss:   %d\n", dcache.stat_misses);
+    $fwrite(dc_file, "alloc:  %d\n", dcache.stat_allocs);
+    $fwrite(dc_file, "wback:  %d\n", dcache.stat_wbacks);
+    $fwrite(dc_file, "evict:  %d\n", dcache.stat_evicts);
 `endif
+    $finish();
+  endtask
+
+  always_ff @(posedge clock) begin
+    if (CPU.mem_inst_word_r == 32'h0000000d) begin // break
+      finish_simulation();
+    end
+  end
+
 
   // 100 MHz clock
   always
