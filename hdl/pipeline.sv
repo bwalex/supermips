@@ -176,9 +176,9 @@ module pipeline#(
   wire        mem_dest_reg_valid_r;//
 
 
-  wire        id_inst_word_i;
-  wire        ex_inst_word_i;
-  wire        mem_inst_word_i;
+  wire [31:0] id_inst_word_i;
+  wire [31:0] ex_inst_word_i;
+  wire [31:0] mem_inst_word_i;
 
 
   assign id_inst_word_i   = (id_stall ) ? 32'b0 : if_inst_word_r;
