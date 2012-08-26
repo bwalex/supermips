@@ -44,12 +44,12 @@ module memory #(
 
   assign addr_int  = addr >> PRIV_WIDTH;
 
+  bit [DATA_WIDTH-1:0]       w;
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n) begin
       if (REL_WIDTH == 1)
         $readmemh(MEM_FILE, mem);
       else begin
-        automatic bit [DATA_WIDTH-1:0] w;
         $readmemh(MEM_FILE, staging);
         for (integer i = 0; i < DEPTH/REL_WIDTH; i++) begin
           for (integer j = 0; j < REL_WIDTH; j++) begin
