@@ -8,7 +8,7 @@ module generic_cache #(
                        MEM_NWORDS = CLINE_WIDTH/MEM_DATA_WIDTH,
                        MEM_D_NWORDS = (MEM_DATA_WIDTH >= DATA_WIDTH) ? 1 : DATA_WIDTH/MEM_DATA_WIDTH,
                        NWORDSLOG2 = `clogb2(NWORDS),
-                       MEM_NWORDSLOG2        = `clogb2(MEM_NWORDS),
+                       MEM_NWORDSLOG2        = (`clogb2(MEM_NWORDS) > 0) ? `clogb2(MEM_NWORDS) : 1,
                        MEM_ADDR_BITWIDTH     = `clogb2(MEM_DATA_WIDTH/8),
                        LFSR_SEED             = 11'd101,
                        ASSOC                 = 4,
@@ -188,7 +188,8 @@ module generic_cache #(
   assign cpu_addr_tag  = cpu_addr[ADDR_WIDTH-1 -: TAG_WIDTH];
   assign cpu_block_idx  = cpu_addr[ADDR_WIDTH-TAG_WIDTH-LINE_ADDR_WIDTH-1 -: NWORDSLOG2];
 
-  assign mem_block_idx  = (MEM_NWORDSLOG2-NWORDSLOG2 > 0) ? { cpu_block_idx, {(MEM_NWORDSLOG2-NWORDSLOG2){1'b0}} } : cpu_block_idx;
+  localparam _W = (MEM_NWORDSLOG2-NWORDSLOG2 > 0) ? (MEM_NWORDSLOG2-NWORDSLOG2) : 0;
+  assign mem_block_idx  = (MEM_NWORDS<=1) ? 'b0 :(MEM_NWORDSLOG2-NWORDSLOG2 > 0) ? { cpu_block_idx, {(_W){1'b0}} } : cpu_block_idx;
 
 
   genvar i;

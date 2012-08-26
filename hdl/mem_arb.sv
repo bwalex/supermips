@@ -48,7 +48,7 @@ module mem_arb #(
   reg                        load_count;
   wire                       dec_count;
 
-  typedef enum               { IDLE, BURST_READ } state_t;
+  typedef enum               { IDLE, BURST_READ, SINGLE_READ } state_t;
   state_t state;
   state_t next_state;
 
@@ -141,8 +141,13 @@ module mem_arb #(
       case (state)
         IDLE: begin
           load_count  = 1'b1;
-          if (rd_int == 1'b1 && burst_len_int != 0)
-            next_state  = BURST_READ;
+          if (rd_int == 1'b1)
+            next_state  = (burst_len_int == 0) ? SINGLE_READ : BURST_READ;
+        end
+
+        SINGLE_READ: begin
+          if (mm_rd_valid)
+            next_state  = IDLE;
         end
 
         BURST_READ: begin
