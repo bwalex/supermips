@@ -272,6 +272,10 @@ module top#(
   string                inst_str_wb;
 
 
+  default clocking cb @(posedge clock);
+  endclocking
+
+
 `ifdef TEXT_IDEC_ENABLE
   text_idec tdec_if(.inst_word(CPU.if_inst_word),    .pc(CPU.if_pc),    .inst_str(inst_str_if));
   text_idec tdec_id(.inst_word(CPU.if_inst_word_r),  .pc(CPU.if_pc_r),  .inst_str(inst_str_id));

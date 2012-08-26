@@ -183,7 +183,7 @@ module pipeline#(
   assign stall_if   = mem_stall | ex_stall | id_stall;
 
   // Signals requiring gating: dest_reg_valid, load_inst, store_inst, jmp_inst, alu_inst
-  // Stages able to stall: (IF), ID, MEM   (in the future EX, if it has iterative ops)
+  // Stages able to stall: (IF), ID, MEM
   // this generates bubbles, effectively
   assign id_ex_dest_reg_valid_i  = id_dest_reg_valid    & ~id_stall;
   assign id_ex_load_inst_i       = id_load_inst         & ~id_stall;
@@ -191,10 +191,10 @@ module pipeline#(
   assign id_ex_jmp_inst_i        = id_jmp_inst          & ~id_stall;
   assign id_ex_alu_inst_i        = id_alu_inst          & ~id_stall;
   assign id_ex_branch_inst_i     = id_branch_inst       & ~id_stall;
-  // XXX: need to "gate" muldiv_op
-  assign id_ex_muldiv_op_i       = (~id_stall) ? id_muldiv_op : OP_NONE; // XXX: can I do this with a non-wire?
+  // need to "gate" muldiv_op
+  assign id_ex_muldiv_op_i       = (~id_stall) ? id_muldiv_op : OP_NONE;
 
-  // XXX: need to "gate" other ex -> mem signals
+  // need to "gate" other ex -> mem signals
   //       - id_load_inst_r
   //       - id_store_inst_r
   //       - id_dest_reg_valid_r (or rather ex_new_dest_reg_valid)
