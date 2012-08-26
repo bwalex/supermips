@@ -1,9 +1,12 @@
 module tcm #(
   parameter ADDR_WIDTH = 32,
             DATA_WIDTH = 32,
-            MEM_DEPTH  = 8*1024*1024, /* 8M words -> 32 MB */
+            MEM_DEPTH  = 16*1024*1024, /* 8M words -> 32 MB */
             MEM_FILE   = "",
-            BE_WIDTH   = DATA_WIDTH/8
+            BE_WIDTH   = DATA_WIDTH/8,
+            REL_WIDTH  = DATA_WIDTH/32,
+            DATA_WIDTH_BYTES = DATA_WIDTH/8,
+            PRIV_WIDTH = `clogb2(DATA_WIDTH_BYTES)
 )(
   input                   clock,
   input                   reset_n,
@@ -17,11 +20,12 @@ module tcm #(
   output                  cpu_waitrequest
 );
 
-  reg [DATA_WIDTH-1:0]    mem[MEM_DEPTH];
+  reg [31:0]              staging[MEM_DEPTH];
+  reg [DATA_WIDTH-1:0]    mem[MEM_DEPTH/REL_WIDTH];
   wire [ADDR_WIDTH-1:0]   mem_addr;
   wire [DATA_WIDTH-1:0]   be_expanded;
 
-  assign mem_addr  = cpu_addr >> 2;
+  assign mem_addr  = cpu_addr >> PRIV_WIDTH;
 
 
   genvar i;
@@ -31,13 +35,22 @@ module tcm #(
     end
   endgenerate
 
-  //initial begin
-  //  $readmemh(MEM_FILE, mem);
-  //end
 
   always_ff @(posedge clock, negedge reset_n)
-    if (~reset_n)
-      $readmemh(MEM_FILE, mem);
+    if (~reset_n) begin
+      if (REL_WIDTH == 1)
+        $readmemh(MEM_FILE, mem);
+      else begin
+        automatic bit [DATA_WIDTH-1:0] w;
+        $readmemh(MEM_FILE, staging);
+        for (integer i = 0; i < MEM_DEPTH/REL_WIDTH; i++) begin
+          for (integer j = 0; j < REL_WIDTH; j++) begin
+            w[DATA_WIDTH-1-j*32 -: 32] = staging[i*REL_WIDTH+j];
+            mem[i] <= w;
+          end
+        end
+      end
+    end
     else if (cpu_wr)
       mem[mem_addr] <=  (mem[mem_addr] & ~be_expanded)
                       | (cpu_wr_data   &  be_expanded);
@@ -46,7 +59,5 @@ module tcm #(
   assign cpu_waitrequest = 1'b0;
 
   assign cpu_rd_data  = mem[mem_addr];
-
-  assert property (@(posedge clock) ~(cpu_rd & cpu_wr));
 
 endmodule

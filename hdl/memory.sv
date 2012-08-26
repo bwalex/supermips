@@ -3,7 +3,10 @@ module memory #(
                           DATA_WIDTH = 32,
                           BURSTLEN_WIDTH = 2,
                           MEM_FILE = "",
-                          DEPTH = 16*1024*1024 // 16Mwords
+                          DEPTH = 16*1024*1024, // 16Mwords
+                          REL_WIDTH  = DATA_WIDTH/32,
+                          DATA_WIDTH_BYTES = DATA_WIDTH/8,
+                          PRIV_WIDTH = `clogb2(DATA_WIDTH_BYTES)
 )(
   input                       clock,
   input                       reset_n,
@@ -23,7 +26,8 @@ module memory #(
 
   reg [BURSTLEN_WIDTH-1:0]   burst_count_r;
 
-  reg [DATA_WIDTH-1:0]       mem[DEPTH];
+  reg [31:0]                 staging[DEPTH];
+  reg [DATA_WIDTH-1:0]       mem[DEPTH/REL_WIDTH];
 
   wire [ADDR_WIDTH-1:0]      addr_int;
   reg [ADDR_WIDTH-1:0]       burst_addr;
@@ -38,11 +42,23 @@ module memory #(
 
   assign waitrequest  = 1'b0;
 
-  assign addr_int  = addr >> `clogb2(DATA_WIDTH/8);
+  assign addr_int  = addr >> PRIV_WIDTH;
 
   always_ff @(posedge clock, negedge reset_n)
-    if (~reset_n)
-      $readmemh(MEM_FILE, mem);
+    if (~reset_n) begin
+      if (REL_WIDTH == 1)
+        $readmemh(MEM_FILE, mem);
+      else begin
+        automatic bit [DATA_WIDTH-1:0] w;
+        $readmemh(MEM_FILE, staging);
+        for (integer i = 0; i < DEPTH/REL_WIDTH; i++) begin
+          for (integer j = 0; j < REL_WIDTH; j++) begin
+            w[DATA_WIDTH-1-j*32 -: 32] = staging[i*REL_WIDTH+j];
+            mem[i] = w;
+          end
+        end
+      end
+    end
     else if (wr) begin
       //$display("mem write: %x (%x) => %x", addr, addr_int, data_in);
       mem[addr_int] <= data_in;
@@ -101,7 +117,7 @@ module memory #(
       case (state)
         IDLE: begin
           load_burst_count     = 1'b1;
-          if (rd && burst_len != 0)
+          if (rd)
             next_state  = BURST_READ;
         end
 
