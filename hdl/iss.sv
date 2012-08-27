@@ -108,8 +108,8 @@ module iss#(
   reg           bds_missing_r;
   reg [ROB_DEPTHLOG2-1:0] bds_flush_slot;
   reg [ROB_DEPTHLOG2-1:0] bds_flush_slot_r;
-  reg [ISS_PC_LOG2-1:0]   bds_flush_iq_idx;
-  reg [ISS_PC_LOG2-1:0]   bds_flush_iq_idx_r;
+  reg [6:0]   bds_flush_iq_idx;
+  reg [6:0]   bds_flush_iq_idx_r;
 
   reg [31:0]    branch_A;
   reg [31:0]    branch_B;
