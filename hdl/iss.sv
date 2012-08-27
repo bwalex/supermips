@@ -114,7 +114,7 @@ module iss#(
   reg [31:0]    branch_A;
   reg [31:0]    branch_B;
   reg [ROB_DEPTHLOG2-1:0] branch_rob_slot;
-  reg [ISS_PC_LOG2-1:0]   branch_iq_idx;
+  reg [ 6:0]   branch_iq_idx;
   reg           bi_inst_valid;
 
   dec_inst_t    bi_retained;
