@@ -329,9 +329,11 @@ module top#(
     if (CPU.WB.dest_reg_valid) begin
       $fwrite(rftrace_file, "%d write (pc =%x), $%d => %x\n", $time, CPU.mem_pc_r, CPU.WB.dest_reg, CPU.WB.result);
     end
+`ifdef TEXT_IDEC_ENABLE
     if ((($past(last_wb_pc) == $past(CPU.mem_pc_r)) && $past(CPU.mem_pc_r) != CPU.mem_pc_r) || ($past(last_wb_pc) != $past(CPU.mem_pc_r)) && $past(CPU.mem_pc_r) != CPU.mem_pc_r )
       $fwrite(ret_file, "%d retire pc=%x; %s; alu=%b, muldiv=%b, jmp=%b, branch=%b, load=%b, store=%b, unknown=%b\n", $time, $past(CPU.mem_pc_r), inst_str_wb_d1, wb_alu_inst, wb_muldiv_inst, wb_jmp_inst, wb_branch_inst, wb_load_inst, wb_store_inst, wb_unknown_inst);
     last_wb_pc <= CPU.mem_pc_r;
+`endif
   end
 `endif //  `ifdef TRACE_ENABLE
 
