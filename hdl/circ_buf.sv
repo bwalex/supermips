@@ -66,11 +66,18 @@ module circ_buf #(
           if (buffer[i].idx == ft)
             fi  = i;
 
+`ifdef IQ_TRACE_ENABLE
+        $fwrite(trace_file, "%d: IQ: fi: %d\n", $time, fi);
+`endif
         for (integer i = EXT_COUNT-1; i >= 0; i--) begin
           automatic iq_entry_int_t e  = buffer[i];
           if (ext_consumed[i] & ext_valid[i]) begin
             if (i < fi)
               fi -= 1;
+
+`ifdef IQ_TRACE_ENABLE
+            $fwrite(trace_file, "%d: IQ: fi: %d\n", $time, fi);
+`endif
 
             buffer.delete(i);
 `ifdef IQ_TRACE_ENABLE
@@ -101,8 +108,14 @@ module circ_buf #(
       if (flush) begin
 `ifdef IQ_TRACE_ENABLE
         automatic integer count  = buffer.size();
+        automatic iq_entry_int_t e;
 `endif
         for (integer i = fi; i < buffer.size() && buffer[fi].stream == flush_stream; i++) begin
+`ifdef IQ_TRACE_ENABLE
+          e  = buffer[fi];
+          $fwrite(trace_file, "%d IQ: flush slot %d, pc=%x, iw=%x, rob_slot=%d, stream=%b idx=%d\n",
+                  $time, fi, e.dec_inst.pc, e.dec_inst.inst_word, e.rob_slot, e.stream, e.idx);
+`endif
           buffer.delete(fi);
         end
 
