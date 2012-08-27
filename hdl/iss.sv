@@ -556,8 +556,8 @@ module iss#(
   end
 
   always_ff @(posedge clock) begin
-    $fwrite(trace_file, "%d: ISS: bds_issued=%b, ls_ready=%b, exmul1_ready=%b, branch_ready=%b, ",
-      $time, bds_issued, ls_ready, exmul1_ready, branch_ready);
+    $fwrite(trace_file, "%d: ISS: bds_missing=%b, bds_missing_r=%b, bds_issued=%b, ls_ready=%b, exmul1_ready=%b, branch_ready=%b, ",
+      $time, bds_missing, bds_missing_r, bds_issued, ls_ready, exmul1_ready, branch_ready);
     for (integer i = 0; i < EX_UNITS; i++)
       $fwrite(trace_file, "ex%1d_ready=%b, ", i, ex_ready[i]);
     $fwrite(trace_file, "\n");
