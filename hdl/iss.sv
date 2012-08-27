@@ -342,14 +342,15 @@ module iss#(
       // Disallow speculative execution
       // XXX: spec
       can_proceed = 1'b0;
-      m = bds_flush_iq_idx_r - ISSUE_PER_CYCLE;
+      m = bds_flush_iq_idx_r - ISSUE_PER_CYCLE -32;
       n = insns[i].idx-1;
-      for (integer j = 0; j <= ISSUE_PER_CYCLE; j++) begin
+      for (integer j = 0; j <= ISSUE_PER_CYCLE+32; j++) begin
         if (m == n)
 	  can_proceed = 1'b1;
         m += 1;
       end
       if (bds_missing_r && !can_proceed && branch_flush_stream == insns[i].stream) begin
+        $fwrite(trace_file, "cannot continue pc: %x, can_proceed=%b, n=%d, m=%d\n", di[i].pc, can_proceed,n, m);
         continue;
       end
 
