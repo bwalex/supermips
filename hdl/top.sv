@@ -298,7 +298,7 @@ module top#(
     if (CPU.ROB.consume_i) begin
       for (integer i = 0; i <= CPU.ROB.consume_count; i++) begin
         k = CPU.ROB.ext_ptr + i;
-        if (!CPU.ROB.kill[k]) begin
+        if (!CPU.ROB.kill[k] && CPU.ROB.valid[k]) begin
           if (CPU.ROB.insns[k].inst_word == 32'h0000000d) begin // break
             finish_simulation();
           end

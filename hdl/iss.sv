@@ -78,7 +78,7 @@ module iss#(
   output                         branch_flush,
   output                         branch_flush_stream,
   output [ROB_DEPTHLOG2-1:0]     branch_flush_slot,
-  output [ISS_PC_LOG2-1:0]       branch_flush_iq_idx,
+  output [ 6:0]                  branch_flush_iq_idx,
 
   // Register file interface
   output [ 4:0]                  rd_addr[ISSUE_PER_CYCLE*2],

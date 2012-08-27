@@ -143,7 +143,7 @@ module ifetch #(
   assign inst_word3_valid  = (!stall_i) && (line_idx == 2'b11 || inst_word2_valid);
 
 
-  assign branch_stall  = cache_waitrequest;
+  assign branch_stall  = load_pc & cache_waitrequest;
 
   assign stall_i     = stall | cache_waitrequest;
 

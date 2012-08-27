@@ -74,8 +74,8 @@ module circ_buf #(
 
             buffer.delete(i);
 `ifdef IQ_TRACE_ENABLE
-            $fwrite(trace_file, "%d IQ: extract from slot %d, pc=%x, iw=%x, rob_slot=%d, stream=%b\n",
-                    $time, i, e.dec_inst.pc, e.dec_inst.inst_word, e.rob_slot, e.stream);
+            $fwrite(trace_file, "%d IQ: extract from slot %d, pc=%x, iw=%x, rob_slot=%d, stream=%b idx=%d\n",
+                    $time, i, e.dec_inst.pc, e.dec_inst.inst_word, e.rob_slot, e.stream, e.idx);
 `endif
           end
         end
@@ -91,10 +91,10 @@ module circ_buf #(
           buffer.push_back(e);
 
 `ifdef IQ_TRACE_ENABLE
-          $fwrite(trace_file, "%d IQ: insert at slot %d, pc=%x, iw=%x, rob_slot=%d, stream=%b\n",
+          $fwrite(trace_file, "%d IQ: insert at slot %d, pc=%x, iw=%x, rob_slot=%d, stream=%b, idx=%d\n",
                   $time,
                   buffer.size()-1, new_elements[i].dec_inst.pc, new_elements[i].dec_inst.inst_word,
-                  new_elements[i].rob_slot, new_elements[i].stream);
+                  new_elements[i].rob_slot, new_elements[i].stream, e.idx);
 `endif
         end
 
