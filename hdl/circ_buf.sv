@@ -17,7 +17,7 @@ module circ_buf #(
   input                    T new_elements[INS_COUNT],
 
   input                    ext_enable,
-  input [EXTCOUNTLOG2-1:0] ext_consumed,
+  input                    ext_consumed[EXT_COUNT],
   output reg               ext_valid[EXT_COUNT],
   output                   T out_elements[EXT_COUNT],
 
@@ -38,7 +38,6 @@ module circ_buf #(
 
   assign ins_enable_i    = ins_enable & ~full;
   assign ext_enable_i    = ext_enable & ~empty;
-  assign ext_consumed_i  = (ext_consumed >= used_count-1) ? (used_count-1) : ext_consumed;
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
@@ -51,13 +50,15 @@ module circ_buf #(
 `endif
 
       if (ext_enable_i)
-        for (integer i = 0; i <= ext_consumed_i; i++) begin
-          automatic iq_entry_int_t e = buffer.pop_front();
-
+        for (integer i = EXT_COUNT-1; i >= 0; i--) begin
+          automatic iq_entry_int e  = buffer[i];
+          if (ext_consumed[i] & ext_valid[i]) begin
+            buffer.delete(i);
 `ifdef IQ_TRACE_ENABLE
-          $fwrite(trace_file, "%d IQ: extract from slot %d, pc=%x, iw=%x, rob_slot=%d, stream=%b\n",
-                  $time, i, e.dec_inst.pc, e.dec_inst.inst_word, e.rob_slot, e.stream);
+              $fwrite(trace_file, "%d IQ: extract from slot %d, pc=%x, iw=%x, rob_slot=%d, stream=%b\n",
+                      $time, i, e.dec_inst.pc, e.dec_inst.inst_word, e.rob_slot, e.stream);
 `endif
+          end
         end
 
       if (ins_enable_i)

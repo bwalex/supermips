@@ -97,7 +97,7 @@ module pipeline#(
 
   // Outputs from ISS
   wire                         issiq_ext_enable;
-  wire [IQ_EXT_DEPTHLOG2-1:0]  issiq_ext_consumed;
+  wire                         issiq_ext_consumed[IQ_EXT_COUNT];
   dec_inst_t                   iss_ls_inst;
   dec_inst_t                   iss_ex_inst[EX_UNITS];
   dec_inst_t                   iss_exmul1_inst;

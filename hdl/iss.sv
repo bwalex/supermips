@@ -4,6 +4,7 @@ module iss#(
             parameter ROB_DEPTHLOG2 = 4,
                       EX_UNITS = 1,
                       ISSUE_PER_CYCLE = 4,
+                      IQ_DEPTHLOG2 = 4,
                       ISS_PC_LOG2 = `clogb2(ISSUE_PER_CYCLE)
 )(
   input                          clock,
@@ -11,7 +12,7 @@ module iss#(
 
   // IQ interface
   output reg                     ext_enable,
-  output reg [ISS_PC_LOG2-1:0]   ext_consumed,
+  output reg                     ext_consumed[ISSUE_PER_CYCLE],
   input                          ext_valid[ISSUE_PER_CYCLE],
   input                          iq_entry_t insns[ISSUE_PER_CYCLE],
   input                          empty,
@@ -82,6 +83,7 @@ module iss#(
   output [ 4:0]                  rd_addr[ISSUE_PER_CYCLE*2],
   input [31:0]                   rd_data[ISSUE_PER_CYCLE*2]
 );
+
 
   dec_inst_t    di[ISSUE_PER_CYCLE];
   wire [ROB_DEPTHLOG2-1:0]       rob_slot[ISSUE_PER_CYCLE];
@@ -276,7 +278,10 @@ module iss#(
       ls_inst_valid          = 1'b0;
       exmul1_inst_valid      = 1'b0;
     for (integer i = 0; i < EX_UNITS; i++)
-      ex_inst_valid[i] = 1'b0;
+      ex_inst_valid[i]  = 1'b0;
+
+    for (integer i = 0; i < ISSUE_PER_CYCLE; i++)
+      ext_consumed[i]  = 1'b0;
 
     for (integer i = 0; i < ISSUE_PER_CYCLE; i++) begin
       if (!ext_valid[i]) begin
@@ -307,16 +312,9 @@ module iss#(
 	      spec = 1'b1;
       end
 
-      if ((di[i].branch_inst | di[i].jmp_inst) && !b_used && branch_ready
-`ifdef FAST_BRANCH_DISABLE
-          // don't allow branch to proceed if we don't have the BDS insn available and ready, too
-          && i != (ISSUE_PER_CYCLE-1) && ext_valid[i+1] && di_ops_ready[i+1]
-	  // don't allow branch to proceed if we can't schedule the BDS, either
-	  && ( ((di[i+1].load_inst | di[i+1].store_inst) && !ls_used && ls_ready)
-	    || (di[i+1].muldiv_inst && !exmul1_used && exmul1_ready)
-	    || (di[i+1].alu_inst && (ex_unit_ready(ex_used, ex_ready) || (!exmul1_used && exmul1_ready))) )
-`endif
-	  ) begin
+      ext_consumed[i]  = 1'b1;
+
+      if ((di[i].branch_inst | di[i].jmp_inst) && !b_used && branch_ready) begin
         b_used           = 1'b1;
         branch_idx       = i;
         bi               = di[i];
@@ -386,12 +384,12 @@ module iss#(
         // If none of the execution units is available in this cycle
         // for this instruction then we stop here since we are issuing
         // strictly in order.
+        ext_consumed[i] <= 1'b0;
         break;
       end // else: !if(di[i].alu_inst && !exmul1_used && exmul1_ready)
     end // for (integer i = 0; i < ISSUE_PER_CYCLE; i++)
 
 
-    ext_consumed       = consumed - 1;
     ext_enable         = (consumed > 0) ? 1'b1 : 1'b0;
 
     bi_inst_valid      = b_used;
@@ -494,8 +492,11 @@ module iss#(
   assign wr_data.pc_valid        = new_pc_valid;
 
 
-  assign bds_missing     = new_pc_valid & bi_inst_valid & (ext_consumed == branch_idx);
-  assign bds_flush_slot  = branch_rob_slot;
+  assign bds_missing    =  new_pc_valid
+                         & bi_inst_valid
+                         & ((branch_idx == {ISS_PC_LOG2{1'b1}}) | (~ext_consumed[branch_idx+1]))
+                         ;
+  assign bds_flush_slot = branch_rob_slot;
 
 
   always_ff @(posedge clock, negedge reset_n)
