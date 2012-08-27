@@ -78,6 +78,7 @@ module iss#(
   output                         branch_flush,
   output                         branch_flush_stream,
   output [ROB_DEPTHLOG2-1:0]     branch_flush_slot,
+  output [ISS_PC_LOG2-1:0]       branch_flush_iq_idx,
 
   // Register file interface
   output [ 4:0]                  rd_addr[ISSUE_PER_CYCLE*2],
@@ -107,10 +108,13 @@ module iss#(
   reg           bds_missing_r;
   reg [ROB_DEPTHLOG2-1:0] bds_flush_slot;
   reg [ROB_DEPTHLOG2-1:0] bds_flush_slot_r;
+  reg [ISS_PC_LOG2-1:0]   bds_flush_iq_idx;
+  reg [ISS_PC_LOG2-1:0]   bds_flush_iq_idx_r;
 
   reg [31:0]    branch_A;
   reg [31:0]    branch_B;
   reg [ROB_DEPTHLOG2-1:0] branch_rob_slot;
+  reg [ISS_PC_LOG2-1:0]   branch_iq_idx;
   reg           bi_inst_valid;
 
   dec_inst_t    bi_retained;
@@ -244,6 +248,7 @@ module iss#(
     branch_A           = di_A[0];
     branch_B           = di_B[0];
     branch_rob_slot    = rob_slot[0];
+    branch_iq_idx      = insns[0].idx;
     ls_A               = di_A[0];
     ls_B               = di_B[0];
     ls_rob_slot        = rob_slot[0];
@@ -285,13 +290,15 @@ module iss#(
 
     for (integer i = 0; i < ISSUE_PER_CYCLE; i++) begin
       if (!ext_valid[i]) begin
-        // If this instruction is not valid, then stop here; we cannot
-        // extract out of order.
+        // If this instruction is not valid, then stop here; there are no
+        // more instructions in the IQ.
         break;
       end
 
+`ifndef OOO_ENABLE
       if (bds_missing_r && i > 0)
         break;
+`endif
 
       if   (!di_ops_ready[i]
 `ifdef ROB_FORWARDING_ENABLE
@@ -304,7 +311,11 @@ module iss#(
         // Alternatively, if the operands are almost ready and this is not
         // going to go to the branch unit, we can issue early and set up
         // forwarding.
+`ifdef OOO_ENABLE
+        continue;
+`else
         break;
+`endif
       end
 
       if (b_used && i > (branch_idx + 1)) begin
@@ -321,6 +332,7 @@ module iss#(
         branch_A         = di_A[i];
         branch_B         = di_B[i];
         branch_rob_slot  = rob_slot[i];
+        branch_iq_idx    = insns[i].idx;
         consumed++;
       end
       else if ((di[i].load_inst | di[i].store_inst) && !ls_used && ls_ready) begin
@@ -384,8 +396,15 @@ module iss#(
         // If none of the execution units is available in this cycle
         // for this instruction then we stop here since we are issuing
         // strictly in order.
-        ext_consumed[i] = 1'b0;
+        ext_consumed[i]  = 1'b0;
+`ifndef OOO_ENABLE
         break;
+`endif
+        // Don't issue anything after a branch that could not be scheduled
+        // XXX: spec
+        if ((di[i].branch_inst | di[i].jmp_inst) && rob_slot[i] != branch_rob_slot_act)
+          break;
+
       end // else: !if(di[i].alu_inst && !exmul1_used && exmul1_ready)
     end // for (integer i = 0; i < ISSUE_PER_CYCLE; i++)
 
@@ -453,10 +472,11 @@ module iss#(
   // Flush only in the first cycle of a taken branch, and only if we aren't missing the BDS
   //  ... or if we branched some time ago and we only now got the BDS.
   assign branch_flush  =  (new_pc_valid & ~branch_stall_d1 & ~bds_missing)
-                        | (bds_missing_r & ext_enable)
+                        | (bds_missing_r & bds_issued)
                         ;
-  assign branch_flush_stream  = (bds_missing_r) ? insns[0].stream  : insns[branch_idx].stream;
-  assign branch_flush_slot    = (bds_missing_r) ? bds_flush_slot_r : bds_flush_slot;
+  assign branch_flush_stream  = (bds_missing_r) ? insns[0].stream    : insns[branch_idx].stream;
+  assign branch_flush_slot    = (bds_missing_r) ? bds_flush_slot_r   : bds_flush_slot;
+  assign branch_flush_iq_idx  = (bds_missing_r) ? bds_flush_iq_idx_r : bds_flush_iq_idx;
 
   assign AB_equal  = (branch_A_act == branch_B_act);
   assign A_gtz     = A_gez & ~A_eqz;
@@ -496,21 +516,34 @@ module iss#(
                          & bi_inst_valid
                          & ((branch_idx == {ISS_PC_LOG2{1'b1}}) | (~ext_consumed[branch_idx+1]))
                          ;
-  assign bds_flush_slot = branch_rob_slot;
+  assign bds_flush_slot    = branch_rob_slot;
+  assign bds_flush_iq_idx  = branch_iq_idx;
 
+
+  always_comb begin
+    bds_issued      = 1'b0;
+    for (integer i = 0; i < ISSUE_PER_CYCLE; i++) begin
+      automatic bit [6:0] k  = bds_flush_iq_idx_r + 1;
+      if (ext_consumed[i] & ext_valid[i] & (k == insns[i].idx))
+        bds_issued  = 1'b1;
+    end
+  end
 
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n) begin
-      bds_missing_r    <= 1'b0;
-      bds_flush_slot_r <= 'b0;
+      bds_missing_r      <= 1'b0;
+      bds_flush_slot_r   <= 'b0;
+      bds_flush_iq_idx_r <= 'b0;
     end
     else if (branch_flush) begin
-      bds_missing_r    <= 1'b0;
-      bds_flush_slot_r <= 'b0;
+      bds_missing_r      <= 1'b0;
+      bds_flush_slot_r   <= 'b0;
+      bds_flush_iq_idx_r <= 'b0;
     end
     else if (bds_missing) begin
-      bds_missing_r    <= 1'b1;
-      bds_flush_slot_r <= bds_flush_slot;
+      bds_missing_r      <= 1'b1;
+      bds_flush_slot_r   <= bds_flush_slot;
+      bds_flush_iq_idx_r <= bds_flush_iq_idx;
     end
 
 

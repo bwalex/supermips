@@ -12,6 +12,7 @@ ROB_DEPTH?=32
 ROB_FORWARDING?=ENABLE
 RETIRE_COUNT?=4
 CACHE?=REAL
+OOO?=DISABLE
 
 all:
 	echo "Targets: ncv, ncv_batch, modelsim, vcs"
@@ -42,6 +43,7 @@ vcs:
 		+define+LS_TRACE_$(TRACE) \
 		+define+CACHE_TRACE_$(TRACE) \
 		+define+ROB_FORWARDING_$(ROB_FORWARDING) \
+		+define+OOO_$(OOO) \
 		-parameters ./.vcs.params \
 		-pvalue+top/CPU/LS/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
 		$(SIM_BASE)/vcs_helpers.sv \

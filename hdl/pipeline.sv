@@ -128,6 +128,7 @@ module pipeline#(
   wire [31:0]                  branch_new_pc;
   wire                         branch_flush;
   wire                         branch_flush_stream;
+  wire [ 6:0]                  branch_flush_iq_idx;
   wire [ROB_DEPTHLOG2-1:0]     branch_flush_slot;
   wire [ROB_DEPTHLOG2-1:0]     branch_rob_dt_idx_a;
   wire [ROB_DEPTHLOG2-1:0]     branch_rob_dt_idx_b;
@@ -371,6 +372,7 @@ module pipeline#(
               .ext_enable               (issiq_ext_enable),
               .ext_consumed             (issiq_ext_consumed),
               .flush                    (branch_flush),
+              .flush_idx                (branch_flush_iq_idx),
               .flush_stream             (branch_flush_stream));
 
 
@@ -414,6 +416,7 @@ module pipeline#(
           .branch_flush                 (branch_flush),
           .branch_flush_stream          (branch_flush_stream),
           .branch_flush_slot            (branch_flush_slot),
+          .branch_flush_iq_idx          (branch_flush_iq_idx),
           .rd_addr                      (rfile_rd_addr),
           // Inputs
           .clock                        (clock),
