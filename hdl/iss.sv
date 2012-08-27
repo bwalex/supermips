@@ -384,7 +384,7 @@ module iss#(
         // If none of the execution units is available in this cycle
         // for this instruction then we stop here since we are issuing
         // strictly in order.
-        ext_consumed[i] <= 1'b0;
+        ext_consumed[i] = 1'b0;
         break;
       end // else: !if(di[i].alu_inst && !exmul1_used && exmul1_ready)
     end // for (integer i = 0; i < ISSUE_PER_CYCLE; i++)
