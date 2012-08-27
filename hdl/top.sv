@@ -280,6 +280,7 @@ module top#(
 `ifdef TEXT_IDEC_ENABLE
   reg [31:0] mem_inst_word_r_d1;
   reg [31:0] mem_pc_r_d1;
+  wire alu_inst, wb_muldiv_inst, wb_jmp_inst, wb_branch_inst, wb_load_inst, wb_store_inst, wb_unknown_inst;
 
   always_ff @(posedge clock) begin
     mem_inst_word_r_d1 <= CPU.mem_inst_word_r;
@@ -291,7 +292,14 @@ module top#(
   text_idec tdec_ex(.inst_word(CPU.id_inst_word_r),  .pc(CPU.id_pc_r),  .inst_str(inst_str_ex));
   text_idec tdec_mem(.inst_word(CPU.ex_inst_word_r), .pc(CPU.ex_pc_r),  .inst_str(inst_str_mem));
   text_idec tdec_wb(.inst_word(CPU.mem_inst_word_r), .pc(CPU.mem_pc_r), .inst_str(inst_str_wb));
-  text_idec tdec_wb_d1(.inst_word(mem_inst_word_r_d1), .pc(mem_pc_r_d1), .inst_str(inst_str_wb_d1));
+  text_idec tdec_wb_d1(.inst_word(mem_inst_word_r_d1), .pc(mem_pc_r_d1), .inst_str(inst_str_wb_d1),
+                       .alu_inst(wb_alu_inst),
+                       .muldiv_inst(wb_muldiv_inst),
+                       .jmp_inst(wb_jmp_inst),
+                       .branch_inst(wb_branch_inst),
+                       .load_inst(wb_load_inst),
+                       .store_inst(wb_store_inst),
+                       .unknown_inst(wb_unknown_inst));
 `endif
 
 
@@ -322,7 +330,7 @@ module top#(
       $fwrite(rftrace_file, "%d write (pc =%x), $%d => %x\n", $time, CPU.mem_pc_r, CPU.WB.dest_reg, CPU.WB.result);
     end
     if ((($past(last_wb_pc) == $past(CPU.mem_pc_r)) && $past(CPU.mem_pc_r) != CPU.mem_pc_r) || ($past(last_wb_pc) != $past(CPU.mem_pc_r)) && $past(CPU.mem_pc_r) != CPU.mem_pc_r )
-      $fwrite(ret_file, "%d retire pc=%x; %s\n", $time, $past(CPU.mem_pc_r), inst_str_wb_d1);
+      $fwrite(ret_file, "%d retire pc=%x; %s; alu=%b, muldiv=%b, jmp=%b, branch=%b, load=%b, store=%b, unknown=%b\n", $time, $past(CPU.mem_pc_r), inst_str_wb_d1, wb_alu_inst, wb_muldiv_inst, wb_jmp_inst, wb_branch_inst, wb_load_inst, wb_store_inst, wb_unknown_inst);
     last_wb_pc <= CPU.mem_pc_r;
   end
 `endif //  `ifdef TRACE_ENABLE
