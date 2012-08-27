@@ -67,7 +67,7 @@ module circ_buf #(
             fi  = i;
 
 `ifdef IQ_TRACE_ENABLE
-        $fwrite(trace_file, "%d: IQ: fi: %d\n", $time, fi);
+        $fwrite(trace_file, "%d: IQ: fi: %d, ft: %d\n", $time, fi, ft);
 `endif
         for (integer i = EXT_COUNT-1; i >= 0; i--) begin
           automatic iq_entry_int_t e  = buffer[i];
@@ -110,7 +110,7 @@ module circ_buf #(
         automatic integer count  = buffer.size();
         automatic iq_entry_int_t e;
 `endif
-        for (integer i = fi; i < buffer.size() && buffer[fi].stream == flush_stream; i++) begin
+        for (integer i = fi; fi < buffer.size() && buffer[fi].stream == flush_stream; i++) begin
 `ifdef IQ_TRACE_ENABLE
           e  = buffer[fi];
           $fwrite(trace_file, "%d IQ: flush slot %d, pc=%x, iw=%x, rob_slot=%d, stream=%b idx=%d\n",
@@ -125,6 +125,13 @@ module circ_buf #(
 `endif
       end
 
+`ifdef IQ_TRACE_ENABLE
+      for (integer i = 0; i < buffer.size(); i++) begin
+        automatic iq_entry_int_t e = buffer[i];
+        $fwrite(trace_file, "%d IQ: slot %d, pc=%x, iw=%x, rob_slot=%d, stream=%b idx=%d\n",
+                $time, fi, e.dec_inst.pc, e.dec_inst.inst_word, e.rob_slot, e.stream, e.idx);
+      end
+`endif
       used_count <= buffer.size();
 
       for (integer i = 0; i < buffer.size(); i++) begin

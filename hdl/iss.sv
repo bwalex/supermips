@@ -110,6 +110,8 @@ module iss#(
   reg [ROB_DEPTHLOG2-1:0] bds_flush_slot_r;
   reg [6:0]   bds_flush_iq_idx;
   reg [6:0]   bds_flush_iq_idx_r;
+  wire        bds_flush_stream;
+  reg         bds_flush_stream_r;
 
   reg [31:0]    branch_A;
   reg [31:0]    branch_B;
@@ -222,9 +224,14 @@ module iss#(
 
 
   always_comb begin
-    automatic bit b_used, ls_used, ex_used[EX_UNITS], exmul1_used, spec;
+    automatic bit b_used, ls_used, ex_used[EX_UNITS], exmul1_used, spec, can_proceed;
+    automatic bit [6:0] m, n;
+    automatic bit ls_skipped;
+    automatic bit md_skipped;
     automatic integer consumed;
 
+    ls_skipped          = 1'b0;
+    md_skipped          = 1'b0;
     consumed            = 0;
     branch_idx          = 'b0;
 
@@ -312,15 +319,38 @@ module iss#(
         // going to go to the branch unit, we can issue early and set up
         // forwarding.
 `ifdef OOO_ENABLE
-        continue;
-`else
-        break;
+        // Don't issue anything after a branch that could not be scheduled
+        // Don't issue any loads/stores after a load/store that could not be scheduled
+        // XXX: spec
+        if (di[i].load_inst | di[i].store_inst)
+          ls_skipped = 1'b1;
+
+        if (di[i].muldiv_inst)
+          md_skipped = 1'b1;
+
+        if (!(di[i].branch_inst | di[i].jmp_inst))
+          continue;
 `endif
+        break;
       end
 
       if (b_used && i > (branch_idx + 1)) begin
 	      // Anything after the BDS is speculative
 	      spec = 1'b1;
+      end
+
+      // Disallow speculative execution
+      // XXX: spec
+      can_proceed = 1'b0;
+      m = bds_flush_iq_idx_r - ISSUE_PER_CYCLE;
+      n = insns[i].idx-1;
+      for (integer j = 0; j <= ISSUE_PER_CYCLE; j++) begin
+        if (m == n)
+	  can_proceed = 1'b1;
+        m += 1;
+      end
+      if (bds_missing_r && !can_proceed && branch_flush_stream == insns[i].stream) begin
+        continue;
       end
 
       ext_consumed[i]  = 1'b1;
@@ -335,7 +365,7 @@ module iss#(
         branch_iq_idx    = insns[i].idx;
         consumed++;
       end
-      else if ((di[i].load_inst | di[i].store_inst) && !ls_used && ls_ready) begin
+      else if ((di[i].load_inst | di[i].store_inst) && !ls_used && ls_ready && !ls_skipped) begin
         ls_used                 = 1'b1;
         ls_inst                 = di[i];
         ls_A                    = di_A[i];
@@ -348,13 +378,13 @@ module iss#(
         ls_fwd_info.B_rob_slot  = as_bval_idx[i];
         consumed++;
       end
-      else if (di[i].muldiv_inst && !exmul1_used && exmul1_ready) begin
+      else if (di[i].muldiv_inst && !exmul1_used && exmul1_ready && !md_skipped) begin
         exmul1_used                 = 1'b1;
         exmul1_inst                 = di[i];
         exmul1_A                    = di_A[i];
         exmul1_B                    = di_B[i];
         exmul1_rob_slot             = rob_slot[i];
-	      exmul1_speculative          = spec;
+        exmul1_speculative          = spec;
         exmul1_fwd_info.A_fwd       = ~di_A_valid[i];
         exmul1_fwd_info.B_fwd       = ~di_B_valid[i];
         exmul1_fwd_info.A_rob_slot  = as_aval_idx[i];
@@ -404,7 +434,6 @@ module iss#(
         // XXX: spec
         if ((di[i].branch_inst | di[i].jmp_inst) && rob_slot[i] != branch_rob_slot_act)
           break;
-
       end // else: !if(di[i].alu_inst && !exmul1_used && exmul1_ready)
     end // for (integer i = 0; i < ISSUE_PER_CYCLE; i++)
 
@@ -412,10 +441,10 @@ module iss#(
     ext_enable         = (consumed > 0) ? 1'b1 : 1'b0;
 
     bi_inst_valid      = b_used;
-    ls_inst_valid      = ls_used & (~ls_speculative | ~branch_flush);
-    exmul1_inst_valid  = exmul1_used & (~exmul1_speculative | ~branch_flush);
+    ls_inst_valid      = ls_used & (~ls_speculative | ~new_pc_valid);
+    exmul1_inst_valid  = exmul1_used & (~exmul1_speculative | ~new_pc_valid);
     for (integer i = 0; i < EX_UNITS; i++)
-      ex_inst_valid[i]     = ex_used[i] & (~ex_speculative[i] | ~branch_flush);
+      ex_inst_valid[i]     = ex_used[i] & (~ex_speculative[i] | ~new_pc_valid);
   end // always_comb
 
 
@@ -474,9 +503,10 @@ module iss#(
   assign branch_flush  =  (new_pc_valid & ~branch_stall_d1 & ~bds_missing)
                         | (bds_missing_r & bds_issued)
                         ;
-  assign branch_flush_stream  = (bds_missing_r) ? insns[0].stream    : insns[branch_idx].stream;
+  //assign branch_flush_stream  = (bds_missing_r) ? insns[0].stream    : insns[branch_idx].stream;
   assign branch_flush_slot    = (bds_missing_r) ? bds_flush_slot_r   : bds_flush_slot;
   assign branch_flush_iq_idx  = (bds_missing_r) ? bds_flush_iq_idx_r : bds_flush_iq_idx;
+  assign branch_flush_stream  = (bds_missing_r) ? bds_flush_stream_r : bds_flush_stream;
 
   assign AB_equal  = (branch_A_act == branch_B_act);
   assign A_gtz     = A_gez & ~A_eqz;
@@ -514,10 +544,11 @@ module iss#(
 
   assign bds_missing    =  new_pc_valid
                          & bi_inst_valid
-                         & ((branch_idx == {ISS_PC_LOG2{1'b1}}) | (~ext_consumed[branch_idx+1]))
+                         & ((branch_idx == ISSUE_PER_CYCLE-1) | (~ext_consumed[(branch_idx == ISSUE_PER_CYCLE-1) ? 0 : branch_idx+1]))
                          ;
   assign bds_flush_slot    = branch_rob_slot;
   assign bds_flush_iq_idx  = branch_iq_idx;
+  assign bds_flush_stream  = insns[branch_idx].stream;
 
 
   always_comb begin
@@ -534,16 +565,19 @@ module iss#(
       bds_missing_r      <= 1'b0;
       bds_flush_slot_r   <= 'b0;
       bds_flush_iq_idx_r <= 'b0;
+      bds_flush_stream_r <= 1'b0;
     end
     else if (branch_flush) begin
       bds_missing_r      <= 1'b0;
       bds_flush_slot_r   <= 'b0;
       bds_flush_iq_idx_r <= 'b0;
+      bds_flush_stream_r <= 1'b0;
     end
     else if (bds_missing) begin
       bds_missing_r      <= 1'b1;
       bds_flush_slot_r   <= bds_flush_slot;
       bds_flush_iq_idx_r <= bds_flush_iq_idx;
+      bds_flush_stream_r <= bds_flush_stream;
     end
 
 
@@ -556,8 +590,8 @@ module iss#(
   end
 
   always_ff @(posedge clock) begin
-    $fwrite(trace_file, "%d: ISS: bds_missing=%b, bds_missing_r=%b, bds_issued=%b, ls_ready=%b, exmul1_ready=%b, branch_ready=%b, ",
-      $time, bds_missing, bds_missing_r, bds_issued, ls_ready, exmul1_ready, branch_ready);
+    $fwrite(trace_file, "%d: ISS: bds_missing=%b, bds_missing_r=%b, bds_issued=%b, bds_flush_iq_idx_r=%d, ls_ready=%b, exmul1_ready=%b, branch_ready=%b, ",
+      $time, bds_missing, bds_missing_r, bds_issued, bds_flush_iq_idx_r, ls_ready, exmul1_ready, branch_ready);
     for (integer i = 0; i < EX_UNITS; i++)
       $fwrite(trace_file, "ex%1d_ready=%b, ", i, ex_ready[i]);
     $fwrite(trace_file, "\n");
