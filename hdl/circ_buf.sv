@@ -69,7 +69,7 @@ module circ_buf #(
         for (integer i = EXT_COUNT-1; i >= 0; i--) begin
           automatic iq_entry_int_t e  = buffer[i];
           if (ext_consumed[i] & ext_valid[i]) begin
-            if (i <= fi)
+            if (i < fi)
               fi -= 1;
 
             buffer.delete(i);

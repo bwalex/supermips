@@ -556,8 +556,8 @@ module iss#(
   end
 
   always_ff @(posedge clock) begin
-    $fwrite(trace_file, "%d: ISS: ls_ready=%b, exmul1_ready=%b, branch_ready=%b, ",
-      $time, ls_ready, exmul1_ready, branch_ready);
+    $fwrite(trace_file, "%d: ISS: bds_issued=%b, ls_ready=%b, exmul1_ready=%b, branch_ready=%b, ",
+      $time, bds_issued, ls_ready, exmul1_ready, branch_ready);
     for (integer i = 0; i < EX_UNITS; i++)
       $fwrite(trace_file, "ex%1d_ready=%b, ", i, ex_ready[i]);
     $fwrite(trace_file, "\n");
@@ -565,7 +565,7 @@ module iss#(
     for (integer i = 0; i < ISSUE_PER_CYCLE; i++) begin
       automatic bit [6:0] k  = bds_flush_iq_idx_r + 1;
       $fwrite(trace_file, "%d: ISS: ext_consumed[%d] = %b\n", $time, i, ext_consumed[i]);
-      $fwrite(trace_file, "%d: ISS: insns[%d].idx = %d (k=%d)\n", $time, i, insns[i].idx, k);
+      $fwrite(trace_file, "%d: ISS: insns       [%d].idx = %d (k=%d)\n", $time, i, insns[i].idx, k);
     end
 
     if (ls_inst_valid)
