@@ -39,7 +39,7 @@ module circ_buf #(
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n)
       idx_r <= 'b0;
-    else
+    else if (ins_enable)
       idx_r <= idx_r + new_count + 1;
 
 

@@ -562,8 +562,11 @@ module iss#(
       $fwrite(trace_file, "ex%1d_ready=%b, ", i, ex_ready[i]);
     $fwrite(trace_file, "\n");
 
-    for (integer i = 0; i < ISSUE_PER_CYCLE; i++)
+    for (integer i = 0; i < ISSUE_PER_CYCLE; i++) begin
+      automatic bit [6:0] k  = bds_flush_iq_idx_r + 1;
       $fwrite(trace_file, "%d: ISS: ext_consumed[%d] = %b\n", $time, i, ext_consumed[i]);
+      $fwrite(trace_file, "%d: ISS: insns[%d].idx = %d (k=%d)\n", $time, i, insns[i].idx, k);
+    end
 
     if (ls_inst_valid)
       $fwrite(trace_file, "%d: ISS: issuing to LS:     pc=%x, A=%x (fwd=%b), B=%x (fwd=%b), rob_slot=%d, iw: %x\n",
