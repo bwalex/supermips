@@ -529,6 +529,9 @@ module iss#(
       $fwrite(trace_file, "ex%1d_ready=%b, ", i, ex_ready[i]);
     $fwrite(trace_file, "\n");
 
+    for (integer i = 0; i < ISSUE_PER_CYCLE; i++)
+      $fwrite(trace_file, "%d: ISS: ext_consumed[%d] = %b\n", i, ext_consumed[i]);
+
     if (ls_inst_valid)
       $fwrite(trace_file, "%d: ISS: issuing to LS:     pc=%x, A=%x (fwd=%b), B=%x (fwd=%b), rob_slot=%d, iw: %x\n",
               $time, ls_inst.pc, ls_A, ls_fwd_info.A_fwd & ls_inst.A_reg_valid,

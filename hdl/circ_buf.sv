@@ -51,7 +51,7 @@ module circ_buf #(
 
       if (ext_enable_i)
         for (integer i = EXT_COUNT-1; i >= 0; i--) begin
-          automatic iq_entry_int e  = buffer[i];
+          automatic iq_entry_int_t e  = buffer[i];
           if (ext_consumed[i] & ext_valid[i]) begin
             buffer.delete(i);
 `ifdef IQ_TRACE_ENABLE
