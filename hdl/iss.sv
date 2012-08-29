@@ -350,7 +350,7 @@ module iss#(
         m += 1;
       end
       if (bds_missing_r && !can_proceed && branch_flush_stream == insns[i].stream) begin
-        $fwrite(trace_file, "cannot continue pc: %x, can_proceed=%b, n=%d, m=%d\n", di[i].pc, can_proceed,n, m);
+        //$fwrite(trace_file, "cannot continue pc: %x, can_proceed=%b, n=%d, m=%d\n", di[i].pc, can_proceed,n, m);
         continue;
       end
 
