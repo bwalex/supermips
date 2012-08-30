@@ -591,6 +591,8 @@ module iss#(
   end
 
   always_ff @(posedge clock) begin
+    automatic integer issue_count  = 0;
+
     $fwrite(trace_file, "%d: ISS: bds_missing=%b, bds_missing_r=%b, bds_issued=%b, bds_flush_iq_idx_r=%d, ls_ready=%b, exmul1_ready=%b, branch_ready=%b, ",
       $time, bds_missing, bds_missing_r, bds_issued, bds_flush_iq_idx_r, ls_ready, exmul1_ready, branch_ready);
     for (integer i = 0; i < EX_UNITS; i++)
@@ -599,9 +601,19 @@ module iss#(
 
     for (integer i = 0; i < ISSUE_PER_CYCLE; i++) begin
       automatic bit [6:0] k  = bds_flush_iq_idx_r + 1;
-      $fwrite(trace_file, "%d: ISS: ext_consumed[%d] = %b\n", $time, i, ext_consumed[i]);
+      $fwrite(trace_file, "%d: ISS: ext_consumed[%d]     = %b\n", $time, i, ext_consumed[i]);
       $fwrite(trace_file, "%d: ISS: insns       [%d].idx = %d (k=%d)\n", $time, i, insns[i].idx, k);
+      if (di[i].branch_inst && !di_ops_ready[i])
+        $fwrite(trace_file, "%d: ISS: branch, pc=%x, OP_NOT_READY\n", $time, di[i].pc);
+      if (di[i].branch_inst && di_ops_ready[i] && !branch_ready)
+        $fwrite(trace_file, "%d: ISS: branch, pc=%x, UNIT_NOT_READY\n", $time, di[i].pc);
+      if (di[i].jmp_inst && !di_ops_ready[i])
+        $fwrite(trace_file, "%d: ISS: jmp, pc=%x, OP_NOT_READY\n", $time, di[i].pc);
+      if (ext_consumed[i])
+        ++issue_count;
     end
+
+    $fwrite(trace_file, "%d: ISS: issue_count=%d\n", $time, issue_count);
 
     if (ls_inst_valid)
       $fwrite(trace_file, "%d: ISS: issuing to LS:     pc=%x, A=%x (fwd=%b), B=%x (fwd=%b), rob_slot=%d, iw: %x\n",
