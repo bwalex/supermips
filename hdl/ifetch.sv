@@ -60,7 +60,26 @@ module ifetch #(
 
 
 
+`ifdef IFETCH_COMB
+  always_comb begin
+    inst_word0_r       = inst_word0;
+    inst_word1_r       = inst_word1;
+    inst_word2_r       = inst_word2;
+    inst_word3_r       = inst_word3;
 
+    inst_word0_valid_r = inst_word0_valid;
+    inst_word1_valid_r = inst_word1_valid;
+    inst_word2_valid_r = inst_word2_valid;
+    inst_word3_valid_r = inst_word3_valid;
+
+    inst_stream_r      = inst_stream;
+
+    pc_out0_r          = pc_out0;
+    pc_out1_r          = pc_out1;
+    pc_out2_r          = pc_out2;
+    pc_out3_r          = pc_out3;
+  end
+`else
   always_ff @(posedge clock, negedge reset_n)
     if (~reset_n) begin
       inst_word0_r       <= 32'b0;
@@ -98,6 +117,7 @@ module ifetch #(
       pc_out2_r          <= pc_out2;
       pc_out3_r          <= pc_out3;
     end
+`endif // !`ifdef IFETCH_COMB
 
 
   always_ff @(posedge clock, negedge reset_n)
