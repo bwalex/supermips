@@ -16,12 +16,18 @@ sub mean { return @_ ? sum(@_) / @_ : 0 }
 
 @block_sz = ();
 $block_idx = 0;
+$last_pc = -4;
+$branches_taken = 0;
+$branch_inst_d1 = 0;
+$branch_inst_d2 = 0;
+$jmp_inst_d1 = 0;
+$jmp_inst_d2 = 0;
 
 open(FD, $ARGV[0]) or die "Could not open file";
 while (<FD>) {
 	$_ =~ /\s*(\d+).*pc=([0-9a-f]+);\s*(\w+).*;.*alu=(\d).*muldiv=(\d).*jmp=(\d).*branch=(\d).*load=(\d).*store=(\d).*unknown=(\d)/;
 	$time = $1;
-	$pc = $2;
+	$pc = hex($2);
 	$inst = $3;
 	$alu_inst = $4;
 	$muldiv_inst = $5;
@@ -40,11 +46,17 @@ while (<FD>) {
 	$count{load} += $load_inst;
 	$count{store} += $store_inst;
 
+	if ($pc != ($last_pc+4)) {
+		++$block_idx;
+		$branches_taken += $branch_inst_d2;
+	}
+
+	$last_pc = $pc;
+
 	++$block_sz[$block_idx];
 
-	if ($jmp_inst == 1 or $branch_inst == 1) {
-		++$block_idx;
-	}
+	$branch_inst_d2 = $branch_inst_d1;
+	$branch_inst_d1 = $branch_inst;
 }
 
 
@@ -57,6 +69,13 @@ while (($key, $value) = each %insns) {
 	print "$key $value\n";
 }
 print "=================\n";
+
+print "Branches (excluding jmps) taken: $branches_taken\n";
+
+open (BF, '> branch_blocks.dat');
+for my $value (@block_sz) {
+	print BF "$value\n";
+}
 
 my @block_sz = sort @block_sz;
 my $mean = mean @block_sz;
