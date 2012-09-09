@@ -17,7 +17,7 @@ AS		= mips-sde-elf-as
 
 #PORT_CFLAGS = -DCORE_DEBUG=1 -mno-branch-likely -O3 -g
 #PORT_CFLAGS = -mno-branch-likely -O3 -g
-PORT_CFLAGS =       -O3 -fomit-frame-pointer -funroll-loops -mno-branch-likely -mno-dsp -mno-dspr2 -mno-float -mbranch-cost=8
+PORT_CFLAGS =       -O3 -fomit-frame-pointer -funroll-loops -mno-branch-likely -mno-dsp -mno-dspr2 -mno-float
 
 FLAGS_STR = "$(PORT_CFLAGS) $(XCFLAGS) $(XLFLAGS) $(LFLAGS_END)"
 CFLAGS = $(PORT_CFLAGS) -I$(PORT_DIR) -I. -DFLAGS_STR=\"$(FLAGS_STR)\" -std=c99 -T $(PORT_DIR)/simple.ld # can't use -nostdinc because of stdarg
