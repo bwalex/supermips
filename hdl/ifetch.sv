@@ -60,7 +60,7 @@ module ifetch #(
 
 
 
-`ifdef IFETCH_COMB
+`ifdef FIVE_STAGE_ENABLE
   always_comb begin
     inst_word0_r       = inst_word0;
     inst_word1_r       = inst_word1;
@@ -117,7 +117,7 @@ module ifetch #(
       pc_out2_r          <= pc_out2;
       pc_out3_r          <= pc_out3;
     end
-`endif // !`ifdef IFETCH_COMB
+`endif // !`ifdef FIVE_STAGE_ENABLE
 
 
   always_ff @(posedge clock, negedge reset_n)

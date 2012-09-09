@@ -3,7 +3,7 @@ SIM_BASE?=../sim
 SOFTWARE_BASE?=../software
 TRICK_ITERATIONS?=100
 PROG?=coremark.vmem
-MEM_FILE?="\"$(SOFTWARE_BASE)/$(PROG)\""
+MEM_FILE?=$(SOFTWARE_BASE)/$(PROG)
 VCS_FLAGS?=
 TRACE?=DISABLE
 EX_UNITS?=1
@@ -13,9 +13,11 @@ ROB_FORWARDING?=ENABLE
 RETIRE_COUNT?=4
 CACHE?=REAL
 OOO?=DISABLE
+FIVE_STAGE?=DISABLE
+OUTPUT_DIR?=.
 
 all:
-	echo "Targets: ncv, ncv_batch, modelsim, vcs"
+	echo "Targets: ncv, ncv_batch, modelsim, vcs, vcs_coverage"
 
 modelsim:
 	qhsim -do "source load_sim.tcl"
@@ -24,16 +26,34 @@ modelsim_clean:
 	rm -f vsim.wlf transcript modelsim.ini
 	rm -rf libraries
 
-vcs:
+out_dir:
+	mkdir -p $(OUTPUT_DIR)
+	echo "" > $(OUTPUT_DIR)/SETTINGS
+	echo "MEM_FILE:       $(MEM_FILE)"          >> $(OUTPUT_DIR)/SETTINGS
+	echo "ITERATIONS:     $(TRICK_ITERATIONS)"  >> $(OUTPUT_DIR)/SETTINGS
+	echo "TRACE:          $(TRACE)"             >> $(OUTPUT_DIR)/SETTINGS
+	echo "VCS_FLAGS:      $(VCS_FLAGS)"         >> $(OUTPUT_DIR)/SETTINGS
+	echo "CACHE:          $(CACHE)"             >> $(OUTPUT_DIR)/SETTINGS
+	echo "EX_UNITS:       $(EX_UNITS)"          >> $(OUTPUT_DIR)/SETTINGS
+	echo "IQ_DEPTH:       $(IQ_DEPTH)"          >> $(OUTPUT_DIR)/SETTINGS
+	echo "ROB_DEPTH:      $(ROB_DEPTH)"         >> $(OUTPUT_DIR)/SETTINGS
+	echo "RETIRE_COUNT:   $(RETIRE_COUNT)"      >> $(OUTPUT_DIR)/SETTINGS
+	echo "ROB_FORWARDING: $(ROB_FORWARDING)"    >> $(OUTPUT_DIR)/SETTINGS
+	echo "OOO:            $(OOO)"               >> $(OUTPUT_DIR)/SETTINGS
+	echo "FIVE_STAGE:     $(FIVE_STAGE)"        >> $(OUTPUT_DIR)/SETTINGS
+
+vcs: out_dir
 	# Not including text_idec, as it VCS doesn't support a string as a non-ref port
 	#
 	# For some weird reason, vcs doesn't like overriding string parameters via
 	# -pvalue; not even after escaping the string all over.
-	@echo assign $(MEM_FILE)     top/MEM_FILE      > .vcs.params
+	@echo assign "\"$(MEM_FILE)\"" top/MEM_FILE      > .vcs.params
 	@echo assign $(EX_UNITS)     top/EX_UNITS     >> .vcs.params
 	@echo assign $(IQ_DEPTH)     top/IQ_DEPTH     >> .vcs.params
 	@echo assign $(ROB_DEPTH)    top/ROB_DEPTH    >> .vcs.params
 	@echo assign $(RETIRE_COUNT) top/RETIRE_COUNT >> .vcs.params
+	@echo "all:" > $(OUTPUT_DIR)/Makefile
+	@echo "	./simv.bin | tee OUTPUT" >> $(OUTPUT_DIR)/Makefile
 	vcs $(VCS_FLAGS) -sverilog \
 		+define+$(CACHE)_CACHE \
 		+define+ROB_TRACE_$(TRACE) \
@@ -44,8 +64,10 @@ vcs:
 		+define+CACHE_TRACE_$(TRACE) \
 		+define+ROB_FORWARDING_$(ROB_FORWARDING) \
 		+define+OOO_$(OOO) \
+		+define+FIVE_STAGE_$(FIVE_STAGE) \
 		-parameters ./.vcs.params \
 		-pvalue+top/CPU/LS/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
+		-o $(OUTPUT_DIR)/simv.bin \
 		$(SIM_BASE)/vcs_helpers.sv \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/types.sv \
@@ -71,18 +93,20 @@ vcs:
 		$(HDL_BASE)/id.sv \
 		$(HDL_BASE)/iss.sv \
 		$(HDL_BASE)/wb.sv
-	./simv
+	make -C $(OUTPUT_DIR) all
 
-vcs_coverage:
+vcs_coverage: out_dir
 	# Not including text_idec, as it VCS doesn't support a string as a non-ref port
 	#
 	# For some weird reason, vcs doesn't like overriding string parameters via
 	# -pvalue; not even after escaping the string all over.
-	@echo assign $(MEM_FILE)     top/MEM_FILE      > .vcs.params
+	@echo assign "\"$(MEM_FILE)\"" top/MEM_FILE      > .vcs.params
 	@echo assign $(EX_UNITS)     top/EX_UNITS     >> .vcs.params
 	@echo assign $(IQ_DEPTH)     top/IQ_DEPTH     >> .vcs.params
 	@echo assign $(ROB_DEPTH)    top/ROB_DEPTH    >> .vcs.params
 	@echo assign $(RETIRE_COUNT) top/RETIRE_COUNT >> .vcs.params
+	@echo "all:" > $(OUTPUT_DIR)/Makefile
+	@echo "	./simv.bin -cm line -cm cond -cm branch -cm tgl | tee OUTPUT" >> $(OUTPUT_DIR)/Makefile
 	vcs $(VCS_FLAGS) -sverilog \
 		-cm line \
 		-cm cond \
@@ -96,8 +120,10 @@ vcs_coverage:
 		+define+CACHE_TRACE_$(TRACE) \
 		+define+ROB_FORWARDING_$(ROB_FORWARDING) \
 		+define+OOO_$(OOO) \
+		+define+FIVE_STAGE_$(FIVE_STAGE) \
 		-parameters ./.vcs.params \
 		-pvalue+top/CPU/LS/MEM/trickbox/ITERATIONS=$(TRICK_ITERATIONS) \
+		-o $(OUTPUT_DIR)/simv.bin \
 		$(SIM_BASE)/vcs_helpers.sv \
 		$(HDL_BASE)/top.sv \
 		$(HDL_BASE)/types.sv \
@@ -123,7 +149,7 @@ vcs_coverage:
 		$(HDL_BASE)/id.sv \
 		$(HDL_BASE)/iss.sv \
 		$(HDL_BASE)/wb.sv
-	./simv -cm line -cm cond -cm branch -cm tgl
+	make -C $(OUTPUT_DIR) all
 
 
 vcs_clean:

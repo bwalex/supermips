@@ -648,7 +648,9 @@ module idec
         dest_reg_valid  = 1'b0;
         load_inst       = 1'b0;
         store_inst      = 1'b0;
+`ifndef FIVE_STAGE_ENABLE
         $display("Unknown instruction: opc: %x (pc: %x)", inst_opc, pc);
+`endif
       end
     endcase // case (inst_opc)
 
