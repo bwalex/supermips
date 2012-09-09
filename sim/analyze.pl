@@ -10,6 +10,11 @@ sub mean { return @_ ? sum(@_) / @_ : 0 }
   jmp => 0
 );
 
+%opnotready_raw = (
+	branch => 0,
+	jmp => 0
+);
+
 %unitnotready = (
   branch => 0,
   jmp => 0
@@ -24,6 +29,7 @@ sub mean { return @_ ? sum(@_) / @_ : 0 }
 %b = ();
 $branchjmp_count = 0;
 
+$last_time = 0;
 open(FD, $ARGV[0]) or die "Could not open file";
 while (<FD>) {
 	if ($_ =~ m/.*OP_NOT_READY.*/) {
@@ -34,6 +40,10 @@ while (<FD>) {
 		if ($b{hex($pc)} == 0) {
 			++$opnotready{$brj};
 			$b{hex($pc)} = 1;
+		}
+		if ($time != $last_time) {
+			++$opnotready_raw{$brj};
+			$last_time = $time;
 		}
 	} elsif ($_ =~ m/.*UNIT_NOT_READY.*/) {
 		$_ =~ /\s*(\d+).*ISS: (branch|jmp), pc=\s*([0-9a-f]+).*/;
@@ -72,10 +82,18 @@ while (<FD>) {
 
 print "issued branches + jmps: $branchjmp_count\n";
 
-print "OP_NOT_READY:\n";
+print "OP_NOT_READY (unique branches):\n";
 while (($key, $value) = each %opnotready) {
 	print "$key $value\n";
 }
+
+
+print "=================\n";
+print "OP_NOT_READY (raw, number of cycles wasted on trying to issue branches):\n";
+while (($key, $value) = each %opnotready_raw) {
+	print "$key $value\n";
+}
+
 
 print "=================\n";
 print "UNIT_NOT_READY:\n";
