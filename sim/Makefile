@@ -127,7 +127,7 @@ ncv:
 
 ncv_batch:
 	ncverilog -sv +access+r +ncbatch \
-		+define+TEXT_IDEC_ENABLE \
+		+define+TEXT_IDEC_$(TRACE) \
 		+define+$(CACHE)_CACHE \
 		+define+TRACE_$(TRACE) \
 		+defparam+top.CPU.MEM.trickbox.ITERATIONS=$(TRICK_ITERATIONS) \
